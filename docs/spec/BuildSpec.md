@@ -134,12 +134,17 @@ DOTween は導入しない。
 
     namespace System.Runtime.CompilerServices
     {
-        internal static class IsExternalInit { }
+        public static class IsExternalInit { }
     }
 
 理由: `record` と `init` セッターには `IsExternalInit` 型が必要だが、
 これは .NET 5 以降にしか存在せず Unity は未対応である。自前で宣言することで
 回避できる（Unity 公式マニュアルに記載）。
+
+`public` とするのは、`Game.Core` 以外のアセンブリで `record` を定義する際に
+必要なためである。`internal` にすると宣言したアセンブリ内でしか見えず、
+`Game.Features.*` や `Game.Tests.*` で `init` セッターがコンパイルできない
+（CS0518）。
 
 ---
 
