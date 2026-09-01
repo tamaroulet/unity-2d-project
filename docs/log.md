@@ -59,3 +59,16 @@ Unity-MCP v10.0.0 / Antigravity（チャット版・IDE版）/ Rider 2026.2 / Cl
   CommandEffect のフィールド分割は事前案になく、エージェント側の指摘が正しかった
 - 所感: 計画段階で規約違反を自力検出した点、および指示書の記述不足
   （Stamina の増減と消費量の区別）を計画段階で埋めた点は、委譲先として良好
+
+### Step 1 実行結果（2026-09-01）
+- 使用モデル: Sonnet 5
+- 範囲逸脱: なし（Assets/Core/Data/ 配下の .cs 4本のみ）
+- 禁止 API の参照: なし
+- コンパイル: 通過。record + IsExternalInit が Unity 6.3 で動作することを実測
+- 差し戻し: 1件（readonly record struct → readonly struct。C# 10 機能のため）
+- 設計案との差分:
+  - 一致: TerminationKind を GameState に持たせず戻り値側に置く構成
+  - 差分: CommandEffect に StaminaDelta と StaminaCost を分離。
+    事前案にはなく、エージェント側の指摘が正しかった（Rest が +30 / 消費0 のため）
+- 所要時間:
+- コミット: e79c0a4
