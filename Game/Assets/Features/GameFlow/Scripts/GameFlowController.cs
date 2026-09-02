@@ -63,12 +63,42 @@ namespace Game.Features.GameFlow
 
         public IReadOnlyList<int> BossBattleTurns => _bossBattleTurns;
 
+        private void Awake()
+        {
+            EnsureDependencies();
+        }
+
         private void Start()
         {
+            EnsureDependencies();
             if (_autoStartOnPlay)
             {
                 StartGame();
             }
+        }
+
+        /// <summary>
+        /// 依存する ScriptableObject が未割り当ての場合に自動補完するセーフティネット。
+        /// </summary>
+        public void EnsureDependencies()
+        {
+#if UNITY_EDITOR
+            if (_gameRules == null) _gameRules = UnityEditor.AssetDatabase.LoadAssetAtPath<GameRulesSO>("Assets/Data/Rules/GameRules.asset");
+            if (_commandResolver == null) _commandResolver = UnityEditor.AssetDatabase.LoadAssetAtPath<CommandResolverSO>("Assets/Data/Commands/CommandResolver.asset");
+            if (_eventCatalog == null) _eventCatalog = UnityEditor.AssetDatabase.LoadAssetAtPath<GameEventCatalogSO>("Assets/Data/Events/GameEventCatalog.asset");
+            if (_eventResolver == null) _eventResolver = UnityEditor.AssetDatabase.LoadAssetAtPath<EventResolverSO>("Assets/Data/Events/EventResolver.asset");
+            if (_endingRules == null) _endingRules = UnityEditor.AssetDatabase.LoadAssetAtPath<EndingRulesSO>("Assets/Data/Endings/EndingRules.asset");
+            if (_endingResolver == null) _endingResolver = UnityEditor.AssetDatabase.LoadAssetAtPath<EndingResolverSO>("Assets/Data/Endings/EndingResolver.asset");
+            if (_gameStateChannel == null) _gameStateChannel = UnityEditor.AssetDatabase.LoadAssetAtPath<GameStateEventChannelSO>("Assets/Data/Channels/GameStateEventChannel.asset");
+            if (_eventFiredChannel == null) _eventFiredChannel = UnityEditor.AssetDatabase.LoadAssetAtPath<GameEventFiredChannelSO>("Assets/Data/Channels/GameEventFiredChannel.asset");
+            if (_endingDecidedChannel == null) _endingDecidedChannel = UnityEditor.AssetDatabase.LoadAssetAtPath<EndingDecidedChannelSO>("Assets/Data/Channels/EndingDecidedChannel.asset");
+            if (_relicCatalog == null) _relicCatalog = UnityEditor.AssetDatabase.LoadAssetAtPath<RelicCatalogSO>("Assets/Features/Relic/Instances/RelicCatalog.asset");
+            if (_relicResolver == null) _relicResolver = UnityEditor.AssetDatabase.LoadAssetAtPath<RelicResolverSO>("Assets/Features/Relic/Instances/RelicResolver.asset");
+            if (_bossCatalog == null) _bossCatalog = UnityEditor.AssetDatabase.LoadAssetAtPath<BossCatalogSO>("Assets/Features/Boss/Instances/BossCatalog.asset");
+            if (_autoBattleResolver == null) _autoBattleResolver = UnityEditor.AssetDatabase.LoadAssetAtPath<AutoBattleResolverSO>("Assets/Features/Boss/Instances/AutoBattleResolver.asset");
+            if (_metaPointResolver == null) _metaPointResolver = UnityEditor.AssetDatabase.LoadAssetAtPath<MetaPointResolverSO>("Assets/Features/MetaProgression/Instances/MetaPointResolver.asset");
+            if (_metaUnlockCatalog == null) _metaUnlockCatalog = UnityEditor.AssetDatabase.LoadAssetAtPath<MetaUnlockCatalogSO>("Assets/Features/MetaProgression/Instances/MetaUnlockCatalog.asset");
+#endif
         }
 
         private void OnEnable()
@@ -93,13 +123,14 @@ namespace Game.Features.GameFlow
         /// </summary>
         public void StartGame()
         {
+            EnsureDependencies();
             _activeRelics.Clear();
             _bossDefeatedCount = 0;
             _currentPhase = GamePhase.Initializing;
 
             if (_gameRules == null)
             {
-                Debug.LogError("[GameFlowController] _gameRules is not assigned on GameFlowController. Please assign GameRulesSO in Inspector or run Tools > Setup Complete UI Layout.");
+                Debug.LogError("[GameFlowController] _gameRules is not assigned on GameFlowController.");
                 return;
             }
 
@@ -108,10 +139,7 @@ namespace Game.Features.GameFlow
                 ? _metaPointResolver.ApplyUnlockedStatBonuses(baseState, _metaProfile, _metaUnlockCatalog, _gameRules)
                 : baseState;
 
-            if (_gameStateChannel != null)
-            {
-                _gameStateChannel.Raise(_currentState);
-            }
+            _gameStateChannel?.Raise(_currentState);
 
             Debug.Log($"[GameFlowController] Game Started! Initial State: Turn={_currentState.CurrentTurn}, Stamina={_currentState.Stamina}, Skill={_currentState.Skill}, Mental={_currentState.Mental}");
 
@@ -124,9 +152,17 @@ namespace Game.Features.GameFlow
         /// </summary>
         public void ExecuteCommand(CommandDataSO command)
         {
+            EnsureDependencies();
+
             if (_currentPhase != GamePhase.WaitingInput)
             {
                 Debug.LogWarning($"[GameFlowController] Cannot execute command {command?.name}: Not in WaitingInput phase (Current phase: {_currentPhase})");
+                return;
+            }
+
+            if (_commandResolver == null || _gameRules == null)
+            {
+                Debug.LogError("[GameFlowController] _commandResolver or _gameRules is missing!");
                 return;
             }
 
@@ -146,7 +182,7 @@ namespace Game.Features.GameFlow
             }
 
             _currentState = result.State;
-            _gameStateChannel.Raise(_currentState);
+            _gameStateChannel?.Raise(_currentState);
 
             Debug.Log($"[GameFlowController] Executed {command.name}! New State: Turn={_currentState.CurrentTurn}, Stamina={_currentState.Stamina}, Skill={_currentState.Skill}, Mental={_currentState.Mental}");
 
@@ -160,10 +196,12 @@ namespace Game.Features.GameFlow
         /// </summary>
         public void AdvanceTurn()
         {
+            EnsureDependencies();
+
             if (_relicResolver != null && _activeRelics.Count > 0)
             {
                 _currentState = _relicResolver.ApplyTurnEndRelics(_currentState, _activeRelics, _gameRules);
-                _gameStateChannel.Raise(_currentState);
+                _gameStateChannel?.Raise(_currentState);
             }
 
             TerminationKind termination = TurnRules.EvaluateTermination(_currentState, _gameRules.MaxTurn);
@@ -175,8 +213,10 @@ namespace Game.Features.GameFlow
                     FinalizeRun(isGameClear: false);
                     break;
                 case TerminationKind.NormalEnd:
-                    EndingKind ending = _endingResolver.Resolve(_currentState, _endingRules);
-                    _endingDecidedChannel.Raise(ending);
+                    EndingKind ending = _endingResolver != null && _endingRules != null
+                        ? _endingResolver.Resolve(_currentState, _endingRules)
+                        : EndingKind.Failure;
+                    _endingDecidedChannel?.Raise(ending);
                     _currentPhase = GamePhase.GameClear;
                     FinalizeRun(isGameClear: true);
                     break;
@@ -191,12 +231,13 @@ namespace Game.Features.GameFlow
         /// </summary>
         private void BeginTurn()
         {
+            EnsureDependencies();
             _currentPhase = GamePhase.TurnStart;
 
             if (_relicResolver != null && _activeRelics.Count > 0)
             {
                 _currentState = _relicResolver.ApplyTurnStartRelics(_currentState, _activeRelics, _gameRules);
-                _gameStateChannel.Raise(_currentState);
+                _gameStateChannel?.Raise(_currentState);
             }
 
             int actIndex = _autoBattleResolver != null && _bossCatalog != null && _bossBattleTurns != null
@@ -207,14 +248,14 @@ namespace Game.Features.GameFlow
             {
                 int bossId = actIndex + 1;
                 BossSO boss = _bossCatalog.FindById(bossId);
-                if (boss != null)
+                if (boss != null && _autoBattleResolver != null)
                 {
                     _currentPhase = GamePhase.BossBattle;
                     FullBattleResult battleResult = _autoBattleResolver.ResolveFullBattle(
                         _currentState, boss, _activeRelics, _gameRules);
 
                     _currentState = battleResult.FinalPlayerState;
-                    _gameStateChannel.Raise(_currentState);
+                    _gameStateChannel?.Raise(_currentState);
 
                     if (battleResult.Outcome == BattleOutcomeKind.Victory)
                     {
@@ -231,19 +272,21 @@ namespace Game.Features.GameFlow
                 }
             }
 
-            EventResult eventResult = _eventResolver.Resolve(_currentState, _eventCatalog);
+            if (_eventResolver != null && _eventCatalog != null)
+            {
+                EventResult eventResult = _eventResolver.Resolve(_currentState, _eventCatalog);
 
-            if (eventResult.HasFired)
-            {
-                _currentState = eventResult.State;
-                _currentPhase = GamePhase.ShowingEvent;
-                _gameStateChannel.Raise(_currentState);
-                _eventFiredChannel.Raise(eventResult.FiredEvent.EventId);
+                if (eventResult.HasFired)
+                {
+                    _currentState = eventResult.State;
+                    _currentPhase = GamePhase.ShowingEvent;
+                    _gameStateChannel?.Raise(_currentState);
+                    _eventFiredChannel?.Raise(eventResult.FiredEvent.EventId);
+                    return;
+                }
             }
-            else
-            {
-                _currentPhase = GamePhase.WaitingInput;
-            }
+
+            _currentPhase = GamePhase.WaitingInput;
         }
 
         private void FinalizeRun(bool isGameClear)
