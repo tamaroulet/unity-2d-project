@@ -1,3 +1,4 @@
+// SPDX-AI-Disclosure: ai-generated
 using Game.Core;
 
 namespace Game.Features.Command

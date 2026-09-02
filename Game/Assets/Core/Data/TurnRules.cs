@@ -1,3 +1,4 @@
+// SPDX-AI-Disclosure: ai-generated
 namespace Game.Core
 {
     /// <summary>

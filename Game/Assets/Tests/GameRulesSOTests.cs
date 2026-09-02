@@ -1,3 +1,4 @@
+// SPDX-AI-Disclosure: ai-generated
 using Game.Core;
 using Game.Features.Command;
 using NUnit.Framework;

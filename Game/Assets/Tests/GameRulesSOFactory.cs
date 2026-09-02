@@ -1,3 +1,4 @@
+// SPDX-AI-Disclosure: ai-generated
 using System;
 using System.Reflection;
 using Game.Features.Command;
