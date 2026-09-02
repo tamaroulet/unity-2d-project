@@ -57,11 +57,18 @@ namespace Game.UI
             if (!Application.isPlaying) return;
 
             GameFlowController controller = UnityEngine.Object.FindFirstObjectByType<GameFlowController>();
-            if (controller != null && controller.CurrentPhase == GamePhase.ShowingRelicDraft && controller.LastEncounteredBoss != null && !IsPanelActive)
+            if (controller != null && (controller.CurrentPhase == GamePhase.ShowingRelicDraft || controller.CurrentPhase == GamePhase.GameOver) && controller.LastEncounteredBoss != null && !IsPanelActive)
             {
                 Show(controller.LastEncounteredBoss, controller.LastBossBattleResult, () =>
                 {
-                    controller.OnRelicAcquired(controller.LastEncounteredBoss.BossId);
+                    if (controller.CurrentPhase == GamePhase.ShowingRelicDraft)
+                    {
+                        controller.OnRelicAcquired(controller.LastEncounteredBoss.BossId);
+                    }
+                    else if (controller.CurrentPhase == GamePhase.GameOver)
+                    {
+                        controller.StartGame();
+                    }
                 });
             }
         }
@@ -79,6 +86,8 @@ namespace Game.UI
         /// </summary>
         public void Show(BossSO boss, FullBattleResult battleResult, Action onDismissed = null)
         {
+            EnsureReferences();
+            gameObject.SetActive(true);
             _onDismissedCallback = onDismissed;
 
             if (_bossNameText != null)
