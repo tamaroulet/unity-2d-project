@@ -301,9 +301,16 @@ Test Runner で通っていること）は、8日前倒しで満たされた。�
 前者を対象としており、また対象タスクが英語のライティングであるため、
 本プロジェクトの記録を直接接続することはできない。
 
-### SPDX-AI-Disclosure の遡及付与（2026-09-02）
-- 対象: Step 1〜3 で作成した .cs 12本（IsExternalInit.cs を含む）
+### SPDX-AI-Disclosure の遡及付与
+- 対象: Step 1〜3 で作成した .cs 12本
+- 値: 11本を ai-generated、IsExternalInit.cs を ai-assisted
+- IsExternalInit.cs の判定: 人間が GitHub Web UI で作成したが、本文は
+  BuildSpec 9節（AI が起草）からの転記であるため none ではなく ai-assisted。
+  タグの意味を「文字列の由来」で一貫させる解釈を採用した
 - 理由: CodingSpec 15節が Step 1〜3 完了後の制定だったため
-- 判定: タグの有無は生成時期を示さない。生成主体は log.md の各 Step の記録で追う
+- 注意: タグの有無は生成時期を示さない。生成主体は各 Step の記録で追う
+- エージェントによる指示文の不備検出: 1件
+  （対象ディレクトリを Assets/Tests/EditMode/ と記載したが実際は Assets/Tests/。
+   実装前に読み替えを提示し、承認を求めて停止した）
 - Step 4 の前に実施した理由: 未付与のまま投入すると、エージェントが規約遵守の
   ために既存ファイルを変更し、「既存ファイルへの変更0件」の判定が濁るため
