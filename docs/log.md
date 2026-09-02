@@ -420,6 +420,37 @@ Unity-MCP 経由での前提アセット（フォルダ・asmdef）作成後、C
 
 ---
 
+### Step 6：エンディング判定
+
+`EndingRulesSO` / `EndingResolverSO` / `EndingRulesSOFactory` / `EndingResolverSOTests`
+
+#### 計画レビュー
+
+Unity-MCP 経由で前提アセット（`Assets/Features/Ending/Scripts/` フォルダ、`Game.Features.Ending.asmdef`、テスト参照追加）を作成後、Claude Code に実装を委譲した。
+
+- 承認理由: 指示書 #3 第7節の要件（純粋関数 `EndingResolverSO.Resolve`、データ SO `EndingRulesSO`、`TrackedParameter` による同値タイブレーク、テスト7項目）に完全に適合していたため
+
+#### エージェントによる指示文の不備検出
+
+1件。プロンプト作成時に簡易指示として記述した内容（`EndingPriority` enum新設・クラス統合）と、指示書第7節の正式仕様（既存 `TrackedParameter` 再利用・`EndingResolverSO` 分離）の相違を Claude Code が検出し、指示書1節の規則に従って無断実装を行わず確認を求めて停止した。
+文書通りの設計を採用して実装を再開した。
+
+- 判定: 適合。指示の不整合を実装前に検出し、不要な enum 重複を防いだ
+- 責任: Antigravity 側。プロンプト作成時に指示書の詳細設計との完全一致を確認していなかった
+
+#### 実行結果
+
+| 項目 | 結果 |
+|---|---|
+| 使用モデル | Sonnet 5 |
+| 書き込み範囲の逸脱 | なし（指定の4ファイルのみ作成、既存コード変更0件） |
+| 人間による差し戻し | 0件 |
+| エージェント自身の自己修正 | 0回 |
+| テスト結果 | 32/32 通過（EditMode、既存25件＋新規7件） |
+| コミット | `cdeb9fe` |
+
+---
+
 ## 評価指標の定義
 
 本プロジェクトで記録している指標のうち、既存の評価系との対応は以下の通り。
