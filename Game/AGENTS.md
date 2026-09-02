@@ -44,13 +44,14 @@
 
 ---
 
-## 2. 開発・書き込み体制
+## 2. 開発・書き込み体制（2モデル協調体制）
 
-開発体制は **Antigravity (Gemini) 完結体制** に移行した。（Claude Code の利用は停止）
+開発体制は **Claude Code（頭脳・品質保証）× Antigravity / Gemini（手足・実装）の 2モデル協調体制** とする。
 
-- Antigravity は、指示書・仕様に基づき `.cs` ファイルの直接作成・編集、単体テストの作成、Unity エディタ操作（Unity-MCP 経由）、Git 管理を統合して実行する
-- C# コードの実装・変更後は、必ず Unity-MCP の `refresh_unity` および `run_tests`（EditMode）を実行し、全テストの合格を機械的に検証すること
-- Unity-MCP の `manage_script` および `execute_code` は無効化のままとし、ファイル編集は IDE 標準のファイルツール（write_to_file / replace_file_content）を用いる
+- **Claude Code**: コア設計・数学モデル・指示書の作成（計画）、中間監視、および総合アーキテクチャ監査（評価）を担当。公式 `/usage` が 85% 未満の安全枠内でのみピンポイント稼働する
+- **Antigravity (Gemini)**: 指示書に基づく `.cs` ファイルの実装、単体テスト作成、Unity-MCP 経由のエディタ操作（シーン・アセット・テスト実行）、Git 管理、およびクォータ安全監視を担当
+- **品質・整合性保証**: C# コードの実装・変更後は、必ず Unity-MCP の `refresh_unity` および `run_tests`（EditMode）を実行し、全テストの合格を機械的に検証すること
+- **スクリプト操作の経路**: Unity-MCP の `manage_script` および `execute_code` は無効化のままとし、ファイル編集は IDE 標準のファイルツール（write_to_file / replace_file_content）を用いる
 
 ---
 

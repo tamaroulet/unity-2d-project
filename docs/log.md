@@ -560,6 +560,26 @@ Antigravity (Gemini) による直接 C# 実装体制への移行後、指示書 
 
 ---
 
+### リソース監視・自動遮断基盤の確立および 2モデル協調ルールの策定
+
+`scripts/get_claude_quota.ps1` / `scripts/invoke_claude_safe.ps1` / `.agents/rules/00_role.md` / `Game/AGENTS.md`
+
+#### 背景と問題
+ローカルログ（`.jsonl`）の単純合算によるトークン推定では、Anthropic サーバー側のプロンプトキャッシュやリクエスト頻度の加重計算と乖離が生じ、セッション枠枯渇（100% used）を事前検知できず有償クレジット超過（Extra Spending）を招くリスクが判明。
+
+#### 調査と対策の実装
+1. **公式 OAuth Usage API 連携**:
+   - `claude -p "/usage"` を非対話実行し、Anthropic サーバーが管理する真の利用率（`SessionUsedPercent`）および正確なリセット日時（`ResetIso`）、残り秒数（`RemainingSeconds`）を確定抽出する `scripts/get_claude_quota.ps1` を実装。
+2. **安全実行ラッパー（自動物理遮断）**:
+   - 使用率 85% 以上の場合は Claude の呼び出しを即座にエラー（exit 1）で物理遮断し、課金突入を 100% 防ぐ `scripts/invoke_claude_safe.ps1` を実装。
+3. **2モデル協調アーキテクチャの恒久化**:
+   - **Claude Code**: コア設計・数学モデル・指示書の作成（計画）、中間監視、総合アーキテクチャ監査（評価）
+   - **Antigravity (Gemini)**: C# 実装、単体テスト作成（100% Green 維持）、Unity-MCP 操作、自動クォータ監視
+4. **自律タイマー監視**:
+   - 20:50 JST のリセット時刻に向け、8000秒の自動起床タイマー（`schedule`）をセット。
+
+---
+
 ## 評価指標の定義
 
 本プロジェクトで記録している指標のうち、既存の評価系との対応は以下の通り。
