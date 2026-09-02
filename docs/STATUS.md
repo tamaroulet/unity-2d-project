@@ -14,25 +14,21 @@
 | **第1週 Step 3** | EditMode テスト（11件通過） | 完了 | |
 | **環境検証** | Web ビルド・GitHub Pages 公開 | 完了 | |
 | **第2週 Step 4** | イベントチャンネル基盤（16/16テスト通過） | 完了 | `233f083` |
-| **第2週 Step 5** | イベント定義と条件評価 | **前提条件待ちで停止** | |
-| **第2週 Step 6** | エンディング判定 | 未着手 | |
+| **第2週 Step 5** | イベント定義と条件評価（25/25テスト通過） | 完了 | `ec34748` |
+| **第2週 Step 6** | エンディング判定 | **未着手（次回対象）** | |
 
 ---
 
 ## 2. 次にやること
 
-1. **人間による Step 5 前提条件の作成（Unity エディタ経由）**:
-   - `Assets/Features/Event/Scripts/` フォルダの作成
-   - `Game.Features.Event.asmdef` の作成（参照: `Game.Core`）
-   - `Game.Tests.EditMode.asmdef` に `Game.Features.Event` への参照を追加
-2. 上記完了後、Step 5 の計画・実装を再開
+1. **Step 6（エンディング判定）の実行**:
+   - Unity-MCP による `Assets/Features/Ending/Scripts/` フォルダおよび `Game.Features.Ending.asmdef` の作成
+   - `Game.Tests.EditMode.asmdef` への参照追加
+   - `EndingPriority` enum、`EndingRulesSO`（純粋関数 `Evaluate`）、テスト（7項目）の実装委譲
+   - EditMode 単体テスト（全32テスト予定）の実行・検証
 
 ---
 
 ## 3. ブロッカー・未確認事項
 
-| # | 項目 | 内容 | 状態 |
-|---|---|---|---|
-| 1 | `Assets/Features/Event/Scripts/` フォルダ | 人間による作成が必要（未作成） | **ブロック中** |
-| 2 | `Game.Features.Event.asmdef` | 人間による作成が必要（未作成） | **ブロック中** |
-| 3 | `Game.Tests.EditMode.asmdef` 参照追加 | `Game.Features.Event` への参照が必要（未追加） | **ブロック中** |
+なし（Step 6 の前準備も Unity-MCP 経由で自動化可能）。

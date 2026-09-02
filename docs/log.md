@@ -396,6 +396,30 @@ A / B / C で識別しており、番号を振った指示書は #2 が最初で
 
 ---
 
+### Step 5：イベント定義と条件評価
+
+`TrackedParameter` / `EventTriggerKind` / `GameEventSO` / `GameEventCatalogSO` / `EventResult` / `EventResolverSO` / `GameState.FiredEventMask` / `GameEventSOFactory` / `EventResolverSOTests`
+
+#### 計画レビュー
+
+Unity-MCP 経由での前提アセット（フォルダ・asmdef）作成後、Claude Code に実装を委譲した。
+
+- 承認理由: 指示書 #3 第6節の要件（7-2節を見越した `TrackedParameter` の Core/Data 配置、純粋関数設計、パラメータ上下限値の SO 参照、`GameState.FiredEventMask` のみ変更、テスト9項目）に完全に適合していたため
+- 前提アセット作成の自動化: 指示書 03_event_ending.md 3節・8節を改訂し、Antigravity が Unity-MCP 経由で GUID 整合性を保ちながらフォルダ・asmdef を自動生成する運用を適用した（コミット: `1b11f66`）
+
+#### 実行結果
+
+| 項目 | 結果 |
+|---|---|
+| 使用モデル | Sonnet 5 |
+| 書き込み範囲の逸脱 | なし（指定ファイルおよび GameState への FiredEventMask 追加のみ） |
+| 人間による差し戻し | 0件 |
+| エージェント自身の自己修正 | 0回 |
+| テスト結果 | 25/25 通過（EditMode、既存16件＋新規9件） |
+| コミット | `ec34748` |
+
+---
+
 ## 評価指標の定義
 
 本プロジェクトで記録している指標のうち、既存の評価系との対応は以下の通り。
