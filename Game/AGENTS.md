@@ -26,7 +26,7 @@
 ### 自律開発の実行サイクル
 1. **毎朝の大枠アライメント（Daily Morning Checkpoint）**: 1日1回（毎朝等）に「前日/夜間の成果」「本日のゲームデザイン大枠」「最新残量」を提示して方針確認
 2. **調査（Evidence-First）**: 外部ツール・仕様・未知のエラーに直面した場合は `search_web` 等で一次情報を調査
-3. **仕様策定・確認**: `docs/instructions/` の指示書に基づき変更範囲とテスト項目を確定
+3. **仕様策定 & Claude洗練**: `docs/instructions/` の指示書素案を必ず Claude に投入し、仕様の穴・数学モデル・ゲーム性の改善・テストケースの網羅性を徹底精査・洗練させてから実装へ移行（Claude 頭脳の最大活用）
 4. **テスト先行実装（TDD）**: EditMode 単体テストコードを先行作成し、C# ロジックを実装
 5. **Unity-MCP 多層検証**: `refresh_unity` および `run_tests`（100% Green）を機械的に確認
 6. **Living Spec 同期 & 記録**: `docs/spec/`、`docs/STATUS.md`、`docs/log.md` を更新して Git コミット・プッシュ
