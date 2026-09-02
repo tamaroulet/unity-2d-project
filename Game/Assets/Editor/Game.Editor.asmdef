@@ -12,7 +12,8 @@
         "Game.Features.GameFlow",
         "Game.UI",
         "Unity.TextMeshPro",
-        "UnityEngine.UI"
+        "UnityEngine.UI",
+        "Unity.InputSystem"
     ],
     "includePlatforms": [
         "Editor"

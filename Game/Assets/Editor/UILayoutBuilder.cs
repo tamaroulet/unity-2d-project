@@ -38,6 +38,12 @@ namespace Game.EditorScripts
         [MenuItem("Tools/Setup Complete UI Layout (Simple Shapes)")]
         public static void SetupCompleteLayout()
         {
+            if (EditorApplication.isPlaying)
+            {
+                Debug.LogWarning("[UILayoutBuilder] PlayMode detected. Stopping PlayMode to rebuild UI safely...");
+                EditorApplication.isPlaying = false;
+            }
+
             // 1. スプライト生成とインポートを完了
             ProceduralSpriteGenerator.GenerateAllSprites();
             AssetDatabase.SaveAssets();
@@ -60,10 +66,24 @@ namespace Game.EditorScripts
             scaler.referenceResolution = new Vector2(1920, 1080);
             scaler.matchWidthOrHeight = 0.5f;
 
-            // EventSystem
-            if (Object.FindFirstObjectByType<UnityEngine.EventSystems.EventSystem>() == null)
+            // EventSystem（新 Input System: InputSystemUIInputModule 対応）
+            UnityEngine.EventSystems.EventSystem es = Object.FindFirstObjectByType<UnityEngine.EventSystems.EventSystem>();
+            if (es == null)
             {
-                new GameObject("EventSystem", typeof(UnityEngine.EventSystems.EventSystem), typeof(UnityEngine.EventSystems.StandaloneInputModule));
+                GameObject esGo = new GameObject("EventSystem", typeof(UnityEngine.EventSystems.EventSystem), typeof(UnityEngine.InputSystem.UI.InputSystemUIInputModule));
+            }
+            else
+            {
+                // 古い StandaloneInputModule があれば除去して InputSystemUIInputModule に置き換え
+                UnityEngine.EventSystems.StandaloneInputModule oldModule = es.GetComponent<UnityEngine.EventSystems.StandaloneInputModule>();
+                if (oldModule != null)
+                {
+                    Object.DestroyImmediate(oldModule);
+                }
+                if (es.GetComponent<UnityEngine.InputSystem.UI.InputSystemUIInputModule>() == null)
+                {
+                    es.gameObject.AddComponent<UnityEngine.InputSystem.UI.InputSystemUIInputModule>();
+                }
             }
 
             // 古い壊れた子オブジェクトを一括クリア（クリーンビルド）
@@ -170,10 +190,10 @@ namespace Game.EditorScripts
 
             GameFlowController flowController = Object.FindFirstObjectByType<GameFlowController>();
 
-            // 3つのコマンドボタン（勉強、特訓、休息）を完全配線
-            SetupCommandButton(rect, "StudyButton", "Icon_Study", "勉強 (Study)\nSkill+5", new Vector2(-400, 0), "Assets/Data/Commands/Study.asset", flowController);
-            SetupCommandButton(rect, "TrainButton", "Icon_Train", "特訓 (Train)\nSkill+10", new Vector2(0, 0), "Assets/Data/Commands/Train.asset", flowController);
-            SetupCommandButton(rect, "RestButton", "Icon_Rest", "休息 (Rest)\nStamina+30", new Vector2(400, 0), "Assets/Data/Commands/Rest.asset", flowController);
+            // 3つのコマンドボタン（STUDY, TRAIN, REST）を完全配線
+            SetupCommandButton(rect, "StudyButton", "Icon_Study", "STUDY\nSkill+5", new Vector2(-400, 0), "Assets/Data/Commands/Study.asset", flowController);
+            SetupCommandButton(rect, "TrainButton", "Icon_Train", "TRAIN\nSkill+10", new Vector2(0, 0), "Assets/Data/Commands/Train.asset", flowController);
+            SetupCommandButton(rect, "RestButton", "Icon_Rest", "REST\nStamina+30", new Vector2(400, 0), "Assets/Data/Commands/Rest.asset", flowController);
         }
 
         private static void SetupCommandButton(RectTransform parent, string name, string iconName, string text, Vector2 pos, string cmdAssetPath, GameFlowController controller)

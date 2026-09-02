@@ -97,12 +97,21 @@ namespace Game.Features.GameFlow
             _bossDefeatedCount = 0;
             _currentPhase = GamePhase.Initializing;
 
+            if (_gameRules == null)
+            {
+                Debug.LogError("[GameFlowController] _gameRules is not assigned on GameFlowController. Please assign GameRulesSO in Inspector or run Tools > Setup Complete UI Layout.");
+                return;
+            }
+
             GameState baseState = _gameRules.CreateInitialState();
             _currentState = _metaPointResolver != null && _metaUnlockCatalog != null
                 ? _metaPointResolver.ApplyUnlockedStatBonuses(baseState, _metaProfile, _metaUnlockCatalog, _gameRules)
                 : baseState;
 
-            _gameStateChannel.Raise(_currentState);
+            if (_gameStateChannel != null)
+            {
+                _gameStateChannel.Raise(_currentState);
+            }
 
             Debug.Log($"[GameFlowController] Game Started! Initial State: Turn={_currentState.CurrentTurn}, Stamina={_currentState.Stamina}, Skill={_currentState.Skill}, Mental={_currentState.Mental}");
 
