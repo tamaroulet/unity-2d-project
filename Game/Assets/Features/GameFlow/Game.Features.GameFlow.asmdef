@@ -1,0 +1,19 @@
+{
+    "name": "Game.Features.GameFlow",
+    "rootNamespace": "Game.Features.GameFlow",
+    "references": [
+        "Game.Core",
+        "Game.Features.Command",
+        "Game.Features.Event",
+        "Game.Features.Ending"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": false,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
