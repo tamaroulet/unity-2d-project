@@ -346,3 +346,21 @@ Safari は ITP により、7日間アクセスがないとストレージを警�
 | 10 | ScriptableObject / MonoBehaviour への `record` 型の使用 |
 | 11 | UI Toolkit の使用 |
 | 12 | Feature 同士の横方向の依存 |
+
+## 15. AI生成の明示
+
+エージェントが生成した `.cs` ファイルの先頭に、以下の形式で1行を記述する。
+
+    // SPDX-AI-Disclosure: ai-generated
+
+値は以下から選ぶ。
+
+| 値 | 意味 |
+|---|---|
+| `none` | AI の関与なし |
+| `ai-assisted` | 人間が書き、AI が補助した |
+| `ai-generated` | AI が生成し、人間がレビューした |
+
+本プロジェクトでは、エージェントが生成したファイルは `ai-generated` とする。
+
+出典: https://github.com/ggfevans/ai-disclosure （CC0、任意規約）
