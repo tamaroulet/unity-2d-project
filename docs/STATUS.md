@@ -14,18 +14,18 @@
 | **第1週 Step 3** | EditMode テスト（11件通過） | 完了 | |
 | **環境検証** | Web ビルド・GitHub Pages 公開 | 完了 | |
 | **第2週 Step 4** | イベントチャンネル基盤（16/16テスト通過） | 完了 | `233f083` |
-| **第2週 Step 5** | イベント定義と条件評価 | **進行中（計画・実装中）** | |
+| **第2週 Step 5** | イベント定義と条件評価 | **前提条件待ちで停止** | |
 | **第2週 Step 6** | エンディング判定 | 未着手 | |
 
 ---
 
 ## 2. 次にやること
 
-1. **Step 5（イベント定義と条件評価）の実行**:
-   - `Assets/Features/Event/Scripts/` 配下のクラス群実装
-   - `GameState.cs` への `FiredEventMask` フィールド追加（唯一の許可された Core 変更）
-   - `EventResolverSO`（純粋関数）の実装
-   - EditMode 単体テスト（`EventResolverSOTests` 9項目）の実行・検証
+1. **人間による Step 5 前提条件の作成（Unity エディタ経由）**:
+   - `Assets/Features/Event/Scripts/` フォルダの作成
+   - `Game.Features.Event.asmdef` の作成（参照: `Game.Core`）
+   - `Game.Tests.EditMode.asmdef` に `Game.Features.Event` への参照を追加
+2. 上記完了後、Step 5 の計画・実装を再開
 
 ---
 
@@ -33,5 +33,6 @@
 
 | # | 項目 | 内容 | 状態 |
 |---|---|---|---|
-| 1 | `Assets/Features/Event/Scripts/` フォルダ | 人間による作成が必要（存在確認済み） | 解決済み |
-| 2 | `Game.Features.Event.asmdef` | 存在確認済み | 解決済み |
+| 1 | `Assets/Features/Event/Scripts/` フォルダ | 人間による作成が必要（未作成） | **ブロック中** |
+| 2 | `Game.Features.Event.asmdef` | 人間による作成が必要（未作成） | **ブロック中** |
+| 3 | `Game.Tests.EditMode.asmdef` 参照追加 | `Game.Features.Event` への参照が必要（未追加） | **ブロック中** |
