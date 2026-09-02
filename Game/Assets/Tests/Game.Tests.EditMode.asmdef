@@ -6,7 +6,8 @@
         "UnityEditor.TestRunner",
         "Game.Core",
         "Game.Features.Command",
-        "Game.Features.Event"
+        "Game.Features.Event",
+        "Game.Features.Ending"
     ],
     "includePlatforms": [
         "Editor"
