@@ -60,12 +60,19 @@ namespace Game.UI
 
             if (_nameText != null)
             {
-                _nameText.text = _command.CommandName;
+                string cmdName = _command.name switch
+                {
+                    "Study" => "STUDY\nSkill+5",
+                    "Train" => "TRAIN\nSkill+10",
+                    "Rest" => "REST\nStamina+30",
+                    _ => _command.CommandName
+                };
+                _nameText.text = cmdName;
             }
 
             if (_costText != null)
             {
-                _costText.text = _command.Effect.StaminaCost.ToString();
+                _costText.text = $"Cost: {_command.Effect.StaminaCost}";
             }
         }
 
@@ -74,8 +81,11 @@ namespace Game.UI
         /// </summary>
         private void OnCommandClick()
         {
+            Debug.Log($"[CommandButtonView] Clicked button for command: {(_command != null ? _command.name : "null")}");
+
             if (_command == null || _gameFlowController == null)
             {
+                Debug.LogError($"[CommandButtonView] Error: _command is {(_command == null ? "null" : "valid")}, _gameFlowController is {(_gameFlowController == null ? "null" : "valid")}");
                 return;
             }
 

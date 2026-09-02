@@ -104,6 +104,8 @@ namespace Game.Features.GameFlow
 
             _gameStateChannel.Raise(_currentState);
 
+            Debug.Log($"[GameFlowController] Game Started! Initial State: Turn={_currentState.CurrentTurn}, Stamina={_currentState.Stamina}, Skill={_currentState.Skill}, Mental={_currentState.Mental}");
+
             BeginTurn();
         }
 
@@ -115,6 +117,7 @@ namespace Game.Features.GameFlow
         {
             if (_currentPhase != GamePhase.WaitingInput)
             {
+                Debug.LogWarning($"[GameFlowController] Cannot execute command {command?.name}: Not in WaitingInput phase (Current phase: {_currentPhase})");
                 return;
             }
 
@@ -128,12 +131,15 @@ namespace Game.Features.GameFlow
 
             if (!result.IsExecutable)
             {
+                Debug.LogWarning($"[GameFlowController] Command {command?.name} not executable with current stamina {_currentState.Stamina} (Cost: {effectiveEffect.StaminaCost})");
                 _currentPhase = GamePhase.WaitingInput;
                 return;
             }
 
             _currentState = result.State;
             _gameStateChannel.Raise(_currentState);
+
+            Debug.Log($"[GameFlowController] Executed {command.name}! New State: Turn={_currentState.CurrentTurn}, Stamina={_currentState.Stamina}, Skill={_currentState.Skill}, Mental={_currentState.Mental}");
 
             _currentPhase = GamePhase.TurnEnd;
 

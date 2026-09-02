@@ -69,22 +69,14 @@ namespace Game.UI
 
             LastDisplayedState = state;
 
-            SetText(_turnText, state.CurrentTurn);
-            SetText(_staminaText, state.Stamina);
-            SetText(_skillText, state.Skill);
-            SetText(_mentalText, state.Mental);
+            if (_turnText != null) _turnText.text = $"TURN {state.CurrentTurn} / 24";
+            if (_staminaText != null) _staminaText.text = $"Stamina: {state.Stamina} / 100";
+            if (_skillText != null) _skillText.text = $"Skill: {state.Skill}";
+            if (_mentalText != null) _mentalText.text = $"Mental: {state.Mental} / 100";
 
             SetGauge(_staminaGauge, state.Stamina);
             SetGauge(_skillGauge, state.Skill);
             SetGauge(_mentalGauge, state.Mental);
-        }
-
-        private static void SetText(TextMeshProUGUI text, int value)
-        {
-            if (text != null)
-            {
-                text.text = value.ToString();
-            }
         }
 
         private static void SetGauge(Slider gauge, int value)

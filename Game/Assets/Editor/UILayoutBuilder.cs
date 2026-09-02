@@ -139,7 +139,7 @@ namespace Game.EditorScripts
             GameObject mentalGo = CreateGaugeGroup(rect, "MentalGroup", "Icon_Mental", ColorMental, new Vector2(400, 0), "Mental: 80 / 100");
 
             GameObject turnGo = CreateLabel(rect, "TurnText", "TURN 1 / 24", new Vector2(-750, 0), new Vector2(200, 50), 28, TextAlignmentOptions.Left);
-            CreateLabel(rect, "PointsText", "💎 0 Pts", new Vector2(750, 0), new Vector2(200, 50), 28, TextAlignmentOptions.Right);
+            CreateLabel(rect, "PointsText", "POINTS: 0", new Vector2(750, 0), new Vector2(200, 50), 28, TextAlignmentOptions.Right);
 
             // StatusView の SerializedObject バインド
             GameStateEventChannelSO channel = AssetDatabase.LoadAssetAtPath<GameStateEventChannelSO>("Assets/Data/Channels/GameStateEventChannel.asset");
