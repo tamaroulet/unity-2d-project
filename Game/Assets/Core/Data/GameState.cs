@@ -14,5 +14,10 @@ namespace Game.Core
         public int Skill { get; init; }
 
         public int Mental { get; init; }
+
+        /// <summary>
+        /// 発火済みイベントのビットマスク。イベント ID n が発火済みのとき、ビット n が立つ。
+        /// </summary>
+        public int FiredEventMask { get; init; }
     }
 }
