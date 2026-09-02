@@ -145,7 +145,7 @@ namespace Game.UI
             }
 
             StringBuilder sb = new StringBuilder();
-            sb.AppendLine(battleResult.Outcome == BattleOutcomeKind.Victory ? "[VICTORY] ボス撃破！" : "[DEFEAT] 敗北...");
+            sb.AppendLine(battleResult.Outcome == BattleOutcomeKind.Victory ? "[VICTORY] Boss Defeated!" : "[DEFEAT] Player Defeated...");
 
             if (battleResult.TurnHistory != null)
             {

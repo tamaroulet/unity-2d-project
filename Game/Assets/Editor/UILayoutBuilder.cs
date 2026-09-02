@@ -236,10 +236,10 @@ namespace Game.EditorScripts
             Transform rootTr = go.transform.Find("PanelRoot");
             if (rootTr != null)
             {
-                CreateLabel(rootTr.GetComponent<RectTransform>(), "EventTitleText", "イベント発生", new Vector2(0, 180), new Vector2(700, 50), 32, TextAlignmentOptions.Center);
-                CreateLabel(rootTr.GetComponent<RectTransform>(), "EventDescriptionText", "ランダムな育成イベントが発生しました。\n選択肢を選んで能力を伸ばしましょう。", new Vector2(0, 50), new Vector2(700, 120), 22, TextAlignmentOptions.Center);
-                CreateModalButton(rootTr.GetComponent<RectTransform>(), "OptionAButton", "選択肢 A (Stamina消費 / Skill上昇)", new Vector2(0, -90), new Vector2(600, 60));
-                CreateModalButton(rootTr.GetComponent<RectTransform>(), "OptionBButton", "選択肢 B (安全策 / Mental保護)", new Vector2(0, -170), new Vector2(600, 60));
+                CreateLabel(rootTr.GetComponent<RectTransform>(), "EventTitleText", "EVENT OCCURRED", new Vector2(0, 180), new Vector2(700, 50), 32, TextAlignmentOptions.Center);
+                CreateLabel(rootTr.GetComponent<RectTransform>(), "EventDescriptionText", "A training event has occurred.\nChoose your option carefully.", new Vector2(0, 50), new Vector2(700, 120), 22, TextAlignmentOptions.Center);
+                CreateModalButton(rootTr.GetComponent<RectTransform>(), "OptionAButton", "Option A (Stamina Cost / Skill Boost)", new Vector2(0, -90), new Vector2(600, 60));
+                CreateModalButton(rootTr.GetComponent<RectTransform>(), "OptionBButton", "Option B (Safe Action / Mental Guard)", new Vector2(0, -170), new Vector2(600, 60));
             }
             go.SetActive(false); // 初期状態は非表示
         }
@@ -254,10 +254,10 @@ namespace Game.EditorScripts
             Transform rootTr = go.transform.Find("PanelRoot");
             if (rootTr != null)
             {
-                CreateLabel(rootTr.GetComponent<RectTransform>(), "DraftTitleText", "レリックドラフト（パッシブ選択）", new Vector2(0, 240), new Vector2(800, 50), 32, TextAlignmentOptions.Center);
-                CreateRelicCard(rootTr.GetComponent<RectTransform>(), "Card1", "鉄のダンベル\n毎ターンStamina+5", new Vector2(-340, -20));
-                CreateRelicCard(rootTr.GetComponent<RectTransform>(), "Card2", "知恵の書\nSkill獲得量+20%", new Vector2(0, -20));
-                CreateRelicCard(rootTr.GetComponent<RectTransform>(), "Card3", "癒やしの護符\nMental保護+30%", new Vector2(340, -20));
+                CreateLabel(rootTr.GetComponent<RectTransform>(), "DraftTitleText", "RELIC DRAFT (SELECT PASSIVE)", new Vector2(0, 240), new Vector2(800, 50), 32, TextAlignmentOptions.Center);
+                CreateRelicCard(rootTr.GetComponent<RectTransform>(), "Card1", "Iron Dumbbell\n+5 Stamina/Turn", new Vector2(-340, -20));
+                CreateRelicCard(rootTr.GetComponent<RectTransform>(), "Card2", "Book of Wisdom\n+20% Skill Gain", new Vector2(0, -20));
+                CreateRelicCard(rootTr.GetComponent<RectTransform>(), "Card3", "Healing Amulet\n+30% Mental Guard", new Vector2(340, -20));
             }
             go.SetActive(false);
         }
@@ -272,13 +272,13 @@ namespace Game.EditorScripts
             Transform rootTr = go.transform.Find("PanelRoot");
             if (rootTr != null)
             {
-                CreateLabel(rootTr.GetComponent<RectTransform>(), "BossTitleText", "⚠️ ボスバトル発生 ⚠️", new Vector2(0, 290), new Vector2(800, 50), 34, TextAlignmentOptions.Center);
+                CreateLabel(rootTr.GetComponent<RectTransform>(), "BossTitleText", "BOSS BATTLE", new Vector2(0, 290), new Vector2(800, 50), 34, TextAlignmentOptions.Center);
                 AttachIcon(rootTr, "BossEmblem", LoadSprite("Boss_Emblem_Act1"), new Vector2(0, 110), new Vector2(200, 200));
 
                 CreateGaugeGroup(rootTr.GetComponent<RectTransform>(), "BossHpGroup", "Icon_Attack", ColorBossHp, new Vector2(0, -60), "Boss HP: 80 / 80");
                 CreateGaugeGroup(rootTr.GetComponent<RectTransform>(), "BossShieldGroup", "Icon_Shield", ColorShield, new Vector2(0, -130), "Shield: 10");
 
-                CreateModalButton(rootTr.GetComponent<RectTransform>(), "AutoBattleNextButton", "オート戦闘 進行", new Vector2(0, -260), new Vector2(400, 70));
+                CreateModalButton(rootTr.GetComponent<RectTransform>(), "AutoBattleNextButton", "AUTO BATTLE / NEXT", new Vector2(0, -260), new Vector2(400, 70));
             }
             go.SetActive(false);
         }
@@ -293,11 +293,11 @@ namespace Game.EditorScripts
             Transform rootTr = go.transform.Find("PanelRoot");
             if (rootTr != null)
             {
-                CreateLabel(rootTr.GetComponent<RectTransform>(), "ShopTitleText", "周回メタアンロックショップ", new Vector2(0, 270), new Vector2(800, 50), 32, TextAlignmentOptions.Center);
-                CreateShopItemCard(rootTr.GetComponent<RectTransform>(), "Item1", "初期Stamina +10\nコスト: 50 Pts", new Vector2(-340, 30));
-                CreateShopItemCard(rootTr.GetComponent<RectTransform>(), "Item2", "初期Skill +5\nコスト: 100 Pts", new Vector2(0, 30));
-                CreateShopItemCard(rootTr.GetComponent<RectTransform>(), "Item3", "初期Mental +15\nコスト: 150 Pts", new Vector2(340, 30));
-                CreateModalButton(rootTr.GetComponent<RectTransform>(), "CloseShopButton", "ショップを閉じる / 次のランへ", new Vector2(0, -250), new Vector2(450, 60));
+                CreateLabel(rootTr.GetComponent<RectTransform>(), "ShopTitleText", "META PROGRESSION SHOP", new Vector2(0, 270), new Vector2(800, 50), 32, TextAlignmentOptions.Center);
+                CreateShopItemCard(rootTr.GetComponent<RectTransform>(), "Item1", "Initial Stamina +10\nCost: 50 Pts", new Vector2(-340, 30));
+                CreateShopItemCard(rootTr.GetComponent<RectTransform>(), "Item2", "Initial Skill +5\nCost: 100 Pts", new Vector2(0, 30));
+                CreateShopItemCard(rootTr.GetComponent<RectTransform>(), "Item3", "Initial Mental +15\nCost: 150 Pts", new Vector2(340, 30));
+                CreateModalButton(rootTr.GetComponent<RectTransform>(), "CloseShopButton", "CLOSE / NEXT RUN", new Vector2(0, -250), new Vector2(450, 60));
             }
             go.SetActive(false);
         }
@@ -312,9 +312,9 @@ namespace Game.EditorScripts
             Transform rootTr = go.transform.Find("PanelRoot");
             if (rootTr != null)
             {
-                CreateLabel(rootTr.GetComponent<RectTransform>(), "EndingTitleText", "🏆 ゲームクリア！", new Vector2(0, 220), new Vector2(700, 60), 38, TextAlignmentOptions.Center);
-                CreateLabel(rootTr.GetComponent<RectTransform>(), "EndingDescriptionText", "24ターンを生き抜き、全4幕のボスを撃破しました！\n獲得 MetaPoints: +150 Pts", new Vector2(0, 60), new Vector2(700, 150), 24, TextAlignmentOptions.Center);
-                CreateModalButton(rootTr.GetComponent<RectTransform>(), "RestartButton", "再挑戦 / メタショップへ", new Vector2(0, -180), new Vector2(450, 70));
+                CreateLabel(rootTr.GetComponent<RectTransform>(), "EndingTitleText", "GAME CLEAR!", new Vector2(0, 220), new Vector2(700, 60), 38, TextAlignmentOptions.Center);
+                CreateLabel(rootTr.GetComponent<RectTransform>(), "EndingDescriptionText", "You survived all 24 turns and defeated all 4 Act Bosses!\nEarned MetaPoints: +150 Pts", new Vector2(0, 60), new Vector2(700, 150), 24, TextAlignmentOptions.Center);
+                CreateModalButton(rootTr.GetComponent<RectTransform>(), "RestartButton", "RESTART / SHOP", new Vector2(0, -180), new Vector2(450, 70));
             }
             go.SetActive(false);
         }
