@@ -621,6 +621,28 @@ Antigravity (Gemini) による直接 C# 実装体制への移行後、指示書 
 
 ---
 
+### 第4週 アセット実体生成・シーン結合・1,000回自動シミュレーション検証
+
+`RelicAssetGenerator.cs` / `RelicSceneBinder.cs` / `MainGame.unity` / `GameMonteCarloSimulationTests.cs`
+
+#### 実行内容（安全消費原則に基づく足場固め）
+1. **基本レリック 6 点の実体生成**:
+   - `Relic_01_IronBoots` 〜 `Relic_06_PowerWrist` の 6 点の ScriptableObject および `RelicCatalog.asset` を Unity-MCP 経由で生成。
+2. **`MainGame.unity` シーンへのドラフトUI配置とバインド**:
+   - `RelicResolver.asset` / `RelicAcquiredChannel.asset` を生成し、Canvas 配下に `RelicDraftDialogPanel` を配置。`GameFlowController` への参照バインドを完了。
+3. **1,000 回モンテカルロ・自動完走シミュレーションテスト**:
+   - ランダム行動 AI による 1,000 回（24,000 ターン以上）の自動周回テストを実行。全走破で例外・破綻 0 件、**64/64 テスト全件合格** を確認。
+
+#### 実行結果
+
+| 項目 | 結果 |
+|---|---|
+| 実装担当 | Antigravity (Gemini) 直接実装（費用 0円） |
+| テスト結果 | **64/64 通過（EditMode、既存63件＋新規1件）** |
+| コミット | `HEAD` |
+
+---
+
 ## 評価指標の定義
 
 本プロジェクトで記録している指標のうち、既存の評価系との対応は以下の通り。
