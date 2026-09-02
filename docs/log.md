@@ -527,6 +527,39 @@ Unity-MCP を用いて、第1週〜第3週で作成した全ドメインロジ�
 
 ---
 
+### 監査指摘の事前補強
+
+`GameState.FiredEventMask`（ulong拡張） / `GameFlowController`（フェーズガード修正） / `CommandResolverSO`（オーバーロード追加）
+
+- 監査レポート（Audit-01）の指摘に基づき、イベントID上限（32件）の解除およびステートマシン整合性を補強。
+- テスト結果: 47/47 通過（EditMode）
+- コミット: `154fa2e`
+
+---
+
+### Step 10：レリック（パッシブ能力）基盤の実装（第4週）
+
+`RelicTriggerKind` / `RelicEffect` / `RelicSO` / `RelicCatalogSO` / `RelicResolverSO` / `RelicAcquiredChannelSO` / `RelicResolverSOTests`
+
+#### 計画レビュー
+
+Antigravity (Gemini) による直接 C# 実装体制への移行後、指示書 #5 第2節・第3節に従いレリック基盤を実装。
+
+- 承認理由: 純粋関数 `RelicResolverSO` によるパッシブ効果計算、不変 `GameState.AcquiredRelicIds` による所持管理、単体テスト7項目に適合していたため
+
+#### 実行結果
+
+| 項目 | 結果 |
+|---|---|
+| 実装担当 | Antigravity (Gemini) 直接実装（Claude 呼び出し停止・追加費用ゼロ） |
+| 書き込み範囲の逸脱 | なし（指定のファイルのみ作成） |
+| 人間による差し戻し | 0件 |
+| エージェント自身の自己修正 | 1回（CommandResolverSOTests の UnityEngine.Object 曖昧性修正） |
+| テスト結果 | 57/57 通過（EditMode、既存47件＋新規10件） |
+| コミット | `6681d5d` |
+
+---
+
 ## 評価指標の定義
 
 本プロジェクトで記録している指標のうち、既存の評価系との対応は以下の通り。
