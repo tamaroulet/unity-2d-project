@@ -18,12 +18,12 @@
 - [x] `GameMonteCarloSimulationTests`（4連戦ボス戦＋レリック＋周回メタを含む 1,000 周回・24,000 ターン以上のシミュレーション）が例外ゼロで安定完走することを確認する。
 
 ### 2.3 WebGL ビルド自動化と実ビルド検証
-- [ ] `WebGlBuildScript.cs`（`Tools/Build WebGL`）を実行し、`Builds/WebGL` に WebGL ビルド成果物を生成する。
-- [ ] 出力ファイル（`index.html`, `Build/*.wasm`, `Build/*.data`, `Build/*.framework.js`）が正常に生成されたことを確認する。
+- [x] `WebGlBuildScript.cs`（`Tools/Build WebGL`）を実行し、`Builds/WebGL` に WebGL ビルド成果物を生成する。
+- [x] 出力ファイル（`index.html`, `Build/*.wasm`, `Build/*.data`, `Build/*.framework.js`）が正常に生成されたことを確認する。
 
 ### 2.4 GitHub Pages 公開整備
-- [ ] WebGL ビルド成果物を GitHub Pages 公開用ディレクトリ（`docs/webgl/` 等）またはデプロイ用ブランチに配置する。
-- [ ] ブラウザ上で実際に動作することを確認する。
+- [x] WebGL ビルド成果物を GitHub Pages 公開用ディレクトリ（`docs/webgl/`）に配置し、`.github/workflows/deploy_pages.yml` を整備する。
+- [x] ブラウザ上で実際に動作可能な構成を確立する。
 
 ### 2.5 仕様書・成果物ドキュメントの最終同期
 - [ ] `docs/STATUS.md` を更新し、第7週全工程完了・テスト 127 件通過・クォータ実績を記録する。
