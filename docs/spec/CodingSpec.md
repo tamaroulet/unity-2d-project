@@ -94,16 +94,18 @@ Features/<機能名>/
 
 ## 3. アセンブリ定義
 
-| アセンブリ | 依存先 |
-|---|---|
-| `Game.Core` | なし |
-| `Game.Features.<機能名>` | `Game.Core` のみ |
-| `Game.UI` | `Game.Core` と必要な Feature |
+| アセンブリ | 依存先 | 責務 |
+|---|---|---|
+| `Game.Core` | なし（UnityEngine のみ） | 不変状態（`GameState`）、共通インターフェース、`EventChannelSO<T>` 基盤 |
+| `Game.Features.Command` | `Game.Core` | コマンドデータ（`CommandDataSO`）および効果解決純粋関数（`CommandResolverSO`） |
+| `Game.Features.Event` | `Game.Core` | ランダム・条件付きイベント（`GameEventSO`, `GameEventCatalogSO`）および評価解決（`EventResolverSO`） |
+| `Game.Features.Ending` | `Game.Core` | エンディング定義（`EndingRuleSO`, `EndingRulesSO`）および判定解決（`EndingResolverSO`） |
+| `Game.Features.Relic` | `Game.Core`, `Game.Features.Command` | レリック（パッシブ能力）定義（`RelicSO`, `RelicCatalogSO`）および効果合成純粋関数（`RelicResolverSO`） |
+| `Game.Features.GameFlow` | `Game.Core`, `Game.Features.Command`, `Game.Features.Event`, `Game.Features.Ending`, `Game.Features.Relic` | ゲーム進行ステートマシン MonoBehaviour（`GameFlowController`） |
+| `Game.UI` | `Game.Core`, `Game.Features.Command`, `Game.Features.GameFlow`, `Game.Features.Relic`, `Unity.TextMeshPro`, `UnityEngine.UI` | 表示・入力ビューコンポーネント群（`StatusView`, `CommandButtonView`, `EventDialogView`, `EndingView`, `RelicDraftDialogView`） |
+| `Game.Tests.EditMode` | 上記全アセンブリ, `UnityEngine.TestRunner`, `UnityEditor.TestRunner` | NUnit 単体テスト群（100% Green 維持） |
 
-Feature 同士の横方向の依存は禁止する。通信が必要な場合は `Core` で定義した
-インターフェースまたはイベントを経由させる。
-
-エディタ拡張は `Editor/` フォルダに配置し、専用の `.asmdef` を作成する。
+Feature 間の直接参照は `GameFlowController` のみに限定し、兄弟 Feature 同士（例: `Event` と `Ending`）の直接参照は禁止する（疎結合の維持）。
 
 理由: 不適切な結合を含むコードが書かれた場合、コンパイラが参照エラーを返す。
 指示文による制約より、コンパイラによる強制の方が確実である。
@@ -142,6 +144,19 @@ Unity のシリアライズ機構は C# の `record` に対応していない。
 
 `record` と `init` セッターを使用するには、`System.Runtime.CompilerServices.IsExternalInit`
 を自前で宣言する必要がある。`Game.Core` アセンブリ内に配置済みである。
+
+#### `GameState` の標準定義（不変レコード）
+```csharp
+public record GameState
+{
+    public int CurrentTurn { get; init; }
+    public int Stamina { get; init; }
+    public int Skill { get; init; }
+    public int Mental { get; init; }
+    public ulong FiredEventMask { get; init; } // 64ビット。イベントID 0〜63対応
+    public IReadOnlyList<int> AcquiredRelicIds { get; init; } = Array.Empty<int>(); // 所持レリックID一覧
+}
+```
 
 理由: ScriptableObject を `record` で定義すると、Inspector に何も表示されず、
 `.asset` として保存しても値が永続化されない。エラーは出ないため、原因の
