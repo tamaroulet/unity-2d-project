@@ -30,27 +30,26 @@
 | **第6週 Step 17** | 単体テスト（MetaPointResolverTests, 41件一括通過） | **完了** | `HEAD` |
 | **第6週 Step 18** | GameFlowController 周回メタ統合 & 初期ステータス底上げ | **完了** | `HEAD` |
 | **第6週 Step 19** | MetaShopDialogView & MainGameシーン結合 & 1,000回周回シミュレーション（125/125テスト通過） | **完了 🎉** | `HEAD` |
-| **第7週 Step 20** | ボス4段階化（Act 1〜4 / Turn 6・12・18・24）・GameFlowController のマルチAct対応・Monte Carloテスト更新（127/127テスト通過） | **完了 🎉** | `HEAD` |
+| **第7週 Step 20** | ボス4段階化（Act 1〜4）・マルチAct対応・127件テスト（100% Green） | **完了 🎉** | `814cc19` |
+| **第7週 Step 21** | 単純図形UIワイヤーフレーム配置（UILayoutBuilder）＆シーン完全バインド | **完了 🎉** | `814cc19` |
+| **第7週 Step 22** | WebGL ローカルビルド確定（WASM 8.4MB / Data 4.5MB）＆ AutoRunner 常駐 | **完了 🎉** | `54704c5` |
 
 ---
 
 ## 2. 次にやること
 
-1. **第7週 残タスク**:
-   - `Game/Assets/Scenes/MainGame.unity` 上の `GameFlowController` が `_bossCatalog` / `_autoBattleResolver` /
-     `_relicCatalog` / `_relicResolver` / `_metaPointResolver` / `_metaUnlockCatalog` 未バインド（`fileID: 0`）のまま。
-     Unity エディタで `Tools > Generate Boss Assets` → `Tools > Bind Boss to MainGame Scene` を実行し、
-     Relic / MetaProgression も同様のバインダー経由で結線すること（シーンの直接テキスト編集は禁止のため、
-     Unity-MCP 不在の本セッションでは未実施）。
-   - WebGL ビルドのコマンドラインでの実機ビルド確認（本セッションでは Unity 実行環境がないため未実施。
-     `Tools/Build WebGL` の静的検証のみ完了）。
-   - README.md のアーキテクチャ図・テスト件数（127件）への同期。
+1. **第7週 最終同期（Step 2.5）**:
+   - `docs/log.md` および `README.md` の最終化と Git コミット＆プッシュ。
+2. **成果発表用まとめの準備**:
+   - ゲーム構造・AI自律開発プロセスの発表用レポートの整理。
 
 ---
 
-## 3. リソース管理・自律監視状態
+## 3. リソース管理・自律監視状態（最新実測値）
 
-- **Claude Code 週間枠**: **4% used（残り 96%・7日間）**
-- **Claude Code 5h枠**: **50% used（残り 50%）**
-- **Gemini 利用枠**: 残り **83.5%**（5h枠 37%）
-- **EditMode テスト**: **127 / 127 passed（静的レビュー基準・Unity Test Runner 未実行）**
+- **Claude Code 週間枠**: **5% used（残り 95%）**
+- **Claude Code 5h枠**: **79% used（残り 21%）**
+- **Gemini 5h枠**: **96.5%（ほぼ全快）**
+- **Gemini 週間枠**: **79.6%**
+- **EditMode テスト**: **127 / 127 passed（Unity-MCP 実測 100% Green達成）**
+- **AutoRunner**: Windows Task Scheduler（`UnityProject_AutoRunner` 30分間隔）常駐中
