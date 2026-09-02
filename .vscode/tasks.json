@@ -1,0 +1,29 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "AutoRunner: Run Once",
+            "type": "shell",
+            "command": "python",
+            "args": ["scripts/auto_runner.py"],
+            "problemMatcher": [],
+            "group": "none"
+        },
+        {
+            "label": "AutoRunner: Check Task Status",
+            "type": "shell",
+            "command": "powershell",
+            "args": ["-Command", "Get-ScheduledTask -TaskName 'UnityProject_AutoRunner' | Format-List TaskName, State, Description"],
+            "problemMatcher": [],
+            "group": "none"
+        },
+        {
+            "label": "AutoRunner: Register Scheduled Task (30 min)",
+            "type": "shell",
+            "command": "powershell",
+            "args": ["-ExecutionPolicy", "Bypass", "-NoProfile", "-File", "scripts/register_scheduled_task.ps1", "-IntervalMinutes", "30"],
+            "problemMatcher": [],
+            "group": "none"
+        }
+    ]
+}

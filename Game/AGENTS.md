@@ -31,6 +31,7 @@
 5. **Unity-MCP 多層検証**: `refresh_unity` および `run_tests`（100% Green）を機械的に確認
 6. **Living Spec 同期 & 記録**: `docs/spec/`、`docs/STATUS.md`、`docs/log.md` を更新して Git コミット・プッシュ
 7. **ダッシュボード保守**: 人間が確認に来られた際に一目で進捗・残量・テスト件数を把握できるよう `docs/STATUS.md` を最新に維持
+8. **自律継続実行インフラ常駐**: Windows Task Scheduler ＋ Antigravity SDK（`scripts/auto_runner.py`）により、セッション外でも 30分間隔で未完了 Step の自動前倒し実行を維持
 
 ### 禁止事項
 - 3層分離（ロジック・通信・ビュー）を破壊する密結合コードの実装
