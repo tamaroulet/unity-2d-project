@@ -737,6 +737,30 @@ Antigravity (Gemini) による直接 C# 実装体制への移行後、指示書 
 
 ---
 
+### 第7週 Step 20〜22：総合リバランス・マルチActボス・単純図形UIレイアウト・WebGLローカル検証・AutoRunner常駐
+
+`Game.Features.Boss/` / `GameFlowController.cs` / `UILayoutBuilder.cs` / `WebGlBuildScript.cs` / `scripts/auto_runner.py`
+
+#### 計画レビュー
+- Claude 頭脳投入により、Act 1〜4（Boss_Act1_01〜Boss_Act4_01, HP 80/140/220/320）のマルチボス交戦ロジック（Turn 6, 12, 18, 24）を一般化実装。
+- `GameMonteCarloSimulationTests.cs` に 4 ボス連戦および周回メタ永続化を含む 1,000 周回シミュレーションを統合。全 127 件のテストが 100% Green で通過。
+- 画像素材を使わない単純図形（単色 Image / RectTransform / 帯ゲージ）による全 7 パネルのワイヤーフレームレイアウト（`UILayoutBuilder.cs`）を構築し、`MainGame.unity` シーンにバインド。
+- WebAssembly（WASM 8.4MB / Data 4.5MB）のローカル WebGL 実機ビルドを完了。
+- Windows Task Scheduler ＋ Antigravity Python SDK による 30 分間隔の自律継続実行ランナー（`scripts/auto_runner.py`）を常駐化。
+
+#### 実行結果
+
+| 項目 | 結果 |
+|---|---|
+| 実装担当 | Claude Code（マルチAct設計・C#実装・テスト拡張） ＋ Antigravity / Gemini（シーン結合・UIワイヤーフレーム・WebGLビルド・AutoRunner構築・テスト検証） |
+| 書き込み範囲の逸脱 | なし |
+| 人間による差し戻し | 0件 |
+| エージェント自身の自己修正 | 2回（Contains の LINQ 曖昧さ解消、UTF-8 ログ出力サニタイズ） |
+| テスト結果 | **127/127 通過（EditMode、既存125件＋新規2件、100% Green達成）** |
+| コミット | `HEAD` |
+
+---
+
 ## 評価指標の定義
 
 本プロジェクトで記録している指標のうち、既存の評価系との対応は以下の通り。

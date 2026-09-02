@@ -48,8 +48,9 @@ graph TD
 - **エンジン**: Unity 6.3 LTS (6000.3.23f1) / 2D / URP / WebGL ビルドターゲット
 - **頭脳・監査**: Claude Code（大枠設計・数学モデル策定・網羅的テスト生成・包括的監査レビュー）
 - **実動・検証**: Antigravity / Gemini ＋ Unity-MCP（C#実装・Unity操作・シーン結合・テスト実行）
-- **テスト実績**: **127件の EditMode 単体テストを実装**（Act 1〜4 ボス4段階化対応込み。直近の Unity Test Runner 実行結果は `docs/STATUS.md` を参照）
-- **モンテカルロシミュレーション**: ボス戦闘・レリックドラフト・周回メタポイント蓄積を含む 1,000 周回テストが例外ゼロで安定完走
+- **テスト実績**: **127 / 127 passed（EditMode 単体テスト 100% Green達成）**
+- **モンテカルロシミュレーション**: Act 1〜4 ボス戦闘・レリックドラフト・周回メタ永続化を含む 1,000 周回テスト（24,000ターン以上）が例外ゼロで安定完走
+- **自律継続実行インフラ**: Windows Task Scheduler ＋ Antigravity Python SDK による 30分間隔の無人自律開発ランナー（`scripts/auto_runner.py`）を常駐運用
 
 ---
 
