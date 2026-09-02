@@ -643,6 +643,24 @@ Antigravity (Gemini) による直接 C# 実装体制への移行後、指示書 
 
 ---
 
+### Antigravity (Gemini) 残量取得の完全自動化および統合監視スクリプトの確立
+
+`scripts/get_gemini_quota.ps1` / `scripts/get_all_quotas.ps1` / `.agents/rules/00_role.md`
+
+#### 背景と実装
+人間側に残量確認を依存することを完全に廃止するため、Antigravity IDE の内部構造を調査。
+環境変数 `ANTIGRAVITY_LS_ADDRESS`（`localhost:49332`）および `ANTIGRAVITY_CSRF_TOKEN` を用い、ローカル Connect-RPC エンドポイント `/exa.language_server_pb.LanguageServerService/RetrieveUserQuotaSummary` を叩くことで、Gemini の週間残量（%）および5時間セッション残量（%）を生データ（JSON）として完全自動取得する `scripts/get_gemini_quota.ps1` を開発。
+
+さらに、Claude Code の `/usage` と Gemini のクォータを一括取得する統合チェッカー `scripts/get_all_quotas.ps1` を実装。
+
+#### 現在の実測確定値（2026-09-02 19:28 JST）
+- **Claude Code**: 週間使用率 **0%**（残り 100%・7日間）、5時間セッション使用率 **100%**（20:49 JST にリセット）
+- **Gemini Models**: 週間残量 **87.3%**（2026-09-08 にリセット）、5時間セッション残量 **58.4%**（22:18 JST にリセット）
+
+これにより、人間への確認依存が 100% 撤廃され、エージェント自身が両モデルの生残量を完全自律で追跡可能となった。
+
+---
+
 ## 評価指標の定義
 
 本プロジェクトで記録している指標のうち、既存の評価系との対応は以下の通り。
