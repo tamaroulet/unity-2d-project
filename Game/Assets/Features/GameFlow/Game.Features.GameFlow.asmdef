@@ -6,7 +6,8 @@
         "Game.Features.Command",
         "Game.Features.Event",
         "Game.Features.Ending",
-        "Game.Features.Relic"
+        "Game.Features.Relic",
+        "Game.Features.Boss"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

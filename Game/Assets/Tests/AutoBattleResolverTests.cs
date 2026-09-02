@@ -414,6 +414,64 @@ namespace Game.Tests.EditMode
             Assert.IsNull(found);
         }
 
+        // --- DecidePlayerAction & ResolveFullBattle -----------------------
+
+        [Test]
+        public void DecidePlayerAction_LowStamina_ChoosesDefend()
+        {
+            GameState player = new GameState { CurrentTurn = 1, Stamina = 10, Skill = 20, Mental = 50 };
+            BossState boss = CreateBossState(1, 100, 100, 0, 1);
+            BossSO bossData = CreateBoss(1, 100, 20, 15, 10, 2f, new[] { BossActionKind.Attack });
+
+            BattlePlayerActionKind action = _resolver.DecidePlayerAction(player, boss, bossData);
+
+            Assert.AreEqual(BattlePlayerActionKind.Defend, action);
+        }
+
+        [Test]
+        public void DecidePlayerAction_SufficientStaminaAndMental_ChoosesAttack()
+        {
+            GameState player = new GameState { CurrentTurn = 1, Stamina = 80, Skill = 20, Mental = 60 };
+            BossState boss = CreateBossState(1, 100, 100, 0, 1);
+            BossSO bossData = CreateBoss(1, 100, 20, 15, 10, 2f, new[] { BossActionKind.Attack });
+
+            BattlePlayerActionKind action = _resolver.DecidePlayerAction(player, boss, bossData);
+
+            Assert.AreEqual(BattlePlayerActionKind.Attack, action);
+        }
+
+        [Test]
+        public void ResolveFullBattle_HighSkillBuild_AchievesVictoryWithinFewTurns()
+        {
+            GameState player = new GameState { CurrentTurn = 12, Stamina = 100, Skill = 35, Mental = 80 };
+            BossSO bossData = CreateBoss(
+                bossId: 1, maxHp: 100, attackPower: 15, mentalPressurePower: 10, guardShieldAmount: 0,
+                specialAttackMultiplier: 1.5f, actionPattern: new[] { BossActionKind.Attack });
+
+            FullBattleResult result = _resolver.ResolveFullBattle(player, bossData, System.Array.Empty<RelicSO>(), _rules);
+
+            Assert.AreEqual(BattleOutcomeKind.Victory, result.Outcome);
+            Assert.IsTrue(result.FinalBossState.IsDefeated);
+            Assert.AreEqual(0, result.FinalBossState.CurrentHp);
+            Assert.IsTrue(result.TurnHistory.Count <= 4); // 35 damage per turn kills 100 HP in 3 turns
+            Assert.IsTrue(result.FinalPlayerState.Stamina > 0);
+        }
+
+        [Test]
+        public void ResolveFullBattle_LowSkillBuild_SuffersDefeatDueToExhaustion()
+        {
+            GameState player = new GameState { CurrentTurn = 12, Stamina = 30, Skill = 2, Mental = 10 };
+            BossSO bossData = CreateBoss(
+                bossId: 1, maxHp: 200, attackPower: 25, mentalPressurePower: 15, guardShieldAmount: 10,
+                specialAttackMultiplier: 2f, actionPattern: new[] { BossActionKind.Attack });
+
+            FullBattleResult result = _resolver.ResolveFullBattle(player, bossData, System.Array.Empty<RelicSO>(), _rules);
+
+            Assert.AreEqual(BattleOutcomeKind.Defeat, result.Outcome);
+            Assert.IsFalse(result.FinalBossState.IsDefeated);
+            Assert.AreEqual(0, result.FinalPlayerState.Stamina);
+        }
+
         // --- Test helpers -------------------------------------------------
 
         private static BossState CreateBossState(int bossId, int currentHp, int maxHp, int shield, int battleTurn)

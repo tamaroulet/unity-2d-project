@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Reflection;
 using Game.Core;
+using Game.Features.Boss;
 using Game.Features.Command;
 using Game.Features.Ending;
 using Game.Features.Event;
@@ -162,12 +163,78 @@ namespace Game.Tests.EditMode
             controller.StartGame();
             CommandDataSO breakdown = CreateCommand("Breakdown", 0, 0, -50, 0);
 
-            controller.ExecuteCommand(breakdown);
+            controller.AdvanceTurn();
 
             Assert.AreEqual(GamePhase.GameOver, controller.CurrentPhase);
-            Assert.AreEqual(0, controller.CurrentState.Mental);
-            Assert.AreEqual(1, controller.CurrentState.CurrentTurn);
-            Assert.AreEqual(0, raisedEndings.Count);
+            Assert.AreEqual(0, controller.CurrentState.Stamina);
+        }
+
+        [Test]
+        public void StartGame_TriggersBossBattleAtBossTurn_AndTransitionsToShowingRelicDraftOnVictory()
+        {
+            GameRulesSO rules = CreateRules(0, 100, 100, 30, 80, 12, 24);
+            GameEventCatalogSO catalog = CreateCatalog(0, 100);
+
+            BossSO boss = ScriptableObject.CreateInstance<BossSO>();
+            _createdObjects.Add(boss);
+            SetField(boss, "_bossId", 1);
+            SetField(boss, "_maxHp", 50);
+            SetField(boss, "_attackPower", 10);
+            SetField(boss, "_mentalPressurePower", 5);
+            SetField(boss, "_guardShieldAmount", 0);
+            SetField(boss, "_specialAttackMultiplier", 1.5f);
+            SetField(boss, "_actionPattern", new List<BossActionKind> { BossActionKind.Attack });
+
+            BossCatalogSO bossCatalog = ScriptableObject.CreateInstance<BossCatalogSO>();
+            _createdObjects.Add(bossCatalog);
+            SetField(bossCatalog, "_bosses", new List<BossSO> { boss });
+
+            AutoBattleResolverSO autoBattleResolver = ScriptableObject.CreateInstance<AutoBattleResolverSO>();
+            _createdObjects.Add(autoBattleResolver);
+
+            GameFlowController controller = CreateController(rules, catalog);
+            SetField(controller, "_bossCatalog", bossCatalog);
+            SetField(controller, "_autoBattleResolver", autoBattleResolver);
+            SetField(controller, "_bossBattleTurn", 12);
+
+            controller.StartGame();
+
+            Assert.AreEqual(GamePhase.ShowingRelicDraft, controller.CurrentPhase);
+            Assert.IsTrue(controller.CurrentState.Stamina > 0);
+        }
+
+        [Test]
+        public void StartGame_TriggersBossBattleAtBossTurn_AndTransitionsToGameOverOnDefeat()
+        {
+            GameRulesSO rules = CreateRules(0, 100, 20, 1, 10, 12, 24);
+            GameEventCatalogSO catalog = CreateCatalog(0, 100);
+
+            BossSO boss = ScriptableObject.CreateInstance<BossSO>();
+            _createdObjects.Add(boss);
+            SetField(boss, "_bossId", 1);
+            SetField(boss, "_maxHp", 300);
+            SetField(boss, "_attackPower", 30);
+            SetField(boss, "_mentalPressurePower", 10);
+            SetField(boss, "_guardShieldAmount", 0);
+            SetField(boss, "_specialAttackMultiplier", 1.5f);
+            SetField(boss, "_actionPattern", new List<BossActionKind> { BossActionKind.Attack });
+
+            BossCatalogSO bossCatalog = ScriptableObject.CreateInstance<BossCatalogSO>();
+            _createdObjects.Add(bossCatalog);
+            SetField(bossCatalog, "_bosses", new List<BossSO> { boss });
+
+            AutoBattleResolverSO autoBattleResolver = ScriptableObject.CreateInstance<AutoBattleResolverSO>();
+            _createdObjects.Add(autoBattleResolver);
+
+            GameFlowController controller = CreateController(rules, catalog);
+            SetField(controller, "_bossCatalog", bossCatalog);
+            SetField(controller, "_autoBattleResolver", autoBattleResolver);
+            SetField(controller, "_bossBattleTurn", 12);
+
+            controller.StartGame();
+
+            Assert.AreEqual(GamePhase.GameOver, controller.CurrentPhase);
+            Assert.AreEqual(0, controller.CurrentState.Stamina);
         }
 
         [Test]

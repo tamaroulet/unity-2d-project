@@ -1,6 +1,7 @@
 // SPDX-AI-Disclosure: ai-generated
 using System.Collections.Generic;
 using Game.Core;
+using Game.Features.Boss;
 using Game.Features.Command;
 using Game.Features.Ending;
 using Game.Features.Event;
@@ -30,6 +31,9 @@ namespace Game.Features.GameFlow
         [SerializeField] private GameEventFiredChannelSO _eventFiredChannel;
         [SerializeField] private EndingDecidedChannelSO _endingDecidedChannel;
         [SerializeField] private RelicAcquiredChannelSO _relicAcquiredChannel;
+        [SerializeField] private BossCatalogSO _bossCatalog;
+        [SerializeField] private AutoBattleResolverSO _autoBattleResolver;
+        [SerializeField] private int _bossBattleTurn = 12;
 
         private GamePhase _currentPhase = GamePhase.Initializing;
         private GameState _currentState;
@@ -143,6 +147,31 @@ namespace Game.Features.GameFlow
             {
                 _currentState = _relicResolver.ApplyTurnStartRelics(_currentState, _activeRelics, _gameRules);
                 _gameStateChannel.Raise(_currentState);
+            }
+
+            if (_autoBattleResolver != null && _bossCatalog != null && _currentState.CurrentTurn == _bossBattleTurn)
+            {
+                BossSO boss = _bossCatalog.FindById(1);
+                if (boss != null)
+                {
+                    _currentPhase = GamePhase.BossBattle;
+                    FullBattleResult battleResult = _autoBattleResolver.ResolveFullBattle(
+                        _currentState, boss, _activeRelics, _gameRules);
+
+                    _currentState = battleResult.FinalPlayerState;
+                    _gameStateChannel.Raise(_currentState);
+
+                    if (battleResult.Outcome == BattleOutcomeKind.Victory)
+                    {
+                        _currentPhase = GamePhase.ShowingRelicDraft;
+                        return;
+                    }
+                    else
+                    {
+                        _currentPhase = GamePhase.GameOver;
+                        return;
+                    }
+                }
             }
 
             EventResult eventResult = _eventResolver.Resolve(_currentState, _eventCatalog);

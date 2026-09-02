@@ -10,6 +10,7 @@ namespace Game.Features.GameFlow
         TurnStart,
         ShowingEvent,
         ShowingRelicDraft,
+        BossBattle,
         WaitingInput,
         ExecutingCommand,
         TurnEnd,
