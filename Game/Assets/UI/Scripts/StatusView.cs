@@ -1,5 +1,6 @@
 // SPDX-AI-Disclosure: ai-generated
 using Game.Core;
+using Game.Features.Boss;
 using Game.Features.GameFlow;
 using TMPro;
 using UnityEngine;
@@ -40,6 +41,7 @@ namespace Game.UI
         {
             EnsureReferences();
             SyncFromFlowController();
+            HookFlowControllerEvents();
         }
 
         private void Update()
@@ -47,6 +49,31 @@ namespace Game.UI
             if (Application.isPlaying)
             {
                 SyncFromFlowController();
+                HookFlowControllerEvents();
+            }
+        }
+
+        private void HookFlowControllerEvents()
+        {
+            GameFlowController controller = Object.FindFirstObjectByType<GameFlowController>();
+            if (controller != null)
+            {
+                controller.OnBossBattleOccurred -= HandleBossBattle;
+                controller.OnBossBattleOccurred += HandleBossBattle;
+            }
+        }
+
+        private void HandleBossBattle(BossSO boss, FullBattleResult result, System.Action callback)
+        {
+            BossBattleDialogView dialog = Object.FindFirstObjectByType<BossBattleDialogView>(FindObjectsInactive.Include);
+            if (dialog != null)
+            {
+                dialog.gameObject.SetActive(true);
+                dialog.Show(boss, result, callback);
+            }
+            else
+            {
+                callback?.Invoke();
             }
         }
 
@@ -70,6 +97,7 @@ namespace Game.UI
         {
             EnsureReferences();
             SyncFromFlowController();
+            HookFlowControllerEvents();
             if (_gameStateChannel != null)
             {
                 _gameStateChannel.OnEventRaised += OnGameStateChanged;

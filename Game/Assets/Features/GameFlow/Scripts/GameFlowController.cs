@@ -61,6 +61,11 @@ namespace Game.Features.GameFlow
 
         public int BossDefeatedCount => _bossDefeatedCount;
 
+        /// <summary>
+        /// ボス戦発生時にUIへ通知するイベント (Boss, Result, OnDismissCallback)。
+        /// </summary>
+        public event System.Action<BossSO, FullBattleResult, System.Action> OnBossBattleOccurred;
+
         public IReadOnlyList<int> BossBattleTurns => _bossBattleTurns;
 
         private void Awake()
@@ -285,12 +290,33 @@ namespace Game.Features.GameFlow
                     {
                         _bossDefeatedCount++;
                         _currentPhase = GamePhase.ShowingRelicDraft;
+                        if (OnBossBattleOccurred != null)
+                        {
+                            OnBossBattleOccurred.Invoke(boss, battleResult, () =>
+                            {
+                                OnRelicAcquired(bossId);
+                            });
+                        }
+                        else
+                        {
+                            OnRelicAcquired(bossId);
+                        }
                         return;
                     }
                     else
                     {
                         _currentPhase = GamePhase.GameOver;
-                        FinalizeRun(isGameClear: false);
+                        if (OnBossBattleOccurred != null)
+                        {
+                            OnBossBattleOccurred.Invoke(boss, battleResult, () =>
+                            {
+                                FinalizeRun(isGameClear: false);
+                            });
+                        }
+                        else
+                        {
+                            FinalizeRun(isGameClear: false);
+                        }
                         return;
                     }
                 }
