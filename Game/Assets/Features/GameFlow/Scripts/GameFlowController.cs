@@ -278,6 +278,9 @@ namespace Game.Features.GameFlow
                     _currentState = battleResult.FinalPlayerState;
                     NotifyStateChanged();
 
+                    LastEncounteredBoss = boss;
+                    LastBossBattleResult = battleResult;
+
                     if (battleResult.Outcome == BattleOutcomeKind.Victory)
                     {
                         _bossDefeatedCount++;
@@ -309,6 +312,12 @@ namespace Game.Features.GameFlow
 
             _currentPhase = GamePhase.WaitingInput;
         }
+
+        /// <summary>
+        /// 直近のボス戦情報（UI表示用）。
+        /// </summary>
+        public BossSO LastEncounteredBoss { get; private set; }
+        public FullBattleResult LastBossBattleResult { get; private set; }
 
         private void FinalizeRun(bool isGameClear)
         {
