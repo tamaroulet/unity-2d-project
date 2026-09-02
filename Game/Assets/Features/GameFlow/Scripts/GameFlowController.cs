@@ -184,9 +184,10 @@ namespace Game.Features.GameFlow
             _currentState = result.State;
             _gameStateChannel?.Raise(_currentState);
 
-            Debug.Log($"[GameFlowController] Executed {command.name}! New State: Turn={_currentState.CurrentTurn}, Stamina={_currentState.Stamina}, Skill={_currentState.Skill}, Mental={_currentState.Mental}");
-
-            _currentPhase = GamePhase.TurnEnd;
+            if (_currentPhase != GamePhase.TurnEnd)
+            {
+                _currentPhase = GamePhase.TurnEnd;
+            }
 
             AdvanceTurn();
         }
