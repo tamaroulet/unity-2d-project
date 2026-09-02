@@ -114,12 +114,22 @@ namespace Game.EditorScripts
             StatusView view = go.GetComponent<StatusView>() ?? go.AddComponent<StatusView>();
 
             // ゲージとテキストの配置
-            CreateGaugeGroup(rect, "StaminaGroup", "Icon_Stamina", ColorStamina, new Vector2(-400, 0), "Stamina: 50 / 100");
-            CreateGaugeGroup(rect, "SkillGroup", "Icon_Skill", ColorSkill, new Vector2(0, 0), "Skill: 10");
-            CreateGaugeGroup(rect, "MentalGroup", "Icon_Mental", ColorMental, new Vector2(400, 0), "Mental: 80 / 100");
+            GameObject staminaGo = CreateGaugeGroup(rect, "StaminaGroup", "Icon_Stamina", ColorStamina, new Vector2(-400, 0), "Stamina: 50 / 100");
+            GameObject skillGo = CreateGaugeGroup(rect, "SkillGroup", "Icon_Skill", ColorSkill, new Vector2(0, 0), "Skill: 10");
+            GameObject mentalGo = CreateGaugeGroup(rect, "MentalGroup", "Icon_Mental", ColorMental, new Vector2(400, 0), "Mental: 80 / 100");
 
-            CreateLabel(rect, "TurnText", "TURN 1 / 24", new Vector2(-750, 0), new Vector2(200, 50), 28, TextAlignmentOptions.Left);
+            GameObject turnGo = CreateLabel(rect, "TurnText", "TURN 1 / 24", new Vector2(-750, 0), new Vector2(200, 50), 28, TextAlignmentOptions.Left);
             CreateLabel(rect, "PointsText", "💎 0 Pts", new Vector2(750, 0), new Vector2(200, 50), 28, TextAlignmentOptions.Right);
+
+            // StatusView の SerializedObject バインド
+            GameStateEventChannelSO channel = AssetDatabase.LoadAssetAtPath<GameStateEventChannelSO>("Assets/Data/Channels/GameStateEventChannel.asset");
+            SerializedObject so = new SerializedObject(view);
+            so.FindProperty("_gameStateChannel").objectReferenceValue = channel;
+            so.FindProperty("_turnText").objectReferenceValue = turnGo.GetComponent<TextMeshProUGUI>();
+            so.FindProperty("_staminaText").objectReferenceValue = staminaGo.transform.Find("Label").GetComponent<TextMeshProUGUI>();
+            so.FindProperty("_skillText").objectReferenceValue = skillGo.transform.Find("Label").GetComponent<TextMeshProUGUI>();
+            so.FindProperty("_mentalText").objectReferenceValue = mentalGo.transform.Find("Label").GetComponent<TextMeshProUGUI>();
+            so.ApplyModifiedProperties();
         }
 
         private static void SetupCommandPanel(Transform canvasTr)
@@ -138,10 +148,42 @@ namespace Game.EditorScripts
             Image img = go.GetComponent<Image>() ?? go.AddComponent<Image>();
             img.color = ColorBgFooter;
 
-            // 3つのコマンドボタン（勉強、特訓、休息）
-            CreateCommandButton(rect, "StudyButton", "Icon_Study", "勉強 (Study)\nSkill+5", new Vector2(-400, 0));
-            CreateCommandButton(rect, "TrainButton", "Icon_Train", "特訓 (Train)\nSkill+10", new Vector2(0, 0));
-            CreateCommandButton(rect, "RestButton", "Icon_Rest", "休息 (Rest)\nStamina+30", new Vector2(400, 0));
+            GameFlowController flowController = Object.FindFirstObjectByType<GameFlowController>();
+
+            // 3つのコマンドボタン（勉強、特訓、休息）を完全配線
+            SetupCommandButton(rect, "StudyButton", "Icon_Study", "勉強 (Study)\nSkill+5", new Vector2(-400, 0), "Assets/Data/Commands/Cmd_Study.asset", flowController);
+            SetupCommandButton(rect, "TrainButton", "Icon_Train", "特訓 (Train)\nSkill+10", new Vector2(0, 0), "Assets/Data/Commands/Cmd_Train.asset", flowController);
+            SetupCommandButton(rect, "RestButton", "Icon_Rest", "休息 (Rest)\nStamina+30", new Vector2(400, 0), "Assets/Data/Commands/Cmd_Rest.asset", flowController);
+        }
+
+        private static void SetupCommandButton(RectTransform parent, string name, string iconName, string text, Vector2 pos, string cmdAssetPath, GameFlowController controller)
+        {
+            Transform existing = parent.Find(name);
+            GameObject btnGo = existing != null ? existing.gameObject : new GameObject(name, typeof(RectTransform), typeof(Image), typeof(Button), typeof(CommandButtonView));
+            btnGo.transform.SetParent(parent, false);
+
+            RectTransform rect = EnsureRectTransform(btnGo);
+            rect.anchoredPosition = pos;
+            rect.sizeDelta = new Vector2(300, 120);
+
+            Image img = btnGo.GetComponent<Image>() ?? btnGo.AddComponent<Image>();
+            img.sprite = LoadSprite("Frame_Card");
+            img.type = Image.Type.Sliced;
+            img.color = ColorButtonBg;
+
+            AttachIcon(rect, "Icon", LoadSprite(iconName), new Vector2(-80, 0), new Vector2(56, 56));
+            GameObject labelGo = CreateLabel(rect, "Text", text, new Vector2(40, 0), new Vector2(180, 80), 22, TextAlignmentOptions.Center);
+
+            CommandDataSO cmd = AssetDatabase.LoadAssetAtPath<CommandDataSO>(cmdAssetPath);
+            Button btn = btnGo.GetComponent<Button>() ?? btnGo.AddComponent<Button>();
+            CommandButtonView btnView = btnGo.GetComponent<CommandButtonView>() ?? btnGo.AddComponent<CommandButtonView>();
+
+            SerializedObject so = new SerializedObject(btnView);
+            so.FindProperty("_command").objectReferenceValue = cmd;
+            so.FindProperty("_gameFlowController").objectReferenceValue = controller;
+            so.FindProperty("_button").objectReferenceValue = btn;
+            so.FindProperty("_nameText").objectReferenceValue = labelGo.GetComponent<TextMeshProUGUI>();
+            so.ApplyModifiedProperties();
         }
 
         private static void SetupEventDialogPanel(Transform canvasTr)
@@ -417,13 +459,31 @@ namespace Game.EditorScripts
             if (controller == null) return;
 
             SerializedObject so = new SerializedObject(controller);
-            SetViewProperty(so, "_statusView", canvasTr.Find("StatusPanel"));
-            SetViewProperty(so, "_commandButtonsView", canvasTr.Find("CommandPanel"));
-            SetViewProperty(so, "_eventDialogView", canvasTr.Find("EventDialogPanel"));
-            SetViewProperty(so, "_endingView", canvasTr.Find("EndingPanel"));
-            SetViewProperty(so, "_relicDraftDialogView", canvasTr.Find("RelicDraftDialogPanel"));
-            SetViewProperty(so, "_bossBattleDialogView", canvasTr.Find("BossBattleDialogPanel"));
-            SetViewProperty(so, "_metaShopDialogView", canvasTr.Find("MetaShopDialogPanel"));
+            so.FindProperty("_gameRules").objectReferenceValue = AssetDatabase.LoadAssetAtPath<GameRulesSO>("Assets/Data/Rules/GameRules.asset");
+            so.FindProperty("_commandResolver").objectReferenceValue = AssetDatabase.LoadAssetAtPath<CommandResolverSO>("Assets/Data/Rules/CommandResolver.asset");
+            so.FindProperty("_eventCatalog").objectReferenceValue = AssetDatabase.LoadAssetAtPath<GameEventCatalogSO>("Assets/Data/Events/GameEventCatalog.asset");
+            so.FindProperty("_eventResolver").objectReferenceValue = AssetDatabase.LoadAssetAtPath<EventResolverSO>("Assets/Data/Rules/EventResolver.asset");
+            so.FindProperty("_endingRules").objectReferenceValue = AssetDatabase.LoadAssetAtPath<EndingRulesSO>("Assets/Data/Endings/EndingRules.asset");
+            so.FindProperty("_endingResolver").objectReferenceValue = AssetDatabase.LoadAssetAtPath<EndingResolverSO>("Assets/Data/Rules/EndingResolver.asset");
+            so.FindProperty("_gameStateChannel").objectReferenceValue = AssetDatabase.LoadAssetAtPath<GameStateEventChannelSO>("Assets/Data/Channels/GameStateEventChannel.asset");
+            so.FindProperty("_eventFiredChannel").objectReferenceValue = AssetDatabase.LoadAssetAtPath<GameEventFiredChannelSO>("Assets/Data/Channels/GameEventFiredChannel.asset");
+            so.FindProperty("_endingDecidedChannel").objectReferenceValue = AssetDatabase.LoadAssetAtPath<EndingDecidedChannelSO>("Assets/Data/Channels/EndingDecidedChannel.asset");
+            so.FindProperty("_relicCatalog").objectReferenceValue = AssetDatabase.LoadAssetAtPath<RelicCatalogSO>("Assets/Features/Relic/Instances/RelicCatalog.asset");
+            so.FindProperty("_relicResolver").objectReferenceValue = AssetDatabase.LoadAssetAtPath<RelicResolverSO>("Assets/Features/Relic/Instances/RelicResolver.asset");
+            so.FindProperty("_bossCatalog").objectReferenceValue = AssetDatabase.LoadAssetAtPath<BossCatalogSO>("Assets/Features/Boss/Instances/BossCatalog.asset");
+            so.FindProperty("_autoBattleResolver").objectReferenceValue = AssetDatabase.LoadAssetAtPath<AutoBattleResolverSO>("Assets/Features/Boss/Instances/AutoBattleResolver.asset");
+            so.FindProperty("_metaPointResolver").objectReferenceValue = AssetDatabase.LoadAssetAtPath<MetaPointResolverSO>("Assets/Features/MetaProgression/Instances/MetaPointResolver.asset");
+            so.FindProperty("_metaUnlockCatalog").objectReferenceValue = AssetDatabase.LoadAssetAtPath<MetaUnlockCatalogSO>("Assets/Features/MetaProgression/Instances/MetaUnlockCatalog.asset");
+
+            int[] bossBattleTurns = { 6, 12, 18, 24 };
+            SerializedProperty turnsProp = so.FindProperty("_bossBattleTurns");
+            turnsProp.ClearArray();
+            turnsProp.arraySize = bossBattleTurns.Length;
+            for (int i = 0; i < bossBattleTurns.Length; i++)
+            {
+                turnsProp.GetArrayElementAtIndex(i).intValue = bossBattleTurns[i];
+            }
+
             so.ApplyModifiedProperties();
         }
 

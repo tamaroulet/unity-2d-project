@@ -49,6 +49,7 @@ namespace Game.Features.GameFlow
         private readonly List<RelicSO> _activeRelics = new List<RelicSO>();
         private MetaProfileState _metaProfile = new MetaProfileState();
         private int _bossDefeatedCount = 0;
+        [SerializeField] private bool _autoStartOnPlay = true;
 
         public GamePhase CurrentPhase => _currentPhase;
 
@@ -61,6 +62,14 @@ namespace Game.Features.GameFlow
         public int BossDefeatedCount => _bossDefeatedCount;
 
         public IReadOnlyList<int> BossBattleTurns => _bossBattleTurns;
+
+        private void Start()
+        {
+            if (_autoStartOnPlay)
+            {
+                StartGame();
+            }
+        }
 
         private void OnEnable()
         {
