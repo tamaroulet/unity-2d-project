@@ -65,11 +65,13 @@ namespace Game.Features.GameFlow
 
         private void Awake()
         {
+            _bossBattleTurns = new List<int> { 6, 12, 18, 24 };
             EnsureDependencies();
         }
 
         private void Start()
         {
+            _bossBattleTurns = new List<int> { 6, 12, 18, 24 };
             EnsureDependencies();
             if (_autoStartOnPlay)
             {
@@ -255,7 +257,7 @@ namespace Game.Features.GameFlow
                 _gameStateChannel?.Raise(_currentState);
             }
 
-            int actIndex = _autoBattleResolver != null && _bossCatalog != null && _bossBattleTurns != null
+            int actIndex = _autoBattleResolver != null && _bossCatalog != null && _bossBattleTurns != null && _currentState.CurrentTurn >= 6
                 ? _bossBattleTurns.IndexOf(_currentState.CurrentTurn)
                 : -1;
 
