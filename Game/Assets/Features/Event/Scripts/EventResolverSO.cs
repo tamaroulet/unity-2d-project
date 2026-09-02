@@ -68,7 +68,7 @@ namespace Game.Features.Event
 
         private bool IsAlreadyFired(GameState state, GameEventSO gameEvent)
         {
-            return (state.FiredEventMask & (1 << gameEvent.EventId)) != 0;
+            return (state.FiredEventMask & (1UL << gameEvent.EventId)) != 0;
         }
 
         private bool IsConditionMet(GameState state, GameEventSO gameEvent)
@@ -109,7 +109,7 @@ namespace Game.Features.Event
             int stamina = TurnRules.Clamp(state.Stamina + effect.StaminaDelta, catalog.ParamMin, catalog.ParamMax);
             int skill = TurnRules.Clamp(state.Skill + effect.SkillDelta, catalog.ParamMin, catalog.ParamMax);
             int mental = TurnRules.Clamp(state.Mental + effect.MentalDelta, catalog.ParamMin, catalog.ParamMax);
-            int firedEventMask = state.FiredEventMask | (1 << gameEvent.EventId);
+            ulong firedEventMask = state.FiredEventMask | (1UL << gameEvent.EventId);
 
             return state with
             {

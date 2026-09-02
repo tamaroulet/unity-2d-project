@@ -117,7 +117,18 @@ namespace Game.Features.GameFlow
                 _gameStateChannel.Raise(_currentState);
                 _eventFiredChannel.Raise(eventResult.FiredEvent.EventId);
             }
+            else
+            {
+                _currentPhase = GamePhase.WaitingInput;
+            }
+        }
 
+        /// <summary>
+        /// イベントダイアログが閉じられたときに呼ばれる。ShowingEvent での表示待機を解除し、
+        /// コマンド入力待ちへ遷移する。
+        /// </summary>
+        public void OnEventDismissed()
+        {
             _currentPhase = GamePhase.WaitingInput;
         }
     }

@@ -17,7 +17,8 @@ namespace Game.Core
 
         /// <summary>
         /// 発火済みイベントのビットマスク。イベント ID n が発火済みのとき、ビット n が立つ。
+        /// ulong（64ビット）とすることで、イベント ID 0〜63 まで扱える。
         /// </summary>
-        public int FiredEventMask { get; init; }
+        public ulong FiredEventMask { get; init; }
     }
 }

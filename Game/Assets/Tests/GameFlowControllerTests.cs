@@ -49,7 +49,7 @@ namespace Game.Tests.EditMode
         }
 
         [Test]
-        public void StartGame_FiresMatchingEventAtTurnStartAndTransitionsToWaitingInput()
+        public void StartGame_FiresMatchingEventAtTurnStartAndTransitionsToShowingEvent()
         {
             GameRulesSO rules = CreateRules(0, 100, 100, 0, 50, 1, 24);
             GameEventSO gameEvent = CreateEvent(
@@ -65,11 +65,50 @@ namespace Game.Tests.EditMode
 
             controller.StartGame();
 
-            Assert.AreEqual(GamePhase.WaitingInput, controller.CurrentPhase);
+            Assert.AreEqual(GamePhase.ShowingEvent, controller.CurrentPhase);
             Assert.AreEqual(2, raisedStates.Count);
             Assert.AreEqual(1, raisedEventIds.Count);
             Assert.AreEqual(5, raisedEventIds[0]);
             Assert.AreEqual(5, controller.CurrentState.Skill);
+        }
+
+        [Test]
+        public void ExecuteCommand_IsIgnoredWhilePhaseIsShowingEvent()
+        {
+            GameRulesSO rules = CreateRules(0, 100, 100, 0, 50, 1, 24);
+            GameEventSO gameEvent = CreateEvent(
+                eventId: 5, triggerKind: EventTriggerKind.TurnReached, triggerTurn: 1,
+                targetParameter: TrackedParameter.Skill, threshold: 0, priority: 1, skillDelta: 5);
+            GameEventCatalogSO catalog = CreateCatalog(0, 100, gameEvent);
+            List<GameState> raisedStates = new List<GameState>();
+            GameStateEventChannelSO gameStateChannel = CreateChannel<GameStateEventChannelSO, GameState>(raisedStates.Add);
+            GameFlowController controller = CreateController(rules, catalog, gameStateChannel: gameStateChannel);
+            controller.StartGame();
+            CommandDataSO train = CreateCommand("Train", -20, 8, -5, 20);
+
+            controller.ExecuteCommand(train);
+
+            Assert.AreEqual(GamePhase.ShowingEvent, controller.CurrentPhase);
+            Assert.AreEqual(5, controller.CurrentState.Skill);
+            Assert.AreEqual(1, controller.CurrentState.CurrentTurn);
+            Assert.AreEqual(2, raisedStates.Count);
+        }
+
+        [Test]
+        public void OnEventDismissed_TransitionsFromShowingEventToWaitingInput()
+        {
+            GameRulesSO rules = CreateRules(0, 100, 100, 0, 50, 1, 24);
+            GameEventSO gameEvent = CreateEvent(
+                eventId: 5, triggerKind: EventTriggerKind.TurnReached, triggerTurn: 1,
+                targetParameter: TrackedParameter.Skill, threshold: 0, priority: 1, skillDelta: 5);
+            GameEventCatalogSO catalog = CreateCatalog(0, 100, gameEvent);
+            GameFlowController controller = CreateController(rules, catalog);
+            controller.StartGame();
+            Assert.AreEqual(GamePhase.ShowingEvent, controller.CurrentPhase);
+
+            controller.OnEventDismissed();
+
+            Assert.AreEqual(GamePhase.WaitingInput, controller.CurrentPhase);
         }
 
         [Test]

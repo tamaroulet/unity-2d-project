@@ -11,6 +11,17 @@ namespace Game.Features.Command
     [CreateAssetMenu(menuName = "Game/Command/CommandResolver", fileName = "CommandResolver")]
     public class CommandResolverSO : ScriptableObject
     {
+        /// <summary>
+        /// コマンドの identity（CommandDataSO 自体）を受け取るオーバーロード。
+        /// 現時点では effect ベースの Resolve に委譲するのみだが、将来的に
+        /// 「特定コマンド使用時のみ発動するレリック」等、コマンド識別子に基づく判定を
+        /// 追加する際の拡張点として用意している。
+        /// </summary>
+        public CommandResult Resolve(GameState state, CommandDataSO command, GameRulesSO rules)
+        {
+            return Resolve(state, command.Effect, rules);
+        }
+
         public CommandResult Resolve(GameState state, CommandEffect effect, GameRulesSO rules)
         {
             if (state.Stamina < effect.StaminaCost)

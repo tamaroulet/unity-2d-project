@@ -1,5 +1,7 @@
 // SPDX-AI-Disclosure: ai-generated
+using System;
 using System.Collections.Generic;
+using System.Reflection;
 using Game.Core;
 using Game.Features.Command;
 using NUnit.Framework;
@@ -9,6 +11,8 @@ namespace Game.Tests.EditMode
 {
     public class CommandResolverSOTests
     {
+        private const BindingFlags FieldFlags = BindingFlags.NonPublic | BindingFlags.Instance;
+
         private static readonly CommandEffect Train = new CommandEffect(-20, 8, -5, 20);
         private static readonly CommandEffect Rest = new CommandEffect(30, 0, 10, 0);
 
@@ -163,6 +167,22 @@ namespace Game.Tests.EditMode
         }
 
         [Test]
+        public void ResolveWithCommandDataSO_ProducesSameResultAsResolveWithEffect()
+        {
+            GameRulesSO rules = CreateRules(0, 100, 100, 0, 50, 1, 24);
+            GameState originalState = new GameState { CurrentTurn = 1, Stamina = 100, Skill = 0, Mental = 50 };
+            CommandDataSO train = CreateCommand("Train", -20, 8, -5, 20);
+
+            CommandResult result = _resolver.Resolve(originalState, train, rules);
+
+            Assert.AreEqual(80, result.State.Stamina);
+            Assert.AreEqual(8, result.State.Skill);
+            Assert.AreEqual(45, result.State.Mental);
+            Assert.IsTrue(result.IsExecutable);
+            Assert.AreEqual(TerminationKind.Continue, result.Termination);
+        }
+
+        [Test]
         public void EndsNormallyAtTurnTwentyFourAfterTwentyFourConsecutiveRests()
         {
             GameRulesSO rules = CreateRules(0, 100, 100, 0, 50, 1, 24);
@@ -189,6 +209,32 @@ namespace Game.Tests.EditMode
             }
 
             Assert.AreEqual(25, state.CurrentTurn);
+        }
+
+        private CommandDataSO CreateCommand(
+            string commandName, int staminaDelta, int skillDelta, int mentalDelta, int staminaCost)
+        {
+            CommandDataSO command = ScriptableObject.CreateInstance<CommandDataSO>();
+            SetField(command, "_commandName", commandName);
+            SetField(command, "_staminaDelta", staminaDelta);
+            SetField(command, "_skillDelta", skillDelta);
+            SetField(command, "_mentalDelta", mentalDelta);
+            SetField(command, "_staminaCost", staminaCost);
+            _createdObjects.Add(command);
+            return command;
+        }
+
+        private static void SetField(object target, string fieldName, object value)
+        {
+            FieldInfo field = target.GetType().GetField(fieldName, FieldFlags);
+            if (field == null)
+            {
+                throw new InvalidOperationException(
+                    $"{target.GetType().Name} にフィールド '{fieldName}' が見つかりません。" +
+                    "フィールド名がリネームされていないか、テストヘルパーを確認してください。");
+            }
+
+            field.SetValue(target, value);
         }
     }
 }
