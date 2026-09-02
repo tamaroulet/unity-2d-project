@@ -216,7 +216,7 @@ namespace Game.Features.GameFlow
                 case TerminationKind.NormalEnd:
                     EndingKind ending = _endingResolver != null && _endingRules != null
                         ? _endingResolver.Resolve(_currentState, _endingRules)
-                        : EndingKind.Failure;
+                        : EndingKind.Stamina;
                     _endingDecidedChannel?.Raise(ending);
                     _currentPhase = GamePhase.GameClear;
                     FinalizeRun(isGameClear: true);
