@@ -8,6 +8,7 @@ using Game.Features.Command;
 using Game.Features.Ending;
 using Game.Features.Event;
 using Game.Features.GameFlow;
+using Game.Features.MetaProgression;
 using Game.Features.Relic;
 using NUnit.Framework;
 using UnityEngine;
@@ -193,6 +194,133 @@ namespace Game.Tests.EditMode
 
             Assert.AreEqual(1000, clearCount + gameOverCount, "ボス戦を含む1000回シミュレーションが全て正常終了すること");
             Debug.Log($"[MonteCarlo Boss] 1,000 Runs With Boss Battle: Clear={clearCount}, GameOver={gameOverCount}");
+        }
+
+        [Test]
+        public void MonteCarlo_1000Runs_WithMetaProgression_VerifiesPointAccumulationAndUnlockProgression()
+        {
+            GameRulesSO rules = CreateRules();
+            CommandDataSO rest = CreateCommand("Rest", staminaDelta: 20, skillDelta: 0, mentalDelta: 10, staminaCost: 0);
+            CommandDataSO train = CreateCommand("Train", staminaDelta: -20, skillDelta: 8, mentalDelta: -5, staminaCost: 20);
+            CommandDataSO special = CreateCommand("Special", staminaDelta: -35, skillDelta: 16, mentalDelta: -10, staminaCost: 35);
+            CommandDataSO[] commands = { rest, train, special };
+
+            RelicSO r1 = CreateRelic(1, RelicTriggerKind.OnTurnStart, 2, 0, 0);
+            RelicSO r2 = CreateRelic(2, RelicTriggerKind.OnCommandExecuted, 0, 3, 0);
+            RelicCatalogSO catalog = CreateCatalog(r1, r2);
+            RelicResolverSO relicResolver = ScriptableObject.CreateInstance<RelicResolverSO>();
+            _createdObjects.Add(relicResolver);
+
+            BossSO boss = ScriptableObject.CreateInstance<BossSO>();
+            _createdObjects.Add(boss);
+            SetField(boss, "_bossId", 1);
+            SetField(boss, "_bossName", "Boss_Act1_01");
+            SetField(boss, "_maxHp", 80);
+            SetField(boss, "_attackPower", 15);
+            SetField(boss, "_mentalPressurePower", 10);
+            SetField(boss, "_guardShieldAmount", 5);
+            SetField(boss, "_specialAttackMultiplier", 1.5f);
+            SetField(boss, "_actionPattern", new List<BossActionKind> { BossActionKind.Attack, BossActionKind.MentalPressure, BossActionKind.Guard });
+
+            BossCatalogSO bossCatalog = ScriptableObject.CreateInstance<BossCatalogSO>();
+            _createdObjects.Add(bossCatalog);
+            SetField(bossCatalog, "_bosses", new List<BossSO> { boss });
+
+            AutoBattleResolverSO autoBattleResolver = ScriptableObject.CreateInstance<AutoBattleResolverSO>();
+            _createdObjects.Add(autoBattleResolver);
+
+            MetaPointResolverSO metaResolver = ScriptableObject.CreateInstance<MetaPointResolverSO>();
+            _createdObjects.Add(metaResolver);
+
+            MetaUnlockSO uStamina = ScriptableObject.CreateInstance<MetaUnlockSO>();
+            _createdObjects.Add(uStamina);
+            SetField(uStamina, "_unlockId", 1);
+            SetField(uStamina, "_cost", 50);
+            SetField(uStamina, "_kind", MetaUnlockKind.InitialStaminaBonus);
+            SetField(uStamina, "_bonusValue", 15);
+
+            MetaUnlockSO uSkill = ScriptableObject.CreateInstance<MetaUnlockSO>();
+            _createdObjects.Add(uSkill);
+            SetField(uSkill, "_unlockId", 2);
+            SetField(uSkill, "_cost", 100);
+            SetField(uSkill, "_kind", MetaUnlockKind.InitialSkillBonus);
+            SetField(uSkill, "_bonusValue", 10);
+
+            MetaUnlockCatalogSO metaCatalog = ScriptableObject.CreateInstance<MetaUnlockCatalogSO>();
+            _createdObjects.Add(metaCatalog);
+            SetField(metaCatalog, "_unlocks", new List<MetaUnlockSO> { uStamina, uSkill });
+
+            GameFlowController controller = CreateController(rules, catalog, relicResolver);
+            SetField(controller, "_bossCatalog", bossCatalog);
+            SetField(controller, "_autoBattleResolver", autoBattleResolver);
+            SetField(controller, "_bossBattleTurn", 12);
+            SetField(controller, "_metaPointResolver", metaResolver);
+            SetField(controller, "_metaUnlockCatalog", metaCatalog);
+
+            int clearCount = 0;
+            int gameOverCount = 0;
+            System.Random rand = new System.Random(999);
+
+            for (int run = 0; run < 1000; run++)
+            {
+                // 所持ポイントがあればアンロックを自動購入
+                if (controller.MetaProfile.AvailableMetaPoints >= 100 && !controller.MetaProfile.UnlockedIds.Contains(2))
+                {
+                    controller.TryPurchaseMetaUnlock(uSkill);
+                }
+                else if (controller.MetaProfile.AvailableMetaPoints >= 50 && !controller.MetaProfile.UnlockedIds.Contains(1))
+                {
+                    controller.TryPurchaseMetaUnlock(uStamina);
+                }
+
+                controller.StartGame();
+
+                for (int t = 0; t < 30; t++)
+                {
+                    if (controller.CurrentPhase == GamePhase.GameClear || controller.CurrentPhase == GamePhase.GameOver)
+                    {
+                        break;
+                    }
+
+                    if (controller.CurrentPhase == GamePhase.ShowingEvent)
+                    {
+                        controller.OnEventDismissed();
+                    }
+
+                    if (controller.CurrentPhase == GamePhase.ShowingRelicDraft)
+                    {
+                        controller.OnRelicAcquired(rand.Next(1, 3));
+                    }
+
+                    if (controller.CurrentPhase == GamePhase.WaitingInput)
+                    {
+                        CommandDataSO chosen = commands[rand.Next(commands.Length)];
+                        controller.ExecuteCommand(chosen);
+
+                        if (controller.CurrentPhase == GamePhase.WaitingInput)
+                        {
+                            controller.ExecuteCommand(rest);
+                        }
+                    }
+                }
+
+                if (controller.CurrentPhase == GamePhase.GameClear)
+                {
+                    clearCount++;
+                }
+                else if (controller.CurrentPhase == GamePhase.GameOver)
+                {
+                    gameOverCount++;
+                }
+            }
+
+            Assert.AreEqual(1000, clearCount + gameOverCount, "メタプログレッション1000回シミュレーションが全て正常終了すること");
+            Assert.AreEqual(1000, controller.MetaProfile.TotalRunsCompleted);
+            Assert.IsTrue(controller.MetaProfile.TotalEarnedMetaPoints > 50000, "1000周で十分なMetaPointsが蓄積されていること");
+            Assert.IsTrue(controller.MetaProfile.UnlockedIds.Contains(1), "初期スタミナアンロックが購入されていること");
+            Assert.IsTrue(controller.MetaProfile.UnlockedIds.Contains(2), "初期スキルアンロックが購入されていること");
+
+            Debug.Log($"[MonteCarlo MetaProgression] 1,000 Runs: Clear={clearCount}, GameOver={gameOverCount}, TotalEarnedPoints={controller.MetaProfile.TotalEarnedMetaPoints}");
         }
 
         private GameRulesSO CreateRules()

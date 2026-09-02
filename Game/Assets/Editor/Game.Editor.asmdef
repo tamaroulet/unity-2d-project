@@ -4,6 +4,7 @@
     "references": [
         "Game.Core",
         "Game.Features.Boss",
+        "Game.Features.MetaProgression",
         "Game.Features.GameFlow",
         "Game.UI",
         "Unity.TextMeshPro",

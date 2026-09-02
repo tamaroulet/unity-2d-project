@@ -8,6 +8,7 @@ using Game.Features.Command;
 using Game.Features.Ending;
 using Game.Features.Event;
 using Game.Features.GameFlow;
+using Game.Features.MetaProgression;
 using Game.UI;
 using NUnit.Framework;
 using TMPro;
@@ -343,6 +344,48 @@ namespace Game.Tests.EditMode
 
             Assert.IsTrue(dismissed, "dismiss callback should be invoked");
             Assert.IsFalse(panelRoot.activeSelf, "panelRoot should be inactive after dismiss");
+        }
+
+        // ---- MetaShopDialogView ----
+
+        [Test]
+        public void MetaShopDialogView_Show_UpdatesTextsAndInvokesDismiss()
+        {
+            GameObject viewObject = CreateInactiveGameObject(nameof(MetaShopDialogView));
+            MetaShopDialogView view = viewObject.AddComponent<MetaShopDialogView>();
+            GameObject panelRoot = new GameObject("PanelRoot");
+            panelRoot.SetActive(false);
+            _createdObjects.Add(panelRoot);
+
+            TextMeshProUGUI pointsText = CreateText(viewObject);
+            TextMeshProUGUI runsText = CreateText(viewObject);
+            Button closeButton = viewObject.AddComponent<Button>();
+
+            SetField(view, "_panelRoot", panelRoot);
+            SetField(view, "_availablePointsText", pointsText);
+            SetField(view, "_totalRunsText", runsText);
+            SetField(view, "_closeButton", closeButton);
+
+            viewObject.SetActive(true);
+
+            MetaProfileState profile = new MetaProfileState
+            {
+                AvailableMetaPoints = 250,
+                TotalEarnedMetaPoints = 500,
+                TotalRunsCompleted = 3
+            };
+
+            bool closed = false;
+            view.Show(profile, () => closed = true);
+
+            Assert.IsTrue(view.IsPanelActive);
+            Assert.AreEqual("MetaPoints: 250", pointsText.text);
+            Assert.AreEqual("Runs Completed: 3", runsText.text);
+
+            view.Dismiss();
+
+            Assert.IsTrue(closed);
+            Assert.IsFalse(view.IsPanelActive);
         }
 
         // ---- EndingView ----

@@ -11,6 +11,7 @@
         "Game.Features.GameFlow",
         "Game.Features.Relic",
         "Game.Features.Boss",
+        "Game.Features.MetaProgression",
         "Game.UI",
         "Unity.TextMeshPro",
         "UnityEngine.UI"

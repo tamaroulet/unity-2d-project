@@ -704,6 +704,29 @@ Antigravity (Gemini) による直接 C# 実装体制への移行後、指示書 
 
 ---
 
+### 第6週 Step 16〜19：周回メタ永続化・アンロックシステム（MetaProgression全工程完了）
+
+`Game.Features.MetaProgression/` / `GameFlowController.cs` / `MetaShopDialogView.cs` / `MetaPointResolverTests.cs` / `GameMonteCarloSimulationTests.cs`
+
+#### 計画レビュー
+- Claude 頭脳投入により、指示書（`07_meta_progression_system.md`）の設計上の穴（獲得ポイントのプロフィール反映経路欠落、アンロック二重購入・負値コスト脆弱性、アンロック効果の初期ステータス底上げ未結合）をレビュー・補強。
+- `MetaProfileState`（不変レコード）、`MetaUnlockSO`、`MetaUnlockCatalogSO`、`MetaPointResolverSO`（純粋関数）を実装。
+- `MetaPointResolverTests.cs`（41件）および `GameFlowControllerTests`、`UIViewTests`、`GameMonteCarloSimulationTests`（1,000回マルチ周回シミュレーション）を作成し、全 125 件の単体テストが 100% Green で通過。
+- `MainGame.unity` の Canvas に `MetaShopDialogPanel` を配置し、Inspector 参照を完全バインド。
+
+#### 実行結果
+
+| 項目 | 結果 |
+|---|---|
+| 実装担当 | Claude Code（設計精査・コアC#生成・単体テスト生成、消費率 23%） ＋ Antigravity / Gemini（GameFlowController結合・UI実装・Unity-MCP検証・シーン結合） |
+| 書き込み範囲の逸脱 | なし |
+| 人間による差し戻し | 0件 |
+| エージェント自身の自己修正 | 2回（引数シグネチャ修正、テストコマンドのメンタル減少修正） |
+| テスト結果 | **125/125 通過（EditMode、既存93件＋新規32件）** |
+| コミット | `HEAD` |
+
+---
+
 ## 評価指標の定義
 
 本プロジェクトで記録している指標のうち、既存の評価系との対応は以下の通り。

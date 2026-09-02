@@ -25,20 +25,24 @@
 | **第5週 Step 12** | ボスデータ基盤（BossState, BossSO, BossCatalogSO） | **完了** | `59b86d5` |
 | **第5週 Step 13** | オートバトルResolver（AutoBattleResolverSO, 84/84テスト通過） | **完了** | `59b86d5` |
 | **第5週 Step 14** | GameFlowController ボスバトル統合 & ステート遷移（88/88テスト通過） | **完了** | `90aae0c` |
-| **第5週 Step 15** | BossBattleDialogView & MainGameシーン配置 & 1,000回シミュレーション（93/93テスト通過） | **完了 🎉** | `HEAD` |
+| **第5週 Step 15** | BossBattleDialogView & MainGameシーン配置 & 1,000回シミュレーション（93/93テスト通過） | **完了 🎉** | `648565c` |
+| **第6週 Step 16** | 周回メタ基盤（MetaProfileState, MetaUnlockSO, MetaPointResolverSO） | **完了** | `HEAD` |
+| **第6週 Step 17** | 単体テスト（MetaPointResolverTests, 41件一括通過） | **完了** | `HEAD` |
+| **第6週 Step 18** | GameFlowController 周回メタ統合 & 初期ステータス底上げ | **完了** | `HEAD` |
+| **第6週 Step 19** | MetaShopDialogView & MainGameシーン結合 & 1,000回周回シミュレーション（125/125テスト通過） | **完了 🎉** | `HEAD` |
 
 ---
 
 ## 2. 次にやること
 
-1. **第6週（周回メタ永続化・アンロックシステム）の設計・実装**:
-   - `MetaPoints` 計算基盤、周回アンロック ScriptableObject、およびメタショップ UI の設計と C# 実装。
+1. **第7週（総合リバランス・UI/UXポリッシュ・Webビルド検証）**:
+   - 4段階ステージ構成（Act 1〜4）の通しプレイ確認、WebGL ビルドの動作検証、および発表資料用アーキテクチャ図の同期。
 
 ---
 
 ## 3. リソース管理・自律監視状態
 
-- **Claude Code 週間枠**: **2% used（残り 98%・7日間）**
-- **Claude Code 5h枠**: **27% used（残り 73%）**
-- **Gemini 利用枠**: 残り **83.9%**（5h枠 38.5%）
-- **EditMode テスト**: **93 / 93 passed（100% Green）**
+- **Claude Code 週間枠**: **4% used（残り 96%・7日間）**
+- **Claude Code 5h枠**: **50% used（残り 50%）**
+- **Gemini 利用枠**: 残り **83.5%**（5h枠 37%）
+- **EditMode テスト**: **125 / 125 passed（100% Green）**

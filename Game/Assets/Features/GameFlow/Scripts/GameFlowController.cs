@@ -5,6 +5,7 @@ using Game.Features.Boss;
 using Game.Features.Command;
 using Game.Features.Ending;
 using Game.Features.Event;
+using Game.Features.MetaProgression;
 using Game.Features.Relic;
 using UnityEngine;
 
@@ -13,9 +14,9 @@ namespace Game.Features.GameFlow
     /// <summary>
     /// ターン進行・状態遷移・Resolver と EventChannelSO のオーケストレーションを担う
     /// MonoBehaviour。自身はパラメータの計算・判定を行わず、GameRulesSO,
-    /// CommandResolverSO, EventResolverSO, EndingResolverSO, RelicResolverSO および TurnRules への
-    /// 処理の委譲のみを行う。状態変化・イベント発生・エンディング確定・レリック獲得は
-    /// EventChannelSO 経由で通知する。
+    /// CommandResolverSO, EventResolverSO, EndingResolverSO, RelicResolverSO,
+    /// AutoBattleResolverSO, MetaPointResolverSO および TurnRules への
+    /// 処理の委譲のみを行う。
     /// </summary>
     public class GameFlowController : MonoBehaviour
     {
@@ -34,16 +35,24 @@ namespace Game.Features.GameFlow
         [SerializeField] private BossCatalogSO _bossCatalog;
         [SerializeField] private AutoBattleResolverSO _autoBattleResolver;
         [SerializeField] private int _bossBattleTurn = 12;
+        [SerializeField] private MetaPointResolverSO _metaPointResolver;
+        [SerializeField] private MetaUnlockCatalogSO _metaUnlockCatalog;
 
         private GamePhase _currentPhase = GamePhase.Initializing;
         private GameState _currentState;
         private readonly List<RelicSO> _activeRelics = new List<RelicSO>();
+        private MetaProfileState _metaProfile = new MetaProfileState();
+        private int _bossDefeatedCount = 0;
 
         public GamePhase CurrentPhase => _currentPhase;
 
         public GameState CurrentState => _currentState;
 
         public IReadOnlyList<RelicSO> ActiveRelics => _activeRelics;
+
+        public MetaProfileState MetaProfile => _metaProfile;
+
+        public int BossDefeatedCount => _bossDefeatedCount;
 
         private void OnEnable()
         {
@@ -63,12 +72,19 @@ namespace Game.Features.GameFlow
 
         /// <summary>
         /// GameRulesSO から初期状態を生成して通知し、最初のターンを開始する。
+        /// アンロック済みの初期ステータス底上げがあれば適用する。
         /// </summary>
         public void StartGame()
         {
             _activeRelics.Clear();
+            _bossDefeatedCount = 0;
             _currentPhase = GamePhase.Initializing;
-            _currentState = _gameRules.CreateInitialState();
+
+            GameState baseState = _gameRules.CreateInitialState();
+            _currentState = _metaPointResolver != null && _metaUnlockCatalog != null
+                ? _metaPointResolver.ApplyUnlockedStatBonuses(baseState, _metaProfile, _metaUnlockCatalog, _gameRules)
+                : baseState;
+
             _gameStateChannel.Raise(_currentState);
 
             BeginTurn();
@@ -124,11 +140,13 @@ namespace Game.Features.GameFlow
             {
                 case TerminationKind.GameOver:
                     _currentPhase = GamePhase.GameOver;
+                    FinalizeRun(isGameClear: false);
                     break;
                 case TerminationKind.NormalEnd:
                     EndingKind ending = _endingResolver.Resolve(_currentState, _endingRules);
                     _endingDecidedChannel.Raise(ending);
                     _currentPhase = GamePhase.GameClear;
+                    FinalizeRun(isGameClear: true);
                     break;
                 default:
                     BeginTurn();
@@ -163,12 +181,14 @@ namespace Game.Features.GameFlow
 
                     if (battleResult.Outcome == BattleOutcomeKind.Victory)
                     {
+                        _bossDefeatedCount++;
                         _currentPhase = GamePhase.ShowingRelicDraft;
                         return;
                     }
                     else
                     {
                         _currentPhase = GamePhase.GameOver;
+                        FinalizeRun(isGameClear: false);
                         return;
                     }
                 }
@@ -187,6 +207,33 @@ namespace Game.Features.GameFlow
             {
                 _currentPhase = GamePhase.WaitingInput;
             }
+        }
+
+        private void FinalizeRun(bool isGameClear)
+        {
+            if (_metaPointResolver != null)
+            {
+                int earnedPoints = _metaPointResolver.CalculateEarnedPoints(_currentState, isGameClear, _bossDefeatedCount);
+                _metaProfile = _metaPointResolver.ApplyRunResult(_metaProfile, earnedPoints);
+            }
+        }
+
+        /// <summary>
+        /// アンロックの購入を試みる。成功時はプロフィールを更新して true を返す。
+        /// </summary>
+        public bool TryPurchaseMetaUnlock(MetaUnlockSO unlock)
+        {
+            if (_metaPointResolver == null || unlock == null)
+            {
+                return false;
+            }
+
+            (MetaProfileState newProfile, bool success) = _metaPointResolver.ApplyUnlock(_metaProfile, unlock);
+            if (success)
+            {
+                _metaProfile = newProfile;
+            }
+            return success;
         }
 
         /// <summary>

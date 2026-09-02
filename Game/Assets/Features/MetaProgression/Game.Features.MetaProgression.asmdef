@@ -1,17 +1,11 @@
 {
-    "name": "Game.UI",
-    "rootNamespace": "Game.UI",
+    "name": "Game.Features.MetaProgression",
+    "rootNamespace": "Game.Features.MetaProgression",
     "references": [
         "Game.Core",
         "Game.Features.Command",
-        "Game.Features.Event",
-        "Game.Features.Ending",
-        "Game.Features.GameFlow",
         "Game.Features.Relic",
-        "Game.Features.Boss",
-        "Game.Features.MetaProgression",
-        "Unity.TextMeshPro",
-        "UnityEngine.UI"
+        "Game.Features.Boss"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

@@ -8,6 +8,7 @@ using Game.Features.Command;
 using Game.Features.Ending;
 using Game.Features.Event;
 using Game.Features.GameFlow;
+using Game.Features.MetaProgression;
 using NUnit.Framework;
 using UnityEngine;
 
@@ -93,6 +94,58 @@ namespace Game.Tests.EditMode
             Assert.AreEqual(5, controller.CurrentState.Skill);
             Assert.AreEqual(1, controller.CurrentState.CurrentTurn);
             Assert.AreEqual(2, raisedStates.Count);
+        }
+
+        [Test]
+        public void AdvanceTurn_OnGameOverOrClear_AccumulatesMetaPointsAndAppliesUnlockBonusOnNextRun()
+        {
+            GameRulesSO rules = CreateRules(0, 100, 100, 20, 50, 1, 24);
+            GameEventCatalogSO catalog = CreateCatalog(0, 100);
+            MetaPointResolverSO metaResolver = ScriptableObject.CreateInstance<MetaPointResolverSO>();
+            _createdObjects.Add(metaResolver);
+
+            MetaUnlockSO unlock = ScriptableObject.CreateInstance<MetaUnlockSO>();
+            _createdObjects.Add(unlock);
+            SetField(unlock, "_unlockId", 1);
+            SetField(unlock, "_unlockName", "Unlock_Stat_Stamina_01");
+            SetField(unlock, "_cost", 30);
+            SetField(unlock, "_kind", MetaUnlockKind.InitialStaminaBonus);
+            SetField(unlock, "_bonusValue", 15);
+
+            MetaUnlockCatalogSO metaCatalog = ScriptableObject.CreateInstance<MetaUnlockCatalogSO>();
+            _createdObjects.Add(metaCatalog);
+            SetField(metaCatalog, "_unlocks", new List<MetaUnlockSO> { unlock });
+
+            GameFlowController controller = CreateController(rules, catalog);
+            SetField(controller, "_metaPointResolver", metaResolver);
+            SetField(controller, "_metaUnlockCatalog", metaCatalog);
+
+            controller.StartGame();
+            Assert.AreEqual(100, controller.CurrentState.Stamina);
+
+            // 1回目のランで休養コマンドを実行してターン進行
+            CommandDataSO rest = CreateCommand("Rest", 0, 10, 0, 0);
+            controller.ExecuteCommand(rest);
+
+            // メンタルを0にしてGameOverにする
+            CommandDataSO breakdown = CreateCommand("Breakdown", 0, 0, -50, 0);
+            controller.ExecuteCommand(breakdown);
+
+            Assert.AreEqual(GamePhase.GameOver, controller.CurrentPhase);
+            Assert.IsTrue(controller.MetaProfile.AvailableMetaPoints > 0, "GameOver時にMetaPointsが獲得されていること");
+            Assert.AreEqual(1, controller.MetaProfile.TotalRunsCompleted);
+
+            // メタショップでアンロックを購入
+            bool purchased = controller.TryPurchaseMetaUnlock(unlock);
+            Assert.IsTrue(purchased, "アンロックが正常に購入できること");
+            Assert.AreEqual(1, controller.MetaProfile.UnlockedIds.Count);
+
+            // 2回目のランを開始：初期ステータスボーナス（Stamina 100 + 15 = 100クランプ、または基本値からの加算）が反映されること
+            GameRulesSO rulesWithLowerInitial = CreateRules(0, 100, 50, 20, 50, 1, 24);
+            SetField(controller, "_gameRules", rulesWithLowerInitial);
+            controller.StartGame();
+
+            Assert.AreEqual(65, controller.CurrentState.Stamina, "初期スタミナ50にアンロックボーナス+15が加算されて65になること");
         }
 
         [Test]
