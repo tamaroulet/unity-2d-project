@@ -22,23 +22,23 @@
 | **監査事前補強** | イベント上限ulong拡張・フェーズガード修正 | 完了 | `154fa2e` |
 | **第4週 Step 10** | レリック（パッシブ能力）基盤（57/57テスト通過） | **完了 🎉** | `6681d5d` |
 | **第4週 Step 11** | レリック3択ドラフトUI & GameFlowController結合（64/64テスト通過） | **完了 🎉** | `HEAD` |
-| **第5週 Step 12** | ボスデータ基盤（BossState, BossSO, BossCatalogSO） | **完了** | `HEAD` |
-| **第5週 Step 13** | オートバトルResolver（AutoBattleResolverSO, 84/84テスト通過） | **完了** | `HEAD` |
+| **第5週 Step 12** | ボスデータ基盤（BossState, BossSO, BossCatalogSO） | **完了** | `59b86d5` |
+| **第5週 Step 13** | オートバトルResolver（AutoBattleResolverSO, 84/84テスト通過） | **完了** | `59b86d5` |
+| **第5週 Step 14** | GameFlowController ボスバトル統合 & ステート遷移（88/88テスト通過） | **完了** | `90aae0c` |
+| **第5週 Step 15** | BossBattleDialogView & MainGameシーン配置 & 1,000回シミュレーション（93/93テスト通過） | **完了 🎉** | `HEAD` |
 
 ---
 
 ## 2. 次にやること
 
-1. **第5週 Step 14（GameFlowController への BossBattle 統合）**:
-   - `GamePhase.BossBattle` の進行ステートマシン配線、および戦闘結果に基づく分岐（撃破でパッシブドラフト、敗北でゲームオーバー）。
-2. **第5週 Step 15（BossBattleView UI 実装 & シーン結合）**:
-   - `BossBattleView` の作成、`MainGame.unity` シーンへの配置、Unity-MCP によるバインド確認。
+1. **第6週（周回メタ永続化・アンロックシステム）の設計・実装**:
+   - `MetaPoints` 計算基盤、周回アンロック ScriptableObject、およびメタショップ UI の設計と C# 実装。
 
 ---
 
 ## 3. リソース管理・自律監視状態
 
 - **Claude Code 週間枠**: **2% used（残り 98%・7日間）**
-- **Claude Code 5h枠**: **26% used（残り 74%）**
-- **Gemini 利用枠**: 残り **85.4%**
-- **EditMode テスト**: **84 / 84 passed（100% Green）**
+- **Claude Code 5h枠**: **27% used（残り 73%）**
+- **Gemini 利用枠**: 残り **83.9%**（5h枠 38.5%）
+- **EditMode テスト**: **93 / 93 passed（100% Green）**

@@ -310,5 +310,62 @@ namespace Game.Features.Boss
 
             return BattleOutcomeKind.InProgress;
         }
+
+        /// <summary>
+        /// オートバトラーにおけるプレイヤーの最適な自動行動を決定する。
+        /// 1. スタミナが Attack コスト未満の場合: Defend（スタミナ回復）
+        /// 2. メンタルが危険領域でボスの強攻撃が来る場合: MentalFocus
+        /// 3. それ以外: Attack（攻撃）
+        /// </summary>
+        public BattlePlayerActionKind DecidePlayerAction(GameState playerState, BossState bossState, BossSO bossData)
+        {
+            if (playerState.Stamina < _attackStaminaCost)
+            {
+                return BattlePlayerActionKind.Defend;
+            }
+
+            BossActionKind nextBossAction = bossData.GetActionForTurn(bossState.BattleTurn);
+            if ((nextBossAction == BossActionKind.Attack || nextBossAction == BossActionKind.SpecialAttack)
+                && playerState.Mental < (_mentalShieldFullValue / 2)
+                && playerState.Stamina >= _attackStaminaCost * 2)
+            {
+                return BattlePlayerActionKind.MentalFocus;
+            }
+
+            return BattlePlayerActionKind.Attack;
+        }
+
+        /// <summary>
+        /// 戦闘開始から決着（Victory または Defeat）まで全自動で交戦をシミュレートし、ターン履歴と最終結果を返す。
+        /// </summary>
+        public FullBattleResult ResolveFullBattle(
+            GameState initialPlayerState,
+            BossSO bossData,
+            IReadOnlyList<RelicSO> activeRelics,
+            GameRulesSO rules,
+            int maxBattleTurns = 50)
+        {
+            BossState currentBoss = bossData.CreateInitialState();
+            GameState currentPlayer = initialPlayerState;
+            List<BattleTurnResult> turnHistory = new List<BattleTurnResult>();
+
+            for (int t = 1; t <= maxBattleTurns; t++)
+            {
+                BattlePlayerActionKind action = DecidePlayerAction(currentPlayer, currentBoss, bossData);
+                BattleTurnResult result = ResolveTurn(currentPlayer, currentBoss, action, bossData, activeRelics, rules);
+                turnHistory.Add(result);
+
+                currentPlayer = result.PlayerState;
+                currentBoss = result.BossState;
+
+                if (result.Outcome != BattleOutcomeKind.InProgress)
+                {
+                    return new FullBattleResult(result.Outcome, currentPlayer, currentBoss, turnHistory);
+                }
+            }
+
+            // 上限ターン到達時はスタミナ切れ扱い（Defeat）
+            return new FullBattleResult(BattleOutcomeKind.Defeat, currentPlayer, currentBoss, turnHistory);
+        }
     }
 }

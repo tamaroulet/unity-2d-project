@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Reflection;
 using Game.Core;
+using Game.Features.Boss;
 using Game.Features.Command;
 using Game.Features.Ending;
 using Game.Features.Event;
@@ -102,6 +103,96 @@ namespace Game.Tests.EditMode
 
             Assert.AreEqual(1000, clearCount + gameOverCount, "1000 回のシミュレーションがすべて正常にクリアまたはゲームオーバーで終了すること");
             Debug.Log($"[MonteCarlo] 1,000 Runs Completed: Clear={clearCount}, GameOver={gameOverCount}, AvgSkillWhenCleared={(clearCount > 0 ? (float)totalFinalSkill / clearCount : 0):F1}");
+        }
+
+        [Test]
+        public void MonteCarlo_1000Runs_WithBossBattle_RandomAndGreedyPolicies_VerifyStability()
+        {
+            GameRulesSO rules = CreateRules();
+            CommandDataSO rest = CreateCommand("Rest", staminaDelta: 20, skillDelta: 0, mentalDelta: 10, staminaCost: 0);
+            CommandDataSO train = CreateCommand("Train", staminaDelta: -20, skillDelta: 8, mentalDelta: -5, staminaCost: 20);
+            CommandDataSO special = CreateCommand("Special", staminaDelta: -35, skillDelta: 16, mentalDelta: -10, staminaCost: 35);
+            CommandDataSO[] commands = { rest, train, special };
+
+            RelicSO r1 = CreateRelic(1, RelicTriggerKind.OnTurnStart, 2, 0, 0);
+            RelicSO r2 = CreateRelic(2, RelicTriggerKind.OnCommandExecuted, 0, 3, 0);
+            RelicCatalogSO catalog = CreateCatalog(r1, r2);
+            RelicResolverSO relicResolver = ScriptableObject.CreateInstance<RelicResolverSO>();
+            _createdObjects.Add(relicResolver);
+
+            BossSO boss = ScriptableObject.CreateInstance<BossSO>();
+            _createdObjects.Add(boss);
+            SetField(boss, "_bossId", 1);
+            SetField(boss, "_bossName", "Boss_Act1_01");
+            SetField(boss, "_maxHp", 80);
+            SetField(boss, "_attackPower", 15);
+            SetField(boss, "_mentalPressurePower", 10);
+            SetField(boss, "_guardShieldAmount", 5);
+            SetField(boss, "_specialAttackMultiplier", 1.5f);
+            SetField(boss, "_actionPattern", new List<BossActionKind> { BossActionKind.Attack, BossActionKind.MentalPressure, BossActionKind.Guard });
+
+            BossCatalogSO bossCatalog = ScriptableObject.CreateInstance<BossCatalogSO>();
+            _createdObjects.Add(bossCatalog);
+            SetField(bossCatalog, "_bosses", new List<BossSO> { boss });
+
+            AutoBattleResolverSO autoBattleResolver = ScriptableObject.CreateInstance<AutoBattleResolverSO>();
+            _createdObjects.Add(autoBattleResolver);
+
+            int clearCount = 0;
+            int gameOverCount = 0;
+            System.Random rand = new System.Random(12345);
+
+            for (int run = 0; run < 1000; run++)
+            {
+                GameFlowController controller = CreateController(rules, catalog, relicResolver);
+                SetField(controller, "_bossCatalog", bossCatalog);
+                SetField(controller, "_autoBattleResolver", autoBattleResolver);
+                SetField(controller, "_bossBattleTurn", 12);
+
+                controller.StartGame();
+
+                for (int t = 0; t < 30; t++)
+                {
+                    if (controller.CurrentPhase == GamePhase.GameClear || controller.CurrentPhase == GamePhase.GameOver)
+                    {
+                        break;
+                    }
+
+                    if (controller.CurrentPhase == GamePhase.ShowingEvent)
+                    {
+                        controller.OnEventDismissed();
+                    }
+
+                    if (controller.CurrentPhase == GamePhase.ShowingRelicDraft)
+                    {
+                        // ボス撃破後のドラフトでレリック獲得
+                        controller.OnRelicAcquired(rand.Next(1, 3));
+                    }
+
+                    if (controller.CurrentPhase == GamePhase.WaitingInput)
+                    {
+                        CommandDataSO chosen = commands[rand.Next(commands.Length)];
+                        controller.ExecuteCommand(chosen);
+
+                        if (controller.CurrentPhase == GamePhase.WaitingInput)
+                        {
+                            controller.ExecuteCommand(rest);
+                        }
+                    }
+                }
+
+                if (controller.CurrentPhase == GamePhase.GameClear)
+                {
+                    clearCount++;
+                }
+                else if (controller.CurrentPhase == GamePhase.GameOver)
+                {
+                    gameOverCount++;
+                }
+            }
+
+            Assert.AreEqual(1000, clearCount + gameOverCount, "ボス戦を含む1000回シミュレーションが全て正常終了すること");
+            Debug.Log($"[MonteCarlo Boss] 1,000 Runs With Boss Battle: Clear={clearCount}, GameOver={gameOverCount}");
         }
 
         private GameRulesSO CreateRules()

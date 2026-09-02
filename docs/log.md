@@ -682,6 +682,28 @@ Antigravity (Gemini) による直接 C# 実装体制への移行後、指示書 
 
 ---
 
+### Step 14 & 15：GameFlowController ボスバトル統合 & BossBattleDialogView & 1,000回シミュレーション（第5週全工程完了）
+
+`GameFlowController.cs` / `BossBattleDialogView.cs` / `MainGame.unity` / `GameMonteCarloSimulationTests.cs`
+
+#### 計画レビュー
+- `GamePhase.BossBattle` を `GameFlowController` に配線し、第12ターンでボス戦を実行。勝利時はパッシブドラフト（`ShowingRelicDraft`）へ、敗北時は `GameOver` へ遷移するステートマシンを構築。
+- `BossBattleDialogView` を `MainGame.unity` の Canvas に配置し、Inspector 参照をバインド。
+- 1,000回の全自動周回モンテカルロシミュレーション（ボスバトル・パッシブドラフト・通常育成）を実行し、例外ゼロで 100% 完走を検証。
+
+#### 実行結果
+
+| 項目 | 結果 |
+|---|---|
+| 実装担当 | Antigravity / Gemini（C# 実装・Unity 操作・シーン結合・テスト実行） |
+| 書き込み範囲の逸脱 | なし |
+| 人間による差し戻し | 0件 |
+| エージェント自身の自己修正 | 1回（テストコードのパネル参照修正） |
+| テスト結果 | **93/93 通過（EditMode、既存84件＋新規9件）** |
+| コミット | `HEAD` |
+
+---
+
 ## 評価指標の定義
 
 本プロジェクトで記録している指標のうち、既存の評価系との対応は以下の通り。

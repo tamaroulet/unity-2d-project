@@ -1,23 +1,22 @@
 {
-    "name": "Game.UI",
-    "rootNamespace": "Game.UI",
+    "name": "Game.Editor",
+    "rootNamespace": "Game.Editor",
     "references": [
         "Game.Core",
-        "Game.Features.Command",
-        "Game.Features.Event",
-        "Game.Features.Ending",
-        "Game.Features.GameFlow",
-        "Game.Features.Relic",
         "Game.Features.Boss",
+        "Game.Features.GameFlow",
+        "Game.UI",
         "Unity.TextMeshPro",
         "UnityEngine.UI"
     ],
-    "includePlatforms": [],
+    "includePlatforms": [
+        "Editor"
+    ],
     "excludePlatforms": [],
     "allowUnsafeCode": false,
     "overrideReferences": false,
     "precompiledReferences": [],
-    "autoReferenced": false,
+    "autoReferenced": true,
     "defineConstraints": [],
     "versionDefines": [],
     "noEngineReferences": false

@@ -163,10 +163,12 @@ namespace Game.Tests.EditMode
             controller.StartGame();
             CommandDataSO breakdown = CreateCommand("Breakdown", 0, 0, -50, 0);
 
-            controller.AdvanceTurn();
+            controller.ExecuteCommand(breakdown);
 
             Assert.AreEqual(GamePhase.GameOver, controller.CurrentPhase);
-            Assert.AreEqual(0, controller.CurrentState.Stamina);
+            Assert.AreEqual(0, controller.CurrentState.Mental);
+            Assert.AreEqual(1, controller.CurrentState.CurrentTurn);
+            Assert.AreEqual(0, raisedEndings.Count);
         }
 
         [Test]

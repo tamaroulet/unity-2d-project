@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Reflection;
 using Game.Core;
+using Game.Features.Boss;
 using Game.Features.Command;
 using Game.Features.Ending;
 using Game.Features.Event;
@@ -263,6 +264,85 @@ namespace Game.Tests.EditMode
             view.Dismiss();
 
             Assert.IsFalse(view.IsPanelActive);
+        }
+
+        // ---- BossBattleDialogView ----
+
+        [Test]
+        public void BossBattleDialogView_Show_SetsPanelActive_AndUpdatesTextsAndGauges()
+        {
+            GameObject viewObject = CreateInactiveGameObject(nameof(BossBattleDialogView));
+            BossBattleDialogView view = viewObject.AddComponent<BossBattleDialogView>();
+            GameObject panelRoot = new GameObject("PanelRoot");
+            panelRoot.SetActive(false);
+            _createdObjects.Add(panelRoot);
+
+            TextMeshProUGUI bossNameText = CreateText(viewObject);
+            TextMeshProUGUI bossHpText = CreateText(viewObject);
+            Slider bossHpSlider = CreateSlider(viewObject);
+            TextMeshProUGUI shieldText = CreateText(viewObject);
+            TextMeshProUGUI battleLogText = CreateText(viewObject);
+            Button dismissButton = viewObject.AddComponent<Button>();
+
+            SetField(view, "_panelRoot", panelRoot);
+            SetField(view, "_bossNameText", bossNameText);
+            SetField(view, "_bossHpText", bossHpText);
+            SetField(view, "_bossHpSlider", bossHpSlider);
+            SetField(view, "_shieldText", shieldText);
+            SetField(view, "_battleLogText", battleLogText);
+            SetField(view, "_dismissButton", dismissButton);
+
+            viewObject.SetActive(true);
+
+            BossSO boss = ScriptableObject.CreateInstance<BossSO>();
+            _createdObjects.Add(boss);
+            SetField(boss, "_bossId", 1);
+            SetField(boss, "_bossName", "Boss_Act1_01");
+            SetField(boss, "_maxHp", 100);
+
+            BossState finalBoss = new BossState { BossId = 1, CurrentHp = 0, MaxHp = 100, Shield = 0, BattleTurn = 3 };
+            GameState finalPlayer = new GameState { CurrentTurn = 12, Stamina = 60, Skill = 30, Mental = 70 };
+            FullBattleResult battleResult = new FullBattleResult(
+                BattleOutcomeKind.Victory, finalPlayer, finalBoss, new List<BattleTurnResult>());
+
+            view.Show(boss, battleResult);
+
+            Assert.IsTrue(panelRoot.activeSelf, "panelRoot should be active after Show");
+            Assert.AreEqual("Boss_Act1_01", bossNameText.text);
+            Assert.AreEqual("HP: 0 / 100", bossHpText.text);
+            Assert.AreEqual(0f, bossHpSlider.value);
+            Assert.IsTrue(battleLogText.text.Contains("[VICTORY]"));
+        }
+
+        [Test]
+        public void BossBattleDialogView_Dismiss_HidesPanelAndInvokesCallback()
+        {
+            GameObject viewObject = CreateInactiveGameObject(nameof(BossBattleDialogView));
+            BossBattleDialogView view = viewObject.AddComponent<BossBattleDialogView>();
+            GameObject panelRoot = new GameObject("PanelRoot");
+            panelRoot.SetActive(false);
+            _createdObjects.Add(panelRoot);
+
+            Button dismissButton = viewObject.AddComponent<Button>();
+            SetField(view, "_panelRoot", panelRoot);
+            SetField(view, "_dismissButton", dismissButton);
+
+            viewObject.SetActive(true);
+
+            BossSO boss = ScriptableObject.CreateInstance<BossSO>();
+            _createdObjects.Add(boss);
+            BossState finalBoss = new BossState { BossId = 1, CurrentHp = 0, MaxHp = 100, Shield = 0, BattleTurn = 1 };
+            GameState finalPlayer = new GameState { CurrentTurn = 12, Stamina = 60, Skill = 30, Mental = 70 };
+            FullBattleResult battleResult = new FullBattleResult(
+                BattleOutcomeKind.Victory, finalPlayer, finalBoss, new List<BattleTurnResult>());
+
+            bool dismissed = false;
+            view.Show(boss, battleResult, () => dismissed = true);
+
+            view.Dismiss();
+
+            Assert.IsTrue(dismissed, "dismiss callback should be invoked");
+            Assert.IsFalse(panelRoot.activeSelf, "panelRoot should be inactive after dismiss");
         }
 
         // ---- EndingView ----
