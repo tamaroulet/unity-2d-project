@@ -16,22 +16,22 @@
 | **第2週 Step 4** | イベントチャンネル基盤（16/16テスト通過） | 完了 | `233f083` |
 | **第2週 Step 5** | イベント定義と条件評価（25/25テスト通過） | 完了 | `ec34748` |
 | **第2週 Step 6** | エンディング判定（32/32テスト通過） | 完了 | `cdeb9fe` |
-| **第3週 Step 7** | ゲーム進行マネージャー（38/38テスト通過） | **完了 🎉** | `9e45bec` |
-| **第3週 Step 8** | UI ビューコンポーネント | **次回対象（着手準備中）** | |
-| **第3週 Step 9** | シーン結合 & アセット構成 | 未着手 | |
+| **第3週 Step 7** | ゲーム進行マネージャー（38/38テスト通過） | 完了 | `9e45bec` |
+| **第3週 Step 8** | UI ビューコンポーネント（47/47テスト通過） | **完了 🎉** | `c4d332d` |
+| **第3週 Step 9** | シーン結合 & アセット構成（MainGame.unity） | **次回対象（第3週完了ゴール！）** | |
 
 ---
 
 ## 2. 次にやること
 
-1. **Step 8（UI ビューコンポーネント）の実行**:
-   - Unity-MCP による `Assets/UI/Scripts/` フォルダおよび `Game.UI.asmdef` の作成
-   - `Game.Tests.EditMode.asmdef` への参照追加
-   - `StatusView`, `CommandButtonView`, `EventDialogView`, `EndingView` の実装委譲
-   - EditMode / PlayMode テストの実行・検証
+1. **Step 9（シーン結合 & アセット構成）の実行**:
+   - `Assets/Scenes/MainGame.unity` シーンの自動構成（Canvas, EventSystem, Camera）
+   - 各 ScriptableObject アセット（GameRules, CommandData, GameEvents, EndingRules, EventChannels）の生成と配置
+   - 各 View と GameFlowController のインスペクター参照バインド
+   - 画面での通し動作検証 & Web ビルド動作確認
 
 ---
 
 ## 3. ブロッカー・未確認事項
 
-なし。
+なし。全 47 件の EditMode テストが 100% 合格中。

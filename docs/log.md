@@ -474,6 +474,36 @@ Unity-MCP 経由で前提アセット（`Assets/Features/GameFlow/Scripts/` フ�
 
 ---
 
+### Step 8：UI ビューコンポーネント
+
+`StatusView` / `CommandButtonView` / `EventDialogView` / `EndingView` / `UIViewTests`
+
+#### 計画レビュー
+
+Unity-MCP 経由で前提アセット（`Assets/UI/Scripts/` フォルダ、`Game.UI.asmdef`、テスト参照追加）を作成後、Claude Code に実装を委譲した。
+
+- 承認理由: 指示書 #4 第4節の要件（MonoBehaviour は計算ロジックを持たずイベントを購読して画面更新する薄い View、uGUI 使用、テスト9項目）に適合していたため
+
+#### エージェントによる指示文・環境不備の検出と改善
+
+1. **TMP Essential Resources 未インポート問題の検出**:
+   - Unity 6 における TMP Essential Resources（LiberationSans SDF 等）が未インポートのため、EditMode テストで `TextMeshProUGUI.text` が空文字を返す問題を検出。人間による TMP Essentials のインポート実施および View 側への確認用プロパティ（`LastDisplayedState`, `DisplayedName` 等）の追加で解決。
+2. **EditMode ライフサイクル同期の改善**:
+   - シーンが存在しない EditMode 単体テストにおいて `SetActive(true)` による `OnEnable()` の自動発火が不安定になる特性に対し、各 View クラスに明示的な `Bind()` メソッドおよびパブリックなハンドラを追加し、決定論的で堅牢なテスト体系へリファクタリングを実施。
+
+#### 実行結果
+
+| 項目 | 結果 |
+|---|---|
+| 使用モデル | Sonnet 5 |
+| 書き込み範囲の逸脱 | なし（指定のファイルのみ作成、規約適合） |
+| 人間による差し戻し | 0件 |
+| エージェント自身の自己修正 | 2回（TMP フォント対応、ライフサイクル Bind 化） |
+| テスト結果 | 47/47 通過（EditMode、既存38件＋新規9件） |
+| コミット | `c4d332d` |
+
+---
+
 ## 評価指標の定義
 
 本プロジェクトで記録している指標のうち、既存の評価系との対応は以下の通り。
