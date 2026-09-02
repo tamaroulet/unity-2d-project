@@ -2,17 +2,15 @@
 """
 Antigravity SDK を使用した自律継続実行スクリプト。
 Windows Task Scheduler から定期実行し、エージェントセッション終了後も
-次のタスクを自動的に前倒し実行する。
+未完了のタスク・計画を自動的に検知して前倒し実行する。
 
 使い方:
   python scripts/auto_runner.py
-  
-Windows Task Scheduler からの実行:
-  powershell -ExecutionPolicy Bypass -NoProfile -File scripts/register_scheduled_task.ps1
 """
 import asyncio
 import json
 import os
+import re
 import subprocess
 import sys
 from datetime import datetime, timezone
@@ -24,6 +22,72 @@ LOG_DIR = PROJECT_ROOT / "logs" / "auto_runner"
 LOG_DIR.mkdir(parents=True, exist_ok=True)
 
 
+# ==============================================================================
+# 1. 構造化計画ロードマップ（Structured Roadmap & Validation Criteria）
+# ==============================================================================
+ROADMAP_PLAN = [
+    {
+        "id": "STEP_2_1_BOSS_ASSETS_AND_SCENE",
+        "title": "マルチActボスデータ生成 & シーン完全バインド",
+        "instruction_pattern": r"2\.1.*マルチActボスデータ生成",
+        "check_files": [
+            "Game/Assets/Features/Boss/Instances/Boss_Act1_01.asset",
+            "Game/Assets/Features/Boss/Instances/Boss_Act2_01.asset",
+            "Game/Assets/Features/Boss/Instances/Boss_Act3_01.asset",
+            "Game/Assets/Features/Boss/Instances/Boss_Act4_01.asset",
+            "Game/Assets/Features/Boss/Instances/BossCatalog.asset",
+        ],
+        "prompt_detail": (
+            "Unity-MCP で Tools/Generate Boss Assets を実行して Act 1〜4 ボスを生成し、"
+            "Tools/Bind Boss to MainGame Scene および Tools/Bind Meta Progression to MainGame Scene で"
+            "MainGame.unity シーンに完全バインドしてください。"
+        )
+    },
+    {
+        "id": "STEP_2_2_TESTS_100_PERCENT_GREEN",
+        "title": "全自動単体テスト・シミュレーション検証（127件 100% Green）",
+        "instruction_pattern": r"2\.2.*全自動単体テスト",
+        "prompt_detail": (
+            "Unity-MCP で refresh_unity と run_tests (EditMode) を実行し、"
+            "全 127 件のテスト（4連戦ボス＋周回メタ 1,000回シミュレーションを含む）が 100% Green で通過することを確認してください。"
+        )
+    },
+    {
+        "id": "STEP_2_3_WEBGL_BUILD",
+        "title": "WebGL ビルド自動化スクリプトの実行と実ビルド検証",
+        "instruction_pattern": r"2\.3.*WebGL ビルド",
+        "check_files": [
+            "Game/Builds/WebGL/index.html",
+        ],
+        "prompt_detail": (
+            "Unity-MCP またはコマンドラインで WebGL ビルド（Tools/Build WebGL または WebGlBuildScript）を実行し、"
+            "Game/Builds/WebGL に index.html, Build/*.wasm 等が正常生成されることを確認してください。"
+        )
+    },
+    {
+        "id": "STEP_2_4_GITHUB_PAGES_DEPLOY",
+        "title": "GitHub Pages 公開整備・ブラウザ動作確認",
+        "instruction_pattern": r"2\.4.*GitHub Pages",
+        "prompt_detail": (
+            "WebGL ビルド成果物を docs/webgl/ にコピーまたは GitHub Actions ワークフロー（.github/workflows/deploy.yml）を整備し、"
+            "GitHub Pages 上でゲームが単体プレイ可能な状態を確立してください。"
+        )
+    },
+    {
+        "id": "STEP_2_5_DOCS_AND_SPEC_FINAL_SYNC",
+        "title": "仕様書・成果物ドキュメントの最終同期とGitコミット",
+        "instruction_pattern": r"2\.5.*仕様書・成果物ドキュメント",
+        "prompt_detail": (
+            "docs/STATUS.md, docs/log.md, docs/instructions/08_polish_and_balance.md, README.md を最新実績に合わせて完全同期し、"
+            "Git コミット＆プッシュを実行してください。"
+        )
+    }
+]
+
+
+# ==============================================================================
+# 2. クォータ・環境・指示書パース処理
+# ==============================================================================
 def get_quotas() -> dict:
     """scripts/get_all_quotas.ps1 を実行してクォータ情報を取得する。"""
     try:
@@ -46,29 +110,84 @@ def should_use_claude(quotas: dict) -> bool:
     return remaining < 25
 
 
-def get_next_prompt() -> str:
-    """docs/STATUS.md と docs/instructions/ を読み取り、次に実行すべきプロンプトを構築する。"""
+def parse_instruction_uncompleted_tasks() -> list:
+    """docs/instructions/08_polish_and_balance.md から未完了タスク (- [ ]) を抽出する。"""
+    instruction_path = PROJECT_ROOT / "docs" / "instructions" / "08_polish_and_balance.md"
+    if not instruction_path.exists():
+        return []
+
+    lines = instruction_path.read_text(encoding="utf-8").splitlines()
+    uncompleted = []
+    current_section = ""
+
+    for line in lines:
+        if line.startswith("### "):
+            current_section = line.replace("### ", "").strip()
+        elif line.strip().startswith("- [ ]"):
+            task_text = line.strip().replace("- [ ]", "").strip()
+            uncompleted.append({
+                "section": current_section,
+                "task": task_text,
+                "raw_line": line
+            })
+
+    return uncompleted
+
+
+def sanitize_text(text: str) -> str:
+    """Windows コンソール出力用に安全な文字列へ正規化する。"""
+    return text.encode("utf-8", errors="ignore").decode("utf-8")
+
+
+def get_next_prompt(quotas: dict) -> tuple:
+    """未完了タスクとロードマップを照合し、次に実行すべき高精度プロンプトを構築する。"""
+    uncompleted_tasks = parse_instruction_uncompleted_tasks()
     status_path = PROJECT_ROOT / "docs" / "STATUS.md"
     status_text = status_path.read_text(encoding="utf-8") if status_path.exists() else ""
 
-    # 基本プロンプト: ルールファイルを読み、STATUS.md に基づいて次のタスクを自律実行する
+    target_task_description = ""
+    if uncompleted_tasks:
+        target = uncompleted_tasks[0]
+        target_task_description = f"【最優先実行目標】\nセクション: {target['section']}\nタスク: {target['task']}\n"
+    else:
+        target_task_description = "【最優先実行目標】\n全指示書タスクの検証・ドキュメント同期・ビルド健全性の確認\n"
+
+    # クォータによる戦略分岐
+    use_claude = should_use_claude(quotas)
+    strategy_note = ""
+    if use_claude:
+        strategy_note = (
+            "【重要・クォータ制限】Gemini 5時間枠が25%未満のため、"
+            "重いC#実装やテスト作成が必要な場合は scripts/invoke_claude_safe.ps1 経由で Claude Code へ委譲してください。"
+        )
+    else:
+        strategy_note = (
+            "【クォータ状態】Gemini 枠は十分です。Gemini + Unity-MCP を主軸に自律実装・検証・コミットを進めてください。"
+        )
+
     prompt = f"""あなたは unity-2d-project の自律開発エージェントです。
-以下の規律に従って作業を進めてください。
+以下の具体的計画と行動規範に従って、直ちに作業を前倒し自律実行してください。
 
-1. まず .agents/rules/00_role.md を読み、全行動規範を確認すること。
-2. docs/STATUS.md を読み、現在の進捗と次に実行すべき Step を特定すること。
-3. scripts/get_all_quotas.ps1 でクォータを確認し、Gemini 25% 未満なら Claude 委譲すること。
-4. 特定した次の Step を自律的に実装・テスト・コミット・プッシュすること。
-5. 完了後、docs/STATUS.md と docs/log.md を更新すること。
+{target_task_description}
 
-現在の STATUS.md:
+{strategy_note}
+
+【作業規律】
+1. .agents/rules/00_role.md の全行動規範（平素な文体、ノンストップ自律チェーン、Unity-MCP検証）を遵守すること。
+2. 作業完了後は必ず docs/instructions/08_polish_and_balance.md の対応するチェックボックスを - [x] に更新すること。
+3. docs/STATUS.md および docs/log.md を同期し、Git コミット＆プッシュ（origin/main）まで同一ターンで完了させること。
+
+【未完了タスク一覧】
+{json.dumps([t['task'] for t in uncompleted_tasks[:5]], ensure_ascii=False, indent=2)}
+
+【現在の STATUS.md 抜粋】
 ---
-{status_text[:2000]}
+{status_text[:1500]}
 ---
 
-ノンストップ自律チェーン規律に従い、止まらずに作業を進めてください。
+止まることなく自律的に作業を完遂してください。
 """
-    return prompt
+    return prompt, uncompleted_tasks
 
 
 def log(message: str):
@@ -81,17 +200,20 @@ def log(message: str):
     print(line, end="")
 
 
+# ==============================================================================
+# 3. エージェント実行エンジン (SDK / CLI Fallback)
+# ==============================================================================
 async def run_with_sdk(prompt: str):
     """Antigravity Python SDK を使用してエージェントを起動する。"""
     from google.antigravity import Agent, LocalAgentConfig, CapabilitiesConfig
 
-    log("[SDK] エージェントを起動中...")
+    log("[SDK] Antigravity SDK Agent を起動中...")
 
     config = LocalAgentConfig(
         system_instructions=(
             "あなたは unity-2d-project の自律開発エージェントです。"
             ".agents/rules/00_role.md の全行動規範に従って作業してください。"
-            "淡々とした工学的・事務的な平素の日本語で応答してください。"
+            "淡々とした工学的・事務的な平素の日本語で応答し、指示された計画タスクを確実に前倒し完遂してください。"
         ),
         capabilities=CapabilitiesConfig(),
     )
@@ -105,7 +227,7 @@ async def run_with_sdk(prompt: str):
                 sys.stdout.write(token)
                 sys.stdout.flush()
 
-            log(f"[SDK] エージェント完了。応答長: {len(full_text)} 文字")
+            log(f"[SDK] エージェント実行完了。出力長: {len(full_text)} 文字")
             return full_text
     except Exception as e:
         log(f"[SDK] エージェント実行エラー: {e}")
@@ -119,7 +241,7 @@ def run_with_cli_fallback(prompt: str):
         result = subprocess.run(
             ["agy", "-p", prompt, "--dangerously-skip-permissions",
              "--output-format", "text"],
-            capture_output=True, text=True, timeout=1800,  # 30分タイムアウト
+            capture_output=True, text=True, timeout=1800,
             cwd=str(PROJECT_ROOT)
         )
         if result.returncode == 0:
@@ -128,50 +250,46 @@ def run_with_cli_fallback(prompt: str):
         else:
             log(f"[CLI] agy 失敗: {result.stderr[:500]}")
     except FileNotFoundError:
-        log("[CLI] agy コマンドが見つからない。SDK のみで実行。")
+        log("[CLI] agy コマンドが見つからないためスキップ。")
     except Exception as e:
         log(f"[CLI] agy 実行エラー: {e}")
     return None
 
 
+# ==============================================================================
+# 4. メインルーチン
+# ==============================================================================
 async def main():
     log("=" * 60)
-    log("[START] 自律継続実行スクリプト開始")
+    log("[START] AutoRunner 計画駆動型自律実行サイクル開始")
 
-    # 1. クォータ確認
+    # 1. クォータ取得
     quotas = get_quotas()
     if quotas:
         claude = quotas.get("Claude", {})
         gemini = quotas.get("Gemini", {})
         log(f"[QUOTA] Claude: session={claude.get('SessionUsedPercent', '?')}% used, "
-            f"weekly={claude.get('WeeklyUsedPercent', '?')}% used, "
-            f"available={claude.get('IsAvailable', '?')}")
+            f"weekly={claude.get('WeeklyUsedPercent', '?')}% used")
         log(f"[QUOTA] Gemini: 5h={gemini.get('FiveHourRemainingPercent', '?')}% remaining, "
             f"weekly={gemini.get('WeeklyRemainingPercent', '?')}% remaining")
-
-        # Gemini が枯渇寸前かどうか
-        if should_use_claude(quotas):
-            log("[QUOTA] Gemini 25% 未満。Claude 優先モードで実行。")
-        else:
-            log("[QUOTA] Gemini 残量十分。通常モードで実行。")
     else:
-        log("[QUOTA] クォータ取得失敗。デフォルトモードで続行。")
+        log("[QUOTA] クォータ取得失敗。安全デフォルトで続行。")
 
-    # 2. 次のプロンプトを構築
-    prompt = get_next_prompt()
-    log(f"[PROMPT] プロンプト構築完了 ({len(prompt)} 文字)")
+    # 2. 計画ロードマップと指示書から具体的プロンプトを構築
+    prompt, remaining_tasks = get_next_prompt(quotas)
+    log(f"[PLAN] 残り未完了タスク数: {len(remaining_tasks)} 件")
+    if remaining_tasks:
+        log(f"[PLAN] 今回のターゲット: {remaining_tasks[0]['task']}")
 
-    # 3. SDK でエージェント実行
+    # 3. エージェント起動（SDK 優先、CLI フォールバック）
     result = await run_with_sdk(prompt)
-
-    # 4. SDK が失敗した場合、CLI フォールバック
     if result is None:
         result = run_with_cli_fallback(prompt)
 
     if result:
-        log("[DONE] 自律実行完了。")
+        log("[DONE] 自律実行サイクル正常完了。")
     else:
-        log("[FAIL] SDK / CLI 両方失敗。次回スケジュールで再試行。")
+        log("[FAIL] エージェント実行失敗。次回スケジュール（30分後）で再試行します。")
 
     log("=" * 60)
 
