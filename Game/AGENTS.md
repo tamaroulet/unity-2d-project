@@ -44,18 +44,13 @@
 
 ---
 
-## 2. 書き込み経路の分離
+## 2. 開発・書き込み体制
 
-`.cs` ファイルの書き込みは **Claude Code のみ**が行う。
+開発体制は **Antigravity (Gemini) 完結体制** に移行した。（Claude Code の利用は停止）
 
-- Antigravity は `.cs` を直接作成・直接編集してはならない
-  （MCP ツール経由か、IDE 自身のファイル書き込み機能かを問わない）。
-  Claude Code CLI を呼び出して実装を委譲する場合も、人間の事前承認（またはパイプライン自律実行の承認）を必須とする。
-- Unity-MCP の `manage_script` および `execute_code` は無効化されている。
-  これを迂回する手段を用いてはならない
-- Antigravity の役割は Unity エディタ操作（Unity-MCP 経由でのフォルダ作成、asmdef 構成、シーン構成、プレハブ、コンポーネント設定、テスト実行、プロファイリング）、Claude Code CLI の呼び出し仲介、および Git / ログ管理に限定される
-
-複数の経路から同一ファイルを書き込むと、変更が失われる。
+- Antigravity は、指示書・仕様に基づき `.cs` ファイルの直接作成・編集、単体テストの作成、Unity エディタ操作（Unity-MCP 経由）、Git 管理を統合して実行する
+- C# コードの実装・変更後は、必ず Unity-MCP の `refresh_unity` および `run_tests`（EditMode）を実行し、全テストの合格を機械的に検証すること
+- Unity-MCP の `manage_script` および `execute_code` は無効化のままとし、ファイル編集は IDE 標準のファイルツール（write_to_file / replace_file_content）を用いる
 
 ---
 
