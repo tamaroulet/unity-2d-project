@@ -99,6 +99,11 @@ namespace Game.Features.GameFlow
             if (_autoBattleResolver == null) _autoBattleResolver = UnityEditor.AssetDatabase.LoadAssetAtPath<AutoBattleResolverSO>("Assets/Features/Boss/Instances/AutoBattleResolver.asset");
             if (_metaPointResolver == null) _metaPointResolver = UnityEditor.AssetDatabase.LoadAssetAtPath<MetaPointResolverSO>("Assets/Features/MetaProgression/Instances/MetaPointResolver.asset");
             if (_metaUnlockCatalog == null) _metaUnlockCatalog = UnityEditor.AssetDatabase.LoadAssetAtPath<MetaUnlockCatalogSO>("Assets/Features/MetaProgression/Instances/MetaUnlockCatalog.asset");
+
+            if (_bossBattleTurns == null || _bossBattleTurns.Count == 0 || _bossBattleTurns.Contains(1))
+            {
+                _bossBattleTurns = new List<int> { 6, 12, 18, 24 };
+            }
 #endif
         }
 
@@ -157,8 +162,16 @@ namespace Game.Features.GameFlow
 
             if (_currentPhase != GamePhase.WaitingInput)
             {
-                Debug.LogWarning($"[GameFlowController] Cannot execute command {command?.name}: Not in WaitingInput phase (Current phase: {_currentPhase})");
-                return;
+                if (_currentPhase == GamePhase.ShowingRelicDraft || _currentPhase == GamePhase.ShowingEvent || _currentPhase == GamePhase.TurnStart)
+                {
+                    Debug.Log($"[GameFlowController] Auto-recovering phase {_currentPhase} to WaitingInput for player command execution.");
+                    _currentPhase = GamePhase.WaitingInput;
+                }
+                else
+                {
+                    Debug.LogWarning($"[GameFlowController] Cannot execute command {command?.name}: Not in WaitingInput phase (Current phase: {_currentPhase})");
+                    return;
+                }
             }
 
             if (_commandResolver == null || _gameRules == null)
