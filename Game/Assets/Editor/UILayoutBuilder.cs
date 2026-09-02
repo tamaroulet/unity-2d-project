@@ -12,61 +12,66 @@ namespace Game.EditorScripts
 {
     public static class UILayoutBuilder
     {
-        private static readonly Color ColorBgHeader = new Color(0.11f, 0.13f, 0.18f, 0.95f);
-        private static readonly Color ColorBgFooter = new Color(0.09f, 0.10f, 0.14f, 0.95f);
-        private static readonly Color ColorBgDialog = new Color(0.13f, 0.15f, 0.20f, 0.98f);
-        private static readonly Color ColorBgBossDialog = new Color(0.18f, 0.11f, 0.13f, 0.98f);
-        private static readonly Color ColorCardBg = new Color(0.18f, 0.21f, 0.28f, 1.0f);
-        private static readonly Color ColorBorder = new Color(0.28f, 0.32f, 0.42f, 1.0f);
-        private static readonly Color ColorOverlay = new Color(0.0f, 0.0f, 0.0f, 0.75f);
+        private static readonly Color ColorBgMain = new Color(0.08f, 0.09f, 0.12f, 1.0f);
+        private static readonly Color ColorBgHeader = new Color(0.12f, 0.15f, 0.20f, 0.98f);
+        private static readonly Color ColorBgFooter = new Color(0.10f, 0.12f, 0.16f, 0.98f);
+        private static readonly Color ColorBgDialog = new Color(0.14f, 0.17f, 0.24f, 0.98f);
+        private static readonly Color ColorBgBossDialog = new Color(0.20f, 0.10f, 0.12f, 0.98f);
+        private static readonly Color ColorButtonBg = new Color(0.18f, 0.22f, 0.30f, 1.0f);
+        private static readonly Color ColorBarBg = new Color(0.18f, 0.20f, 0.26f, 1.0f);
+        private static readonly Color ColorOverlay = new Color(0.0f, 0.0f, 0.0f, 0.80f);
 
-        private static readonly Color ColorStamina = new Color(0.22f, 0.75f, 0.45f, 1.0f);
-        private static readonly Color ColorSkill = new Color(0.25f, 0.55f, 0.95f, 1.0f);
-        private static readonly Color ColorMental = new Color(0.85f, 0.35f, 0.65f, 1.0f);
-        private static readonly Color ColorBossHp = new Color(0.90f, 0.25f, 0.25f, 1.0f);
-        private static readonly Color ColorShield = new Color(0.25f, 0.75f, 0.95f, 1.0f);
+        private static readonly Color ColorStamina = new Color(0.22f, 0.85f, 0.45f, 1.0f);
+        private static readonly Color ColorSkill = new Color(0.25f, 0.65f, 0.98f, 1.0f);
+        private static readonly Color ColorMental = new Color(0.92f, 0.35f, 0.65f, 1.0f);
+        private static readonly Color ColorBossHp = new Color(0.92f, 0.25f, 0.25f, 1.0f);
+        private static readonly Color ColorShield = new Color(0.30f, 0.75f, 0.95f, 1.0f);
 
         [MenuItem("Tools/Setup Complete UI Layout (Simple Shapes)")]
         public static void SetupCompleteLayout()
         {
-            // まずスプライトが存在しなければ生成
             ProceduralSpriteGenerator.GenerateAllSprites();
 
             string scenePath = "Assets/Scenes/MainGame.unity";
             EditorSceneManager.OpenScene(scenePath, OpenSceneMode.Single);
 
+            // 1. Canvas の初期化
             Canvas canvas = Object.FindFirstObjectByType<Canvas>();
             if (canvas == null)
             {
-                GameObject canvasGo = new GameObject("Canvas", typeof(Canvas), typeof(CanvasScaler), typeof(GraphicRaycaster));
+                GameObject canvasGo = new GameObject("Canvas", typeof(RectTransform), typeof(Canvas), typeof(CanvasScaler), typeof(GraphicRaycaster));
                 canvas = canvasGo.GetComponent<Canvas>();
-                canvas.renderMode = RenderMode.ScreenSpaceOverlay;
             }
 
-            // Canvas Scaler 設定 (1920 x 1080 基準)
+            canvas.renderMode = RenderMode.ScreenSpaceOverlay;
             CanvasScaler scaler = canvas.GetComponent<CanvasScaler>() ?? canvas.gameObject.AddComponent<CanvasScaler>();
             scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
             scaler.referenceResolution = new Vector2(1920, 1080);
             scaler.matchWidthOrHeight = 0.5f;
 
-            // 1. StatusPanel のレイアウト
+            // EventSystem
+            if (Object.FindFirstObjectByType<UnityEngine.EventSystems.EventSystem>() == null)
+            {
+                new GameObject("EventSystem", typeof(UnityEngine.EventSystems.EventSystem), typeof(UnityEngine.EventSystems.StandaloneInputModule));
+            }
+
+            // 2. 全画面背景
+            CreateOrUpdateBackground(canvas.transform);
+
+            // 3. 各 UI パネルの完全構築
             SetupStatusPanel(canvas.transform);
-
-            // 2. CommandButtonsPanel のレイアウト
             SetupCommandPanel(canvas.transform);
-
-            // 3. 各ダイアログ（単純図形ワイヤーフレーム）
             SetupEventDialogPanel(canvas.transform);
             SetupRelicDraftDialogPanel(canvas.transform);
             SetupBossBattleDialogPanel(canvas.transform);
             SetupMetaShopDialogPanel(canvas.transform);
             SetupEndingPanel(canvas.transform);
 
-            // 4. GameFlowController の参照再バインド
+            // 4. GameFlowController へのバインド
             RebindGameFlowControllerReferences(canvas.transform);
 
             EditorSceneManager.SaveScene(EditorSceneManager.GetActiveScene());
-            Debug.Log("[UILayoutBuilder] Complete UI Layout (with Procedural Sprites) configured and saved successfully.");
+            Debug.Log("[UILayoutBuilder] Full UI Layout with Renderers & Sprites successfully built and saved.");
         }
 
         private static Sprite LoadSprite(string name)
@@ -74,14 +79,31 @@ namespace Game.EditorScripts
             return AssetDatabase.LoadAssetAtPath<Sprite>($"Assets/UI/Sprites/{name}.png");
         }
 
+        private static void CreateOrUpdateBackground(Transform canvasTr)
+        {
+            Transform bgTr = canvasTr.Find("Background");
+            GameObject bgGo = bgTr != null ? bgTr.gameObject : new GameObject("Background", typeof(RectTransform), typeof(Image));
+            bgGo.transform.SetParent(canvasTr, false);
+            bgGo.transform.SetAsFirstSibling();
+
+            RectTransform rect = bgGo.GetComponent<RectTransform>();
+            rect.anchorMin = Vector2.zero;
+            rect.anchorMax = Vector2.one;
+            rect.sizeDelta = Vector2.zero;
+
+            Image img = bgGo.GetComponent<Image>();
+            img.color = ColorBgMain;
+            img.raycastTarget = false;
+        }
+
         private static void SetupStatusPanel(Transform canvasTr)
         {
             Transform tr = canvasTr.Find("StatusPanel");
-            if (tr == null) return;
-            GameObject go = tr.gameObject;
+            GameObject go = tr != null ? tr.gameObject : new GameObject("StatusPanel", typeof(RectTransform), typeof(Image), typeof(StatusView));
+            go.transform.SetParent(canvasTr, false);
 
-            RectTransform rect = go.GetComponent<RectTransform>();
-            rect.anchorMin = new Vector2(0f, 0.80f);
+            RectTransform rect = EnsureRectTransform(go);
+            rect.anchorMin = new Vector2(0f, 0.82f);
             rect.anchorMax = new Vector2(1f, 1f);
             rect.offsetMin = new Vector2(20f, -10f);
             rect.offsetMax = new Vector2(-20f, -10f);
@@ -89,19 +111,25 @@ namespace Game.EditorScripts
             Image img = go.GetComponent<Image>() ?? go.AddComponent<Image>();
             img.color = ColorBgHeader;
 
-            // 各ゲージにアイコンを配置
-            AttachIcon(tr, "Icon_Stamina", LoadSprite("Icon_Stamina"), new Vector2(-220, 10), new Vector2(32, 32));
-            AttachIcon(tr, "Icon_Skill", LoadSprite("Icon_Skill"), new Vector2(0, 10), new Vector2(32, 32));
-            AttachIcon(tr, "Icon_Mental", LoadSprite("Icon_Mental"), new Vector2(220, 10), new Vector2(32, 32));
+            StatusView view = go.GetComponent<StatusView>() ?? go.AddComponent<StatusView>();
+
+            // ゲージとテキストの配置
+            CreateGaugeGroup(rect, "StaminaGroup", "Icon_Stamina", ColorStamina, new Vector2(-400, 0), "Stamina: 50 / 100");
+            CreateGaugeGroup(rect, "SkillGroup", "Icon_Skill", ColorSkill, new Vector2(0, 0), "Skill: 10");
+            CreateGaugeGroup(rect, "MentalGroup", "Icon_Mental", ColorMental, new Vector2(400, 0), "Mental: 80 / 100");
+
+            CreateLabel(rect, "TurnText", "TURN 1 / 24", new Vector2(-750, 0), new Vector2(200, 50), 28, TextAlignmentOptions.Left);
+            CreateLabel(rect, "PointsText", "💎 0 Pts", new Vector2(750, 0), new Vector2(200, 50), 28, TextAlignmentOptions.Right);
         }
 
         private static void SetupCommandPanel(Transform canvasTr)
         {
-            Transform tr = canvasTr.Find("CommandButtonsPanel");
-            if (tr == null) return;
-            GameObject go = tr.gameObject;
+            Transform tr = canvasTr.Find("CommandPanel") ?? canvasTr.Find("CommandButtonsPanel");
+            GameObject go = tr != null ? tr.gameObject : new GameObject("CommandPanel", typeof(RectTransform), typeof(Image));
+            go.name = "CommandPanel";
+            go.transform.SetParent(canvasTr, false);
 
-            RectTransform rect = go.GetComponent<RectTransform>();
+            RectTransform rect = EnsureRectTransform(go);
             rect.anchorMin = new Vector2(0f, 0f);
             rect.anchorMax = new Vector2(1f, 0.22f);
             rect.offsetMin = new Vector2(20f, 15f);
@@ -109,107 +137,278 @@ namespace Game.EditorScripts
 
             Image img = go.GetComponent<Image>() ?? go.AddComponent<Image>();
             img.color = ColorBgFooter;
+
+            // 3つのコマンドボタン（勉強、特訓、休息）
+            CreateCommandButton(rect, "StudyButton", "Icon_Study", "勉強 (Study)\nSkill+5", new Vector2(-400, 0));
+            CreateCommandButton(rect, "TrainButton", "Icon_Train", "特訓 (Train)\nSkill+10", new Vector2(0, 0));
+            CreateCommandButton(rect, "RestButton", "Icon_Rest", "休息 (Rest)\nStamina+30", new Vector2(400, 0));
         }
 
         private static void SetupEventDialogPanel(Transform canvasTr)
         {
             Transform tr = canvasTr.Find("EventDialogPanel");
-            if (tr == null) return;
-            ConfigureModalPanel(tr, new Vector2(800, 500), ColorBgDialog);
+            GameObject go = tr != null ? tr.gameObject : new GameObject("EventDialogPanel", typeof(RectTransform), typeof(Image), typeof(EventDialogView));
+            go.transform.SetParent(canvasTr, false);
+
+            ConfigureModalPanel(go.transform, new Vector2(850, 520), ColorBgDialog);
+            Transform rootTr = go.transform.Find("PanelRoot");
+            if (rootTr != null)
+            {
+                CreateLabel(rootTr.GetComponent<RectTransform>(), "EventTitleText", "イベント発生", new Vector2(0, 180), new Vector2(700, 50), 32, TextAlignmentOptions.Center);
+                CreateLabel(rootTr.GetComponent<RectTransform>(), "EventDescriptionText", "ランダムな育成イベントが発生しました。\n選択肢を選んで能力を伸ばしましょう。", new Vector2(0, 50), new Vector2(700, 120), 22, TextAlignmentOptions.Center);
+                CreateModalButton(rootTr.GetComponent<RectTransform>(), "OptionAButton", "選択肢 A (Stamina消費 / Skill上昇)", new Vector2(0, -90), new Vector2(600, 60));
+                CreateModalButton(rootTr.GetComponent<RectTransform>(), "OptionBButton", "選択肢 B (安全策 / Mental保護)", new Vector2(0, -170), new Vector2(600, 60));
+            }
+            go.SetActive(false); // 初期状態は非表示
         }
 
         private static void SetupRelicDraftDialogPanel(Transform canvasTr)
         {
             Transform tr = canvasTr.Find("RelicDraftDialogPanel");
-            if (tr == null) return;
-            ConfigureModalPanel(tr, new Vector2(1100, 600), ColorBgDialog);
+            GameObject go = tr != null ? tr.gameObject : new GameObject("RelicDraftDialogPanel", typeof(RectTransform), typeof(Image));
+            go.transform.SetParent(canvasTr, false);
 
-            Transform rootTr = tr.Find("PanelRoot");
+            ConfigureModalPanel(go.transform, new Vector2(1150, 650), ColorBgDialog);
+            Transform rootTr = go.transform.Find("PanelRoot");
             if (rootTr != null)
             {
-                AttachIcon(rootTr, "DraftRelicIcon", LoadSprite("Icon_Relic"), new Vector2(0, 180), new Vector2(48, 48));
+                CreateLabel(rootTr.GetComponent<RectTransform>(), "DraftTitleText", "レリックドラフト（パッシブ選択）", new Vector2(0, 240), new Vector2(800, 50), 32, TextAlignmentOptions.Center);
+                CreateRelicCard(rootTr.GetComponent<RectTransform>(), "Card1", "鉄のダンベル\n毎ターンStamina+5", new Vector2(-340, -20));
+                CreateRelicCard(rootTr.GetComponent<RectTransform>(), "Card2", "知恵の書\nSkill獲得量+20%", new Vector2(0, -20));
+                CreateRelicCard(rootTr.GetComponent<RectTransform>(), "Card3", "癒やしの護符\nMental保護+30%", new Vector2(340, -20));
             }
+            go.SetActive(false);
         }
 
         private static void SetupBossBattleDialogPanel(Transform canvasTr)
         {
             Transform tr = canvasTr.Find("BossBattleDialogPanel");
-            if (tr == null) return;
-            ConfigureModalPanel(tr, new Vector2(1200, 700), ColorBgBossDialog);
+            GameObject go = tr != null ? tr.gameObject : new GameObject("BossBattleDialogPanel", typeof(RectTransform), typeof(Image), typeof(BossBattleDialogView));
+            go.transform.SetParent(canvasTr, false);
 
-            Transform rootTr = tr.Find("PanelRoot");
+            ConfigureModalPanel(go.transform, new Vector2(1250, 750), ColorBgBossDialog);
+            Transform rootTr = go.transform.Find("PanelRoot");
             if (rootTr != null)
             {
-                // ボス幾何学紋章（200x200）
-                AttachIcon(rootTr, "BossEmblem", LoadSprite("Boss_Emblem_Act1"), new Vector2(0, 80), new Vector2(180, 180));
-                // HP/シールドアイコン
-                AttachIcon(rootTr, "BossHpIcon", LoadSprite("Icon_Attack"), new Vector2(-250, -100), new Vector2(32, 32));
-                AttachIcon(rootTr, "BossShieldIcon", LoadSprite("Icon_Shield"), new Vector2(-250, -150), new Vector2(32, 32));
+                CreateLabel(rootTr.GetComponent<RectTransform>(), "BossTitleText", "⚠️ ボスバトル発生 ⚠️", new Vector2(0, 290), new Vector2(800, 50), 34, TextAlignmentOptions.Center);
+                AttachIcon(rootTr, "BossEmblem", LoadSprite("Boss_Emblem_Act1"), new Vector2(0, 110), new Vector2(200, 200));
+
+                CreateGaugeGroup(rootTr.GetComponent<RectTransform>(), "BossHpGroup", "Icon_Attack", ColorBossHp, new Vector2(0, -60), "Boss HP: 80 / 80");
+                CreateGaugeGroup(rootTr.GetComponent<RectTransform>(), "BossShieldGroup", "Icon_Shield", ColorShield, new Vector2(0, -130), "Shield: 10");
+
+                CreateModalButton(rootTr.GetComponent<RectTransform>(), "AutoBattleNextButton", "オート戦闘 進行", new Vector2(0, -260), new Vector2(400, 70));
             }
+            go.SetActive(false);
         }
 
         private static void SetupMetaShopDialogPanel(Transform canvasTr)
         {
             Transform tr = canvasTr.Find("MetaShopDialogPanel");
-            if (tr == null) return;
-            ConfigureModalPanel(tr, new Vector2(1100, 650), ColorBgDialog);
+            GameObject go = tr != null ? tr.gameObject : new GameObject("MetaShopDialogPanel", typeof(RectTransform), typeof(Image), typeof(MetaShopDialogView));
+            go.transform.SetParent(canvasTr, false);
 
-            Transform rootTr = tr.Find("PanelRoot");
+            ConfigureModalPanel(go.transform, new Vector2(1150, 700), ColorBgDialog);
+            Transform rootTr = go.transform.Find("PanelRoot");
             if (rootTr != null)
             {
-                AttachIcon(rootTr, "ShopHeaderIcon", LoadSprite("Icon_Relic"), new Vector2(0, 240), new Vector2(40, 40));
+                CreateLabel(rootTr.GetComponent<RectTransform>(), "ShopTitleText", "周回メタアンロックショップ", new Vector2(0, 270), new Vector2(800, 50), 32, TextAlignmentOptions.Center);
+                CreateShopItemCard(rootTr.GetComponent<RectTransform>(), "Item1", "初期Stamina +10\nコスト: 50 Pts", new Vector2(-340, 30));
+                CreateShopItemCard(rootTr.GetComponent<RectTransform>(), "Item2", "初期Skill +5\nコスト: 100 Pts", new Vector2(0, 30));
+                CreateShopItemCard(rootTr.GetComponent<RectTransform>(), "Item3", "初期Mental +15\nコスト: 150 Pts", new Vector2(340, 30));
+                CreateModalButton(rootTr.GetComponent<RectTransform>(), "CloseShopButton", "ショップを閉じる / 次のランへ", new Vector2(0, -250), new Vector2(450, 60));
             }
+            go.SetActive(false);
         }
 
         private static void SetupEndingPanel(Transform canvasTr)
         {
             Transform tr = canvasTr.Find("EndingPanel");
-            if (tr == null) return;
-            ConfigureModalPanel(tr, new Vector2(900, 600), ColorBgDialog);
+            GameObject go = tr != null ? tr.gameObject : new GameObject("EndingPanel", typeof(RectTransform), typeof(Image), typeof(EndingView));
+            go.transform.SetParent(canvasTr, false);
+
+            ConfigureModalPanel(go.transform, new Vector2(950, 650), ColorBgDialog);
+            Transform rootTr = go.transform.Find("PanelRoot");
+            if (rootTr != null)
+            {
+                CreateLabel(rootTr.GetComponent<RectTransform>(), "EndingTitleText", "🏆 ゲームクリア！", new Vector2(0, 220), new Vector2(700, 60), 38, TextAlignmentOptions.Center);
+                CreateLabel(rootTr.GetComponent<RectTransform>(), "EndingDescriptionText", "24ターンを生き抜き、全4幕のボスを撃破しました！\n獲得 MetaPoints: +150 Pts", new Vector2(0, 60), new Vector2(700, 150), 24, TextAlignmentOptions.Center);
+                CreateModalButton(rootTr.GetComponent<RectTransform>(), "RestartButton", "再挑戦 / メタショップへ", new Vector2(0, -180), new Vector2(450, 70));
+            }
+            go.SetActive(false);
         }
 
-        private static void AttachIcon(Transform parent, string iconName, Sprite sprite, Vector2 anchoredPos, Vector2 size)
+        // --- UI 生成ヘルパー群 ---
+
+        private static RectTransform EnsureRectTransform(GameObject go)
         {
-            if (parent == null || sprite == null) return;
-            Transform existing = parent.Find(iconName);
-            GameObject iconGo = existing != null ? existing.gameObject : new GameObject(iconName, typeof(RectTransform), typeof(Image));
-            iconGo.transform.SetParent(parent, false);
-
-            RectTransform rect = iconGo.GetComponent<RectTransform>();
-            rect.anchoredPosition = anchoredPos;
-            rect.sizeDelta = size;
-
-            Image img = iconGo.GetComponent<Image>();
-            img.sprite = sprite;
-            img.color = Color.white;
-            img.raycastTarget = false;
+            RectTransform rect = go.GetComponent<RectTransform>();
+            if (rect == null)
+            {
+                rect = go.AddComponent<RectTransform>();
+            }
+            return rect;
         }
 
         private static void ConfigureModalPanel(Transform panelTr, Vector2 size, Color bgColor)
         {
+            EnsureRectTransform(panelTr.gameObject);
             RectTransform rect = panelTr.GetComponent<RectTransform>();
             rect.anchorMin = Vector2.zero;
             rect.anchorMax = Vector2.one;
             rect.offsetMin = Vector2.zero;
             rect.offsetMax = Vector2.zero;
 
-            // 背景暗転オーバーレイ
             Image overlayImg = panelTr.GetComponent<Image>() ?? panelTr.gameObject.AddComponent<Image>();
             overlayImg.color = ColorOverlay;
 
             Transform rootTr = panelTr.Find("PanelRoot");
-            if (rootTr != null)
-            {
-                RectTransform rootRect = rootTr.GetComponent<RectTransform>();
-                rootRect.anchorMin = new Vector2(0.5f, 0.5f);
-                rootRect.anchorMax = new Vector2(0.5f, 0.5f);
-                rootRect.pivot = new Vector2(0.5f, 0.5f);
-                rootRect.sizeDelta = size;
-                rootRect.anchoredPosition = Vector2.zero;
+            GameObject rootGo = rootTr != null ? rootTr.gameObject : new GameObject("PanelRoot", typeof(RectTransform), typeof(Image));
+            rootGo.transform.SetParent(panelTr, false);
 
-                Image rootImg = rootTr.GetComponent<Image>() ?? rootTr.gameObject.AddComponent<Image>();
-                rootImg.color = bgColor;
-            }
+            RectTransform rootRect = EnsureRectTransform(rootGo);
+            rootRect.anchorMin = new Vector2(0.5f, 0.5f);
+            rootRect.anchorMax = new Vector2(0.5f, 0.5f);
+            rootRect.pivot = new Vector2(0.5f, 0.5f);
+            rootRect.sizeDelta = size;
+            rootRect.anchoredPosition = Vector2.zero;
+
+            Image rootImg = rootGo.GetComponent<Image>() ?? rootGo.AddComponent<Image>();
+            rootImg.sprite = LoadSprite("Frame_Card");
+            rootImg.type = Image.Type.Sliced;
+            rootImg.color = bgColor;
+        }
+
+        private static void CreateGaugeGroup(RectTransform parent, string name, string iconName, Color barColor, Vector2 pos, string label)
+        {
+            Transform existing = parent.Find(name);
+            GameObject groupGo = existing != null ? existing.gameObject : new GameObject(name, typeof(RectTransform));
+            groupGo.transform.SetParent(parent, false);
+
+            RectTransform rect = EnsureRectTransform(groupGo);
+            rect.anchoredPosition = pos;
+            rect.sizeDelta = new Vector2(320, 60);
+
+            // アイコン
+            AttachIcon(rect, "Icon", LoadSprite(iconName), new Vector2(-130, 0), new Vector2(40, 40));
+
+            // ゲージ背景
+            Transform barBgTr = rect.Find("BarBg");
+            GameObject barBgGo = barBgTr != null ? barBgTr.gameObject : new GameObject("BarBg", typeof(RectTransform), typeof(Image));
+            barBgGo.transform.SetParent(rect, false);
+            RectTransform barBgRect = EnsureRectTransform(barBgGo);
+            barBgRect.anchoredPosition = new Vector2(20, -5);
+            barBgRect.sizeDelta = new Vector2(220, 24);
+            barBgGo.GetComponent<Image>().color = ColorBarBg;
+
+            // ゲージバー
+            Transform barFillTr = barBgRect.Find("BarFill");
+            GameObject barFillGo = barFillTr != null ? barFillTr.gameObject : new GameObject("BarFill", typeof(RectTransform), typeof(Image));
+            barFillGo.transform.SetParent(barBgRect, false);
+            RectTransform barFillRect = EnsureRectTransform(barFillGo);
+            barFillRect.anchorMin = Vector2.zero;
+            barFillRect.anchorMax = new Vector2(0.7f, 1f); // 70% 仮置き
+            barFillRect.sizeDelta = Vector2.zero;
+            barFillGo.GetComponent<Image>().color = barColor;
+
+            // ラベル
+            CreateLabel(rect, "Label", label, new Vector2(20, 15), new Vector2(220, 24), 18, TextAlignmentOptions.Center);
+        }
+
+        private static void CreateCommandButton(RectTransform parent, string name, string iconName, string text, Vector2 pos)
+        {
+            Transform existing = parent.Find(name);
+            GameObject btnGo = existing != null ? existing.gameObject : new GameObject(name, typeof(RectTransform), typeof(Image), typeof(Button));
+            btnGo.transform.SetParent(parent, false);
+
+            RectTransform rect = EnsureRectTransform(btnGo);
+            rect.anchoredPosition = pos;
+            rect.sizeDelta = new Vector2(300, 120);
+
+            Image img = btnGo.GetComponent<Image>() ?? btnGo.AddComponent<Image>();
+            img.sprite = LoadSprite("Frame_Card");
+            img.type = Image.Type.Sliced;
+            img.color = ColorButtonBg;
+
+            AttachIcon(rect, "Icon", LoadSprite(iconName), new Vector2(-80, 0), new Vector2(56, 56));
+            CreateLabel(rect, "Text", text, new Vector2(40, 0), new Vector2(180, 80), 22, TextAlignmentOptions.Center);
+        }
+
+        private static void CreateModalButton(RectTransform parent, string name, string text, Vector2 pos, Vector2 size)
+        {
+            Transform existing = parent.Find(name);
+            GameObject btnGo = existing != null ? existing.gameObject : new GameObject(name, typeof(RectTransform), typeof(Image), typeof(Button));
+            btnGo.transform.SetParent(parent, false);
+
+            RectTransform rect = EnsureRectTransform(btnGo);
+            rect.anchoredPosition = pos;
+            rect.sizeDelta = size;
+
+            Image img = btnGo.GetComponent<Image>() ?? btnGo.AddComponent<Image>();
+            img.sprite = LoadSprite("Frame_Card");
+            img.type = Image.Type.Sliced;
+            img.color = new Color(0.25f, 0.45f, 0.85f, 1.0f);
+
+            CreateLabel(rect, "Text", text, Vector2.zero, size, 22, TextAlignmentOptions.Center);
+        }
+
+        private static void CreateRelicCard(RectTransform parent, string name, string text, Vector2 pos)
+        {
+            Transform existing = parent.Find(name);
+            GameObject cardGo = existing != null ? existing.gameObject : new GameObject(name, typeof(RectTransform), typeof(Image), typeof(Button));
+            cardGo.transform.SetParent(parent, false);
+
+            RectTransform rect = EnsureRectTransform(cardGo);
+            rect.anchoredPosition = pos;
+            rect.sizeDelta = new Vector2(280, 380);
+
+            Image img = cardGo.GetComponent<Image>() ?? cardGo.AddComponent<Image>();
+            img.sprite = LoadSprite("Frame_Card");
+            img.type = Image.Type.Sliced;
+            img.color = ColorButtonBg;
+
+            AttachIcon(rect, "Icon", LoadSprite("Icon_Relic"), new Vector2(0, 80), new Vector2(80, 80));
+            CreateLabel(rect, "Text", text, new Vector2(0, -60), new Vector2(240, 120), 20, TextAlignmentOptions.Center);
+            CreateModalButton(rect, "SelectButton", "選択する", new Vector2(0, -130), new Vector2(200, 45));
+        }
+
+        private static void CreateShopItemCard(RectTransform parent, string name, string text, Vector2 pos)
+        {
+            CreateRelicCard(parent, name, text, pos);
+        }
+
+        private static void AttachIcon(Transform parent, string iconName, Sprite sprite, Vector2 anchoredPos, Vector2 size)
+        {
+            if (parent == null) return;
+            Transform existing = parent.Find(iconName);
+            GameObject iconGo = existing != null ? existing.gameObject : new GameObject(iconName, typeof(RectTransform), typeof(Image));
+            iconGo.transform.SetParent(parent, false);
+
+            RectTransform rect = EnsureRectTransform(iconGo);
+            rect.anchoredPosition = anchoredPos;
+            rect.sizeDelta = size;
+
+            Image img = iconGo.GetComponent<Image>() ?? iconGo.AddComponent<Image>();
+            if (sprite != null) img.sprite = sprite;
+            img.color = Color.white;
+            img.raycastTarget = false;
+        }
+
+        private static void CreateLabel(RectTransform parent, string name, string text, Vector2 pos, Vector2 size, float fontSize, TextAlignmentOptions alignment)
+        {
+            Transform existing = parent.Find(name);
+            GameObject labelGo = existing != null ? existing.gameObject : new GameObject(name, typeof(RectTransform), typeof(TextMeshProUGUI));
+            labelGo.transform.SetParent(parent, false);
+
+            RectTransform rect = EnsureRectTransform(labelGo);
+            rect.anchoredPosition = pos;
+            rect.sizeDelta = size;
+
+            TextMeshProUGUI tmp = labelGo.GetComponent<TextMeshProUGUI>() ?? labelGo.AddComponent<TextMeshProUGUI>();
+            tmp.text = text;
+            tmp.fontSize = fontSize;
+            tmp.alignment = alignment;
+            tmp.color = Color.white;
+            tmp.raycastTarget = false;
         }
 
         private static void RebindGameFlowControllerReferences(Transform canvasTr)
@@ -219,7 +418,7 @@ namespace Game.EditorScripts
 
             SerializedObject so = new SerializedObject(controller);
             SetViewProperty(so, "_statusView", canvasTr.Find("StatusPanel"));
-            SetViewProperty(so, "_commandButtonsView", canvasTr.Find("CommandButtonsPanel"));
+            SetViewProperty(so, "_commandButtonsView", canvasTr.Find("CommandPanel"));
             SetViewProperty(so, "_eventDialogView", canvasTr.Find("EventDialogPanel"));
             SetViewProperty(so, "_endingView", canvasTr.Find("EndingPanel"));
             SetViewProperty(so, "_relicDraftDialogView", canvasTr.Find("RelicDraftDialogPanel"));
@@ -234,12 +433,7 @@ namespace Game.EditorScripts
             SerializedProperty prop = so.FindProperty(propName);
             if (prop != null)
             {
-                Component view = tr.GetComponent(propName.TrimStart('_').Replace("View", "View").Replace("ButtonsView", "ButtonsView"));
-                if (view == null)
-                {
-                    // コンポーネント型に応じた取得
-                    view = tr.GetComponent<MonoBehaviour>();
-                }
+                Component view = tr.GetComponent<MonoBehaviour>();
                 if (view != null)
                 {
                     prop.objectReferenceValue = view;
