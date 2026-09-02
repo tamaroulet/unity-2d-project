@@ -21,23 +21,21 @@
 | **第3週 Step 9** | シーン結合 & アセット構成（MainGame.unity） | 完了（第3週全工程ゴール達成！🎉） | `be571a0` |
 | **監査事前補強** | イベント上限ulong拡張・フェーズガード修正 | 完了 | `154fa2e` |
 | **第4週 Step 10** | レリック（パッシブ能力）基盤（57/57テスト通過） | **完了 🎉** | `6681d5d` |
-| **第4週 Step 11** | レリック3択ドラフトUI & GameFlowController結合 | **次回対象（着手準備中）** | |
+| **第4週 Step 11** | レリック3択ドラフトUI & GameFlowController結合（63/63テスト通過） | **完了 🎉** | `HEAD` |
 
 ---
 
 ## 2. 次にやること
 
-1. **Step 11（レリック3択ドラフトUI & GameFlowController結合）の実装**:
-   - `RelicDraftDialogView.cs`（3枚のレリックを提示し、1枚選んで獲得するUI）
-   - `GameFlowController` への `RelicResolverSO` / `RelicCatalogSO` / `RelicAcquiredChannelSO` 統合
-   - ターン開始時・コマンド実行時・ターン終了時パッシブ効果の自動反映
-   - テストの追加 & 通し動作検証
+1. **Step 12 / 第5週（中間試練ボスシステム・戦闘フェーズ）の設計策定**:
+   - 20:50 の Claude 枠回復を待機し、Claude による「第5週 中間試練システム」の指示書・数学モデル設計を実施。
+   - Gemini によるシーンへの `RelicDraftDialogView` プレハブ配置と結合確認。
 
 ---
 
 ## 3. リソース管理・自律監視状態
 
 - **Claude Code 5h枠**: 100% 制限中（`invoke_claude_safe.ps1` により物理遮断中・課金防止）
-- **リセット予定時刻**: **20:50 JST**（残り約 8000 秒、`schedule` タイマー `task-1124` で自動起床予約済み）
-- **現在の開発モード**: Gemini (Antigravity) 単独による Step 11 実装・テスト進行中（費用 0円）
-- **EditMode テスト**: 57 / 57 passed（100% Green）
+- **リセット予定時刻**: **20:50 JST**（`schedule` タイマー `task-1124` で自動起床予約済み）
+- **現在の開発モード**: Gemini 単独実装（費用 0円）
+- **EditMode テスト**: **63 / 63 passed（100% Green）**

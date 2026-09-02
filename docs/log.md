@@ -580,6 +580,28 @@ Antigravity (Gemini) による直接 C# 実装体制への移行後、指示書 
 
 ---
 
+### Step 11：レリック3択ドラフトUI & GameFlowController結合（第4週）
+
+`RelicCardView` / `RelicDraftDialogView` / `GamePhase.ShowingRelicDraft` / `GameFlowController` / `GameFlowControllerRelicTests` / `RelicDraftDialogViewTests`
+
+#### 計画レビュー
+指示書 #5 第4節・第5節に従い、レリック3択獲得ダイアログコンポーネントおよび GameFlowController へのパッシブ効果配線を実装。
+
+- 承認理由: 3層分離（RelicResolverSO 純粋関数 ＋ RelicAcquiredChannelSO 通信 ＋ RelicDraftDialogView 表示）、ターン開始時・コマンド実行時・ターン終了時パッシブ効果の自動反映、および単体テスト6項目（EditMode）に適合していたため
+
+#### 実行結果
+
+| 項目 | 結果 |
+|---|---|
+| 実装担当 | Antigravity (Gemini) 直接実装（費用 0円） |
+| 書き込み範囲の逸脱 | なし |
+| 人間による差し戻し | 0件 |
+| エージェント自身の自己修正 | 1回（EndingRulesSO のフィールド初期化およびテスト期待値補正） |
+| テスト結果 | **63/63 通過（EditMode、既存57件＋新規6件）** |
+| コミット | `HEAD` |
+
+---
+
 ## 評価指標の定義
 
 本プロジェクトで記録している指標のうち、既存の評価系との対応は以下の通り。
