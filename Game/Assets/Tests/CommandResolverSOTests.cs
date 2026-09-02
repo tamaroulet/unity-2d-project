@@ -17,7 +17,7 @@ namespace Game.Tests.EditMode
         private static readonly CommandEffect Rest = new CommandEffect(30, 0, 10, 0);
 
         private CommandResolverSO _resolver;
-        private readonly List<Object> _createdObjects = new List<Object>();
+        private readonly List<UnityEngine.Object> _createdObjects = new List<UnityEngine.Object>();
 
         [SetUp]
         public void SetUp()
@@ -29,9 +29,9 @@ namespace Game.Tests.EditMode
         [TearDown]
         public void TearDown()
         {
-            foreach (Object createdObject in _createdObjects)
+            foreach (UnityEngine.Object createdObject in _createdObjects)
             {
-                Object.DestroyImmediate(createdObject);
+                UnityEngine.Object.DestroyImmediate(createdObject);
             }
 
             _createdObjects.Clear();

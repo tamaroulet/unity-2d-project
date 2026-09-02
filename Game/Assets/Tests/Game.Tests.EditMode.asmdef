@@ -9,6 +9,7 @@
         "Game.Features.Event",
         "Game.Features.Ending",
         "Game.Features.GameFlow",
+        "Game.Features.Relic",
         "Game.UI",
         "Unity.TextMeshPro",
         "UnityEngine.UI"

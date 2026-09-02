@@ -1,0 +1,17 @@
+{
+    "name": "Game.Features.Relic",
+    "rootNamespace": "Game.Features.Relic",
+    "references": [
+        "Game.Core",
+        "Game.Features.Command"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": false,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

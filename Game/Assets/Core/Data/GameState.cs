@@ -20,5 +20,11 @@ namespace Game.Core
         /// ulong（64ビット）とすることで、イベント ID 0〜63 まで扱える。
         /// </summary>
         public ulong FiredEventMask { get; init; }
+
+        /// <summary>
+        /// プレイヤーが現在所持しているレリックの ID 一覧。
+        /// </summary>
+        public System.Collections.Generic.IReadOnlyList<int> AcquiredRelicIds { get; init; } =
+            System.Array.Empty<int>();
     }
 }
