@@ -22,21 +22,23 @@
 | **監査事前補強** | イベント上限ulong拡張・フェーズガード修正 | 完了 | `154fa2e` |
 | **第4週 Step 10** | レリック（パッシブ能力）基盤（57/57テスト通過） | **完了 🎉** | `6681d5d` |
 | **第4週 Step 11** | レリック3択ドラフトUI & GameFlowController結合（64/64テスト通過） | **完了 🎉** | `HEAD` |
-| **第4週 アセット整備** | 基本レリック6点生成 & MainGameシーン結合 & 1000回シミュレーション | **完了 🎉** | `HEAD` |
+| **第5週 Step 12** | ボスデータ基盤（BossState, BossSO, BossCatalogSO） | **完了** | `HEAD` |
+| **第5週 Step 13** | オートバトルResolver（AutoBattleResolverSO, 84/84テスト通過） | **完了** | `HEAD` |
 
 ---
 
 ## 2. 次にやること
 
-1. **第5週（中間試練ボスシステム・戦闘フェーズ）の設計・C#実装（Claude 投入）**:
-   - 20:49 の Claude 枠回復後、満タンになった Claude で「第5週 中間ボス戦闘システム」の指示書・数学モデル・C#コアロジックをフル投入。
+1. **第5週 Step 14（GameFlowController への BossBattle 統合）**:
+   - `GamePhase.BossBattle` の進行ステートマシン配線、および戦闘結果に基づく分岐（撃破でパッシブドラフト、敗北でゲームオーバー）。
+2. **第5週 Step 15（BossBattleView UI 実装 & シーン結合）**:
+   - `BossBattleView` の作成、`MainGame.unity` シーンへの配置、Unity-MCP によるバインド確認。
 
 ---
 
 ## 3. リソース管理・自律監視状態
 
-- **Claude Code 週間枠**: **0% used（残り 100%・7日間）**
-- **Claude Code 5h枠**: 100% 制限中（`invoke_claude_safe.ps1` により物理遮断中・課金防止）
-- **リセット予定時刻**: **20:49 JST**（`schedule` タイマー `task-1124` で自動起床予約済み、残り約 33分）
-- **Gemini 利用枠**: 残り約 88%
-- **EditMode テスト**: **64 / 64 passed（100% Green）**
+- **Claude Code 週間枠**: **2% used（残り 98%・7日間）**
+- **Claude Code 5h枠**: **26% used（残り 74%）**
+- **Gemini 利用枠**: 残り **85.4%**
+- **EditMode テスト**: **84 / 84 passed（100% Green）**

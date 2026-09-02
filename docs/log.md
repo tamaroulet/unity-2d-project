@@ -661,6 +661,27 @@ Antigravity (Gemini) による直接 C# 実装体制への移行後、指示書 
 
 ---
 
+### Step 12 & 13：ボスデータ基盤 & オートバトルResolver（第5週）
+
+`Game.Features.Boss` / `BossState.cs` / `BossSO.cs` / `AutoBattleResolverSO.cs` / `AutoBattleResolverTests.cs`
+
+#### 計画レビュー
+`docs/instructions/06_boss_battle_system.md` および `GameDesignMaster.md` に基づき、オートバトラー形式のボス戦闘システム基盤を実装。
+- 承認理由: 3層分離（`AutoBattleResolverSO` 純粋関数 ＋ 不変レコード `BossState` / `BattleTurnResult` ＋ `Game.Features.Boss` 独立asmdef）、スタミナ＝AP・スキル＝ダメージ・メンタル＝シールド維持の計算式、および網羅的単体テスト（20件）に適合していたため。
+
+#### 実行結果
+
+| 項目 | 結果 |
+|---|---|
+| 実装担当 | Claude Code（設計精査・コアC#生成・テスト生成、消費率 26%） ＋ Antigravity / Gemini（Unity-MCP 検証） |
+| 書き込み範囲の逸脱 | なし |
+| 人間による差し戻し | 0件 |
+| エージェント自身の自己修正 | 0回 |
+| テスト結果 | **84/84 通過（EditMode、既存64件＋新規20件）** |
+| コミット | `HEAD` |
+
+---
+
 ## 評価指標の定義
 
 本プロジェクトで記録している指標のうち、既存の評価系との対応は以下の通り。

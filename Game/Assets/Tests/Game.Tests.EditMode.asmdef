@@ -10,6 +10,7 @@
         "Game.Features.Ending",
         "Game.Features.GameFlow",
         "Game.Features.Relic",
+        "Game.Features.Boss",
         "Game.UI",
         "Unity.TextMeshPro",
         "UnityEngine.UI"

@@ -101,6 +101,7 @@ Features/<機能名>/
 | `Game.Features.Event` | `Game.Core` | ランダム・条件付きイベント（`GameEventSO`, `GameEventCatalogSO`）および評価解決（`EventResolverSO`） |
 | `Game.Features.Ending` | `Game.Core` | エンディング定義（`EndingRuleSO`, `EndingRulesSO`）および判定解決（`EndingResolverSO`） |
 | `Game.Features.Relic` | `Game.Core`, `Game.Features.Command` | レリック（パッシブ能力）定義（`RelicSO`, `RelicCatalogSO`）および効果合成純粋関数（`RelicResolverSO`） |
+| `Game.Features.Boss` | `Game.Core`, `Game.Features.Command`, `Game.Features.Relic` | ボス定義（`BossSO`, `BossCatalogSO`）、不変戦闘状態（`BossState`）および1ターン自動解決純粋関数（`AutoBattleResolverSO`） |
 | `Game.Features.GameFlow` | `Game.Core`, `Game.Features.Command`, `Game.Features.Event`, `Game.Features.Ending`, `Game.Features.Relic` | ゲーム進行ステートマシン MonoBehaviour（`GameFlowController`） |
 | `Game.UI` | `Game.Core`, `Game.Features.Command`, `Game.Features.GameFlow`, `Game.Features.Relic`, `Unity.TextMeshPro`, `UnityEngine.UI` | 表示・入力ビューコンポーネント群（`StatusView`, `CommandButtonView`, `EventDialogView`, `EndingView`, `RelicDraftDialogView`） |
 | `Game.Tests.EditMode` | 上記全アセンブリ, `UnityEngine.TestRunner`, `UnityEditor.TestRunner` | NUnit 単体テスト群（100% Green 維持） |
