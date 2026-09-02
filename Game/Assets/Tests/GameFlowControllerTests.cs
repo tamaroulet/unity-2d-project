@@ -250,7 +250,7 @@ namespace Game.Tests.EditMode
             GameFlowController controller = CreateController(rules, catalog);
             SetField(controller, "_bossCatalog", bossCatalog);
             SetField(controller, "_autoBattleResolver", autoBattleResolver);
-            SetField(controller, "_bossBattleTurn", 12);
+            SetField(controller, "_bossBattleTurns", new List<int> { 12 });
 
             controller.StartGame();
 
@@ -284,12 +284,53 @@ namespace Game.Tests.EditMode
             GameFlowController controller = CreateController(rules, catalog);
             SetField(controller, "_bossCatalog", bossCatalog);
             SetField(controller, "_autoBattleResolver", autoBattleResolver);
-            SetField(controller, "_bossBattleTurn", 12);
+            SetField(controller, "_bossBattleTurns", new List<int> { 12 });
 
             controller.StartGame();
 
             Assert.AreEqual(GamePhase.GameOver, controller.CurrentPhase);
             Assert.AreEqual(0, controller.CurrentState.Stamina);
+        }
+
+        [Test]
+        public void StartGame_ProgressesThroughAllFourActs_DefeatsAllBossesAndReachesGameClear()
+        {
+            // Act 1〜4（Turn 6/12/18/24）のボス戦が順番に発生し、
+            // 4体すべてを撃破して周回がクリアに到達することを検証する。
+            GameRulesSO rules = CreateRules(0, 999, 500, 100, 500, 1, 24);
+            GameEventCatalogSO catalog = CreateCatalog(0, 999);
+
+            BossCatalogSO bossCatalog = CreateFourActBossCatalog();
+
+            AutoBattleResolverSO autoBattleResolver = ScriptableObject.CreateInstance<AutoBattleResolverSO>();
+            _createdObjects.Add(autoBattleResolver);
+
+            GameFlowController controller = CreateController(rules, catalog);
+            SetField(controller, "_bossCatalog", bossCatalog);
+            SetField(controller, "_autoBattleResolver", autoBattleResolver);
+            SetField(controller, "_bossBattleTurns", new List<int> { 6, 12, 18, 24 });
+
+            controller.StartGame();
+            CommandDataSO rest = CreateCommand("Rest", staminaDelta: 50, skillDelta: 0, mentalDelta: 0, staminaCost: 0);
+
+            for (int i = 0;
+                i < 30 && controller.CurrentPhase != GamePhase.GameClear && controller.CurrentPhase != GamePhase.GameOver;
+                i++)
+            {
+                if (controller.CurrentPhase == GamePhase.ShowingRelicDraft)
+                {
+                    // このテストではドラフト内容自体は無関係なため、適当な ID でドラフトを閉じる。
+                    controller.OnRelicAcquired(i + 100);
+                }
+
+                if (controller.CurrentPhase == GamePhase.WaitingInput)
+                {
+                    controller.ExecuteCommand(rest);
+                }
+            }
+
+            Assert.AreEqual(GamePhase.GameClear, controller.CurrentPhase);
+            Assert.AreEqual(4, controller.BossDefeatedCount, "Act 1〜4 の全ボスを撃破していること");
         }
 
         [Test]
@@ -402,6 +443,45 @@ namespace Game.Tests.EditMode
             SetField(command, "_staminaCost", staminaCost);
             _createdObjects.Add(command);
             return command;
+        }
+
+        /// <summary>
+        /// Boss_Act1_01〜Boss_Act4_01（BossId 1〜4）を保持する BossCatalogSO を組み立てる。
+        /// 数値は BossAssetGenerator が生成する実アセットの値と揃えている。
+        /// </summary>
+        private BossCatalogSO CreateFourActBossCatalog()
+        {
+            (int id, string name, int hp, int atk, int mentalPressure, int shield, float mul)[] specs =
+            {
+                (1, "Boss_Act1_01", 80, 15, 10, 5, 1.5f),
+                (2, "Boss_Act2_01", 140, 22, 15, 10, 1.8f),
+                (3, "Boss_Act3_01", 220, 30, 20, 15, 2.0f),
+                (4, "Boss_Act4_01", 320, 40, 25, 20, 2.2f),
+            };
+
+            List<BossSO> bosses = new List<BossSO>();
+            foreach ((int id, string name, int hp, int atk, int mentalPressure, int shield, float mul) in specs)
+            {
+                BossSO boss = ScriptableObject.CreateInstance<BossSO>();
+                _createdObjects.Add(boss);
+                SetField(boss, "_bossId", id);
+                SetField(boss, "_bossName", name);
+                SetField(boss, "_maxHp", hp);
+                SetField(boss, "_attackPower", atk);
+                SetField(boss, "_mentalPressurePower", mentalPressure);
+                SetField(boss, "_guardShieldAmount", shield);
+                SetField(boss, "_specialAttackMultiplier", mul);
+                SetField(boss, "_actionPattern", new List<BossActionKind>
+                {
+                    BossActionKind.Attack, BossActionKind.MentalPressure, BossActionKind.Guard, BossActionKind.SpecialAttack
+                });
+                bosses.Add(boss);
+            }
+
+            BossCatalogSO catalog = ScriptableObject.CreateInstance<BossCatalogSO>();
+            _createdObjects.Add(catalog);
+            SetField(catalog, "_bosses", bosses);
+            return catalog;
         }
 
         private TChannel CreateChannel<TChannel, TValue>(Action<TValue> onRaised)

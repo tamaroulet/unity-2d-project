@@ -36,9 +36,19 @@ namespace Game.EditorScripts
                 SerializedObject so = new SerializedObject(flowController);
                 so.FindProperty("_bossCatalog").objectReferenceValue = catalog;
                 so.FindProperty("_autoBattleResolver").objectReferenceValue = resolver;
-                so.FindProperty("_bossBattleTurn").intValue = 12;
+
+                // Act 1〜4 のボスバトル発生ターン（BossCatalog 内の BossId 1〜4 に対応する）
+                int[] bossBattleTurns = { 6, 12, 18, 24 };
+                SerializedProperty turnsProp = so.FindProperty("_bossBattleTurns");
+                turnsProp.ClearArray();
+                turnsProp.arraySize = bossBattleTurns.Length;
+                for (int i = 0; i < bossBattleTurns.Length; i++)
+                {
+                    turnsProp.GetArrayElementAtIndex(i).intValue = bossBattleTurns[i];
+                }
+
                 so.ApplyModifiedProperties();
-                Debug.Log("[BossSceneBinder] GameFlowController bound with Boss assets.");
+                Debug.Log("[BossSceneBinder] GameFlowController bound with Boss assets (Act 1-4, Turn 6/12/18/24).");
             }
 
             // 2. Canvas 配下に BossBattleDialogPanel を配置

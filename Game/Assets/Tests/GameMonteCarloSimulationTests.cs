@@ -1,6 +1,7 @@
 // SPDX-AI-Disclosure: ai-generated
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
 using Game.Core;
 using Game.Features.Boss;
@@ -121,20 +122,8 @@ namespace Game.Tests.EditMode
             RelicResolverSO relicResolver = ScriptableObject.CreateInstance<RelicResolverSO>();
             _createdObjects.Add(relicResolver);
 
-            BossSO boss = ScriptableObject.CreateInstance<BossSO>();
-            _createdObjects.Add(boss);
-            SetField(boss, "_bossId", 1);
-            SetField(boss, "_bossName", "Boss_Act1_01");
-            SetField(boss, "_maxHp", 80);
-            SetField(boss, "_attackPower", 15);
-            SetField(boss, "_mentalPressurePower", 10);
-            SetField(boss, "_guardShieldAmount", 5);
-            SetField(boss, "_specialAttackMultiplier", 1.5f);
-            SetField(boss, "_actionPattern", new List<BossActionKind> { BossActionKind.Attack, BossActionKind.MentalPressure, BossActionKind.Guard });
-
-            BossCatalogSO bossCatalog = ScriptableObject.CreateInstance<BossCatalogSO>();
-            _createdObjects.Add(bossCatalog);
-            SetField(bossCatalog, "_bosses", new List<BossSO> { boss });
+            // Act 1〜4（Turn 6/12/18/24）に対応する BossId 1〜4 のカタログを組み立てる。
+            BossCatalogSO bossCatalog = CreateFourActBossCatalog();
 
             AutoBattleResolverSO autoBattleResolver = ScriptableObject.CreateInstance<AutoBattleResolverSO>();
             _createdObjects.Add(autoBattleResolver);
@@ -148,11 +137,11 @@ namespace Game.Tests.EditMode
                 GameFlowController controller = CreateController(rules, catalog, relicResolver);
                 SetField(controller, "_bossCatalog", bossCatalog);
                 SetField(controller, "_autoBattleResolver", autoBattleResolver);
-                SetField(controller, "_bossBattleTurn", 12);
+                SetField(controller, "_bossBattleTurns", new List<int> { 6, 12, 18, 24 });
 
                 controller.StartGame();
 
-                for (int t = 0; t < 30; t++)
+                for (int t = 0; t < 40; t++)
                 {
                     if (controller.CurrentPhase == GamePhase.GameClear || controller.CurrentPhase == GamePhase.GameOver)
                     {
@@ -166,7 +155,7 @@ namespace Game.Tests.EditMode
 
                     if (controller.CurrentPhase == GamePhase.ShowingRelicDraft)
                     {
-                        // ボス撃破後のドラフトでレリック獲得
+                        // ボス撃破後のドラフトでレリック獲得（Act 1〜4 の撃破ごとに最大4回発生する）
                         controller.OnRelicAcquired(rand.Next(1, 3));
                     }
 
@@ -192,8 +181,8 @@ namespace Game.Tests.EditMode
                 }
             }
 
-            Assert.AreEqual(1000, clearCount + gameOverCount, "ボス戦を含む1000回シミュレーションが全て正常終了すること");
-            Debug.Log($"[MonteCarlo Boss] 1,000 Runs With Boss Battle: Clear={clearCount}, GameOver={gameOverCount}");
+            Assert.AreEqual(1000, clearCount + gameOverCount, "Act 1〜4 のボス戦を含む1000回シミュレーションが全て正常終了すること");
+            Debug.Log($"[MonteCarlo Boss] 1,000 Runs With Boss Battle (Act 1-4): Clear={clearCount}, GameOver={gameOverCount}");
         }
 
         [Test]
@@ -211,20 +200,8 @@ namespace Game.Tests.EditMode
             RelicResolverSO relicResolver = ScriptableObject.CreateInstance<RelicResolverSO>();
             _createdObjects.Add(relicResolver);
 
-            BossSO boss = ScriptableObject.CreateInstance<BossSO>();
-            _createdObjects.Add(boss);
-            SetField(boss, "_bossId", 1);
-            SetField(boss, "_bossName", "Boss_Act1_01");
-            SetField(boss, "_maxHp", 80);
-            SetField(boss, "_attackPower", 15);
-            SetField(boss, "_mentalPressurePower", 10);
-            SetField(boss, "_guardShieldAmount", 5);
-            SetField(boss, "_specialAttackMultiplier", 1.5f);
-            SetField(boss, "_actionPattern", new List<BossActionKind> { BossActionKind.Attack, BossActionKind.MentalPressure, BossActionKind.Guard });
-
-            BossCatalogSO bossCatalog = ScriptableObject.CreateInstance<BossCatalogSO>();
-            _createdObjects.Add(bossCatalog);
-            SetField(bossCatalog, "_bosses", new List<BossSO> { boss });
+            // Act 1〜4（Turn 6/12/18/24）に対応する BossId 1〜4 のカタログを組み立てる。
+            BossCatalogSO bossCatalog = CreateFourActBossCatalog();
 
             AutoBattleResolverSO autoBattleResolver = ScriptableObject.CreateInstance<AutoBattleResolverSO>();
             _createdObjects.Add(autoBattleResolver);
@@ -253,7 +230,7 @@ namespace Game.Tests.EditMode
             GameFlowController controller = CreateController(rules, catalog, relicResolver);
             SetField(controller, "_bossCatalog", bossCatalog);
             SetField(controller, "_autoBattleResolver", autoBattleResolver);
-            SetField(controller, "_bossBattleTurn", 12);
+            SetField(controller, "_bossBattleTurns", new List<int> { 6, 12, 18, 24 });
             SetField(controller, "_metaPointResolver", metaResolver);
             SetField(controller, "_metaUnlockCatalog", metaCatalog);
 
@@ -275,7 +252,7 @@ namespace Game.Tests.EditMode
 
                 controller.StartGame();
 
-                for (int t = 0; t < 30; t++)
+                for (int t = 0; t < 40; t++)
                 {
                     if (controller.CurrentPhase == GamePhase.GameClear || controller.CurrentPhase == GamePhase.GameOver)
                     {
@@ -364,6 +341,44 @@ namespace Game.Tests.EditMode
             SetField(cat, "_relics", new List<RelicSO>(relics));
             _createdObjects.Add(cat);
             return cat;
+        }
+
+        /// <summary>
+        /// Boss_Act1_01〜Boss_Act4_01（BossId 1〜4）を保持する BossCatalogSO を組み立てる。
+        /// 数値は BossAssetGenerator が生成する実アセットの値と揃えている。
+        /// </summary>
+        private BossCatalogSO CreateFourActBossCatalog()
+        {
+            (int id, string name, int hp, int atk, int mentalPressure, int shield, float mul)[] specs =
+            {
+                (1, "Boss_Act1_01", 80, 15, 10, 5, 1.5f),
+                (2, "Boss_Act2_01", 140, 22, 15, 10, 1.8f),
+                (3, "Boss_Act3_01", 220, 30, 20, 15, 2.0f),
+                (4, "Boss_Act4_01", 320, 40, 25, 20, 2.2f),
+            };
+
+            List<BossSO> bosses = specs.Select(spec =>
+            {
+                BossSO boss = ScriptableObject.CreateInstance<BossSO>();
+                _createdObjects.Add(boss);
+                SetField(boss, "_bossId", spec.id);
+                SetField(boss, "_bossName", spec.name);
+                SetField(boss, "_maxHp", spec.hp);
+                SetField(boss, "_attackPower", spec.atk);
+                SetField(boss, "_mentalPressurePower", spec.mentalPressure);
+                SetField(boss, "_guardShieldAmount", spec.shield);
+                SetField(boss, "_specialAttackMultiplier", spec.mul);
+                SetField(boss, "_actionPattern", new List<BossActionKind>
+                {
+                    BossActionKind.Attack, BossActionKind.MentalPressure, BossActionKind.Guard, BossActionKind.SpecialAttack
+                });
+                return boss;
+            }).ToList();
+
+            BossCatalogSO catalog = ScriptableObject.CreateInstance<BossCatalogSO>();
+            _createdObjects.Add(catalog);
+            SetField(catalog, "_bosses", bosses);
+            return catalog;
         }
 
         private GameFlowController CreateController(GameRulesSO rules, RelicCatalogSO catalog, RelicResolverSO relicResolver)

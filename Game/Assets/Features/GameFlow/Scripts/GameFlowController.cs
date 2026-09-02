@@ -34,7 +34,13 @@ namespace Game.Features.GameFlow
         [SerializeField] private RelicAcquiredChannelSO _relicAcquiredChannel;
         [SerializeField] private BossCatalogSO _bossCatalog;
         [SerializeField] private AutoBattleResolverSO _autoBattleResolver;
-        [SerializeField] private int _bossBattleTurn = 12;
+
+        /// <summary>
+        /// ボスバトルを起動するターン番号のリスト（Act 順）。
+        /// リストの i 番目の要素で戦うボスは BossCatalogSO 内の BossId == i + 1 のもの
+        /// （例: 既定値 {6, 12, 18, 24} は Act 1〜4 が Boss_Act1_01〜Boss_Act4_01 に対応する）。
+        /// </summary>
+        [SerializeField] private List<int> _bossBattleTurns = new List<int> { 6, 12, 18, 24 };
         [SerializeField] private MetaPointResolverSO _metaPointResolver;
         [SerializeField] private MetaUnlockCatalogSO _metaUnlockCatalog;
 
@@ -53,6 +59,8 @@ namespace Game.Features.GameFlow
         public MetaProfileState MetaProfile => _metaProfile;
 
         public int BossDefeatedCount => _bossDefeatedCount;
+
+        public IReadOnlyList<int> BossBattleTurns => _bossBattleTurns;
 
         private void OnEnable()
         {
@@ -167,9 +175,14 @@ namespace Game.Features.GameFlow
                 _gameStateChannel.Raise(_currentState);
             }
 
-            if (_autoBattleResolver != null && _bossCatalog != null && _currentState.CurrentTurn == _bossBattleTurn)
+            int actIndex = _autoBattleResolver != null && _bossCatalog != null && _bossBattleTurns != null
+                ? _bossBattleTurns.IndexOf(_currentState.CurrentTurn)
+                : -1;
+
+            if (actIndex >= 0)
             {
-                BossSO boss = _bossCatalog.FindById(1);
+                int bossId = actIndex + 1;
+                BossSO boss = _bossCatalog.FindById(bossId);
                 if (boss != null)
                 {
                     _currentPhase = GamePhase.BossBattle;

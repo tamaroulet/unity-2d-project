@@ -14,3 +14,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: Game.Features.Boss::Game.Features.Boss.BossCatalogSO
   _bosses:
   - {fileID: 11400000, guid: 2be141eb8554d74449c055d055ab6337, type: 2}
+  - {fileID: 11400000, guid: 461a3b7de743896468f059d7ffcd9c45, type: 2}
+  - {fileID: 11400000, guid: 7fd1464e8165b7e4c9a0768a8ca0dcc5, type: 2}
+  - {fileID: 11400000, guid: 018e2c1712643ac46984d71a45926e50, type: 2}
