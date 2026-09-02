@@ -504,6 +504,29 @@ Unity-MCP 経由で前提アセット（`Assets/UI/Scripts/` フォルダ、`Gam
 
 ---
 
+### Step 9：シーン構築 & アセット結合（第3週完了）
+
+`Assets/Data/`（ScriptableObject アセット10点） / `Assets/Scenes/MainGame.unity`
+
+#### 計画レビュー
+
+Unity-MCP を用いて、第1週〜第3週で作成した全ドメインロジック、通信層、ステートマシン、UI ビューを `MainGame.unity` シーンおよび ScriptableObject アセット群として自動構成・バインドした。
+
+- 承認理由: 指示書 #4 第5節の要件（MainGame シーン構成、全 SO アセットの生成とインスペクター参照バインド、EditMode 全テスト通過）に完全に適合していたため
+
+#### 実行結果
+
+| 項目 | 結果 |
+|---|---|
+| 使用ツール | Unity-MCP（`manage_scriptable_object`, `manage_gameobject`, `manage_components`, `manage_scene`） |
+| 書き込み範囲の逸脱 | なし（指定のアセット・シーンのみ作成） |
+| 人間による差し戻し | 0件 |
+| エージェント自身の自己修正 | 0回 |
+| テスト結果 | 47/47 通過（EditMode） |
+| コミット | `be571a0` |
+
+---
+
 ## 評価指標の定義
 
 本プロジェクトで記録している指標のうち、既存の評価系との対応は以下の通り。
