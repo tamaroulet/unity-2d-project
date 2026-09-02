@@ -104,6 +104,7 @@ namespace Game.UI
         /// </summary>
         private void OnCommandClick()
         {
+            EnsureReferences();
             Debug.Log($"[CommandButtonView] Clicked button for command: {(_command != null ? _command.name : "null")}");
 
             if (_command == null || _gameFlowController == null)
@@ -113,6 +114,12 @@ namespace Game.UI
             }
 
             _gameFlowController.ExecuteCommand(_command);
+
+            StatusView statusView = Object.FindFirstObjectByType<StatusView>();
+            if (statusView != null && _gameFlowController.CurrentState != null)
+            {
+                statusView.OnGameStateChanged(_gameFlowController.CurrentState);
+            }
         }
 
         /// <summary>

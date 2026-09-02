@@ -1,5 +1,6 @@
 // SPDX-AI-Disclosure: ai-generated
 using Game.Core;
+using Game.Features.GameFlow;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -35,9 +36,40 @@ namespace Game.UI
             EnsureReferences();
         }
 
+        private void Start()
+        {
+            EnsureReferences();
+            SyncFromFlowController();
+        }
+
+        private void Update()
+        {
+            if (Application.isPlaying)
+            {
+                SyncFromFlowController();
+            }
+        }
+
+        private void SyncFromFlowController()
+        {
+            GameFlowController controller = Object.FindFirstObjectByType<GameFlowController>();
+            if (controller != null && controller.CurrentState != null)
+            {
+                if (LastDisplayedState == null ||
+                    LastDisplayedState.CurrentTurn != controller.CurrentState.CurrentTurn ||
+                    LastDisplayedState.Stamina != controller.CurrentState.Stamina ||
+                    LastDisplayedState.Skill != controller.CurrentState.Skill ||
+                    LastDisplayedState.Mental != controller.CurrentState.Mental)
+                {
+                    OnGameStateChanged(controller.CurrentState);
+                }
+            }
+        }
+
         private void OnEnable()
         {
             EnsureReferences();
+            SyncFromFlowController();
             if (_gameStateChannel != null)
             {
                 _gameStateChannel.OnEventRaised += OnGameStateChanged;

@@ -85,7 +85,6 @@ namespace Game.Features.GameFlow
         public void EnsureDependencies()
         {
 #if UNITY_EDITOR
-            if (!Application.isPlaying) return;
             if (_gameRules == null) _gameRules = UnityEditor.AssetDatabase.LoadAssetAtPath<GameRulesSO>("Assets/Data/Rules/GameRules.asset");
             if (_commandResolver == null) _commandResolver = UnityEditor.AssetDatabase.LoadAssetAtPath<CommandResolverSO>("Assets/Data/Commands/CommandResolver.asset");
             if (_eventCatalog == null) _eventCatalog = UnityEditor.AssetDatabase.LoadAssetAtPath<GameEventCatalogSO>("Assets/Data/Events/GameEventCatalog.asset");
@@ -125,6 +124,11 @@ namespace Game.Features.GameFlow
             }
         }
 
+        private void NotifyStateChanged()
+        {
+            _gameStateChannel?.Raise(_currentState);
+        }
+
         /// <summary>
         /// GameRulesSO から初期状態を生成して通知し、最初のターンを開始する。
         /// アンロック済みの初期ステータス底上げがあれば適用する。
@@ -147,7 +151,7 @@ namespace Game.Features.GameFlow
                 ? _metaPointResolver.ApplyUnlockedStatBonuses(baseState, _metaProfile, _metaUnlockCatalog, _gameRules)
                 : baseState;
 
-            _gameStateChannel?.Raise(_currentState);
+            NotifyStateChanged();
 
             Debug.Log($"[GameFlowController] Game Started! Initial State: Turn={_currentState.CurrentTurn}, Stamina={_currentState.Stamina}, Skill={_currentState.Skill}, Mental={_currentState.Mental}");
 
@@ -198,7 +202,7 @@ namespace Game.Features.GameFlow
             }
 
             _currentState = result.State;
-            _gameStateChannel?.Raise(_currentState);
+            NotifyStateChanged();
 
             if (_currentPhase != GamePhase.TurnEnd)
             {
@@ -218,7 +222,7 @@ namespace Game.Features.GameFlow
             if (_relicResolver != null && _activeRelics.Count > 0)
             {
                 _currentState = _relicResolver.ApplyTurnEndRelics(_currentState, _activeRelics, _gameRules);
-                _gameStateChannel?.Raise(_currentState);
+                NotifyStateChanged();
             }
 
             TerminationKind termination = TurnRules.EvaluateTermination(_currentState, _gameRules.MaxTurn);
@@ -254,7 +258,7 @@ namespace Game.Features.GameFlow
             if (_relicResolver != null && _activeRelics.Count > 0)
             {
                 _currentState = _relicResolver.ApplyTurnStartRelics(_currentState, _activeRelics, _gameRules);
-                _gameStateChannel?.Raise(_currentState);
+                NotifyStateChanged();
             }
 
             int actIndex = _autoBattleResolver != null && _bossCatalog != null && _bossBattleTurns != null && _currentState.CurrentTurn >= 6
@@ -272,7 +276,7 @@ namespace Game.Features.GameFlow
                         _currentState, boss, _activeRelics, _gameRules);
 
                     _currentState = battleResult.FinalPlayerState;
-                    _gameStateChannel?.Raise(_currentState);
+                    NotifyStateChanged();
 
                     if (battleResult.Outcome == BattleOutcomeKind.Victory)
                     {
@@ -297,7 +301,7 @@ namespace Game.Features.GameFlow
                 {
                     _currentState = eventResult.State;
                     _currentPhase = GamePhase.ShowingEvent;
-                    _gameStateChannel?.Raise(_currentState);
+                    NotifyStateChanged();
                     _eventFiredChannel?.Raise(eventResult.FiredEvent.EventId);
                     return;
                 }
