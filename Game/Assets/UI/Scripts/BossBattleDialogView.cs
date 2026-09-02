@@ -40,6 +40,15 @@ namespace Game.UI
             if (_bossHpText == null) _bossHpText = transform.Find("PanelRoot/BossHpGroup/Label")?.GetComponent<TextMeshProUGUI>();
             if (_shieldText == null) _shieldText = transform.Find("PanelRoot/BossShieldGroup/Label")?.GetComponent<TextMeshProUGUI>();
             if (_dismissButton == null) _dismissButton = transform.Find("PanelRoot/AutoBattleNextButton")?.GetComponent<Button>();
+
+            if (_dismissButton != null)
+            {
+                TextMeshProUGUI btnText = _dismissButton.GetComponentInChildren<TextMeshProUGUI>();
+                if (btnText != null)
+                {
+                    btnText.text = "AUTO BATTLE / NEXT";
+                }
+            }
         }
 
         private void OnEnable()
@@ -92,7 +101,18 @@ namespace Game.UI
 
             if (_bossNameText != null)
             {
-                _bossNameText.text = boss != null ? boss.BossName : "Boss";
+                _bossNameText.text = boss != null ? boss.BossName : "BOSS BATTLE";
+            }
+
+            if (_dismissButton != null)
+            {
+                TextMeshProUGUI btnText = _dismissButton.GetComponentInChildren<TextMeshProUGUI>();
+                if (btnText != null)
+                {
+                    btnText.text = battleResult != null && battleResult.Outcome == BattleOutcomeKind.Victory
+                        ? "VICTORY / NEXT ACT"
+                        : "DEFEAT / RESTART";
+                }
             }
 
             if (battleResult != null)
