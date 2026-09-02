@@ -20,6 +20,9 @@ namespace Game.UI
         [SerializeField] private Slider _staminaGauge;
         [SerializeField] private Slider _skillGauge;
         [SerializeField] private Slider _mentalGauge;
+        [SerializeField] private RectTransform _staminaBarFill;
+        [SerializeField] private RectTransform _skillBarFill;
+        [SerializeField] private RectTransform _mentalBarFill;
 
         /// <summary>
         /// 直近に受信した GameState。TMP Essential Resources 未インポート環境では
@@ -27,12 +30,40 @@ namespace Game.UI
         /// </summary>
         public GameState LastDisplayedState { get; private set; }
 
+        private void Awake()
+        {
+            EnsureReferences();
+        }
+
         private void OnEnable()
         {
+            EnsureReferences();
             if (_gameStateChannel != null)
             {
                 _gameStateChannel.OnEventRaised += OnGameStateChanged;
             }
+        }
+
+        private void EnsureReferences()
+        {
+#if UNITY_EDITOR
+            if (!Application.isPlaying) return;
+            if (_gameStateChannel == null)
+            {
+                _gameStateChannel = UnityEditor.AssetDatabase.LoadAssetAtPath<GameStateEventChannelSO>("Assets/Data/Channels/GameStateEventChannel.asset");
+            }
+#endif
+            if (_turnText == null) _turnText = transform.Find("TurnText")?.GetComponent<TextMeshProUGUI>();
+            if (_staminaText == null) _staminaText = transform.Find("StaminaGroup/Label")?.GetComponent<TextMeshProUGUI>();
+            if (_skillText == null) _skillText = transform.Find("SkillGroup/Label")?.GetComponent<TextMeshProUGUI>();
+            if (_mentalText == null) _mentalText = transform.Find("MentalGroup/Label")?.GetComponent<TextMeshProUGUI>();
+            if (_staminaGauge == null) _staminaGauge = transform.Find("StaminaGroup")?.GetComponent<Slider>();
+            if (_skillGauge == null) _skillGauge = transform.Find("SkillGroup")?.GetComponent<Slider>();
+            if (_mentalGauge == null) _mentalGauge = transform.Find("MentalGroup")?.GetComponent<Slider>();
+
+            if (_staminaBarFill == null) _staminaBarFill = transform.Find("StaminaGroup/BarBg/BarFill")?.GetComponent<RectTransform>();
+            if (_skillBarFill == null) _skillBarFill = transform.Find("SkillGroup/BarBg/BarFill")?.GetComponent<RectTransform>();
+            if (_mentalBarFill == null) _mentalBarFill = transform.Find("MentalGroup/BarBg/BarFill")?.GetComponent<RectTransform>();
         }
 
         private void OnDisable()
@@ -77,6 +108,10 @@ namespace Game.UI
             SetGauge(_staminaGauge, state.Stamina);
             SetGauge(_skillGauge, state.Skill);
             SetGauge(_mentalGauge, state.Mental);
+
+            SetBarFill(_staminaBarFill, (float)state.Stamina / 100f);
+            SetBarFill(_skillBarFill, (float)Mathf.Clamp(state.Skill, 0, 100) / 100f);
+            SetBarFill(_mentalBarFill, (float)state.Mental / 100f);
         }
 
         private static void SetGauge(Slider gauge, int value)
@@ -84,6 +119,17 @@ namespace Game.UI
             if (gauge != null)
             {
                 gauge.value = value;
+            }
+        }
+
+        private static void SetBarFill(RectTransform barFill, float ratio)
+        {
+            if (barFill != null)
+            {
+                float clampedRatio = Mathf.Clamp01(ratio);
+                barFill.anchorMin = Vector2.zero;
+                barFill.anchorMax = new Vector2(clampedRatio, 1f);
+                barFill.sizeDelta = Vector2.zero;
             }
         }
     }

@@ -30,14 +30,37 @@ namespace Game.UI
         /// </summary>
         public int DisplayedCost => _command != null ? _command.Effect.StaminaCost : 0;
 
+        private void Awake()
+        {
+            EnsureReferences();
+        }
+
         private void OnEnable()
         {
+            EnsureReferences();
             RefreshLabel();
 
             if (_button != null)
             {
+                _button.onClick.RemoveListener(OnCommandClick);
                 _button.onClick.AddListener(OnCommandClick);
             }
+        }
+
+        private void EnsureReferences()
+        {
+            if (_button == null) _button = GetComponent<Button>();
+            if (_nameText == null) _nameText = transform.Find("Text")?.GetComponent<TextMeshProUGUI>();
+            if (_gameFlowController == null) _gameFlowController = Object.FindFirstObjectByType<GameFlowController>();
+
+#if UNITY_EDITOR
+            if (_command == null)
+            {
+                if (name.Contains("Study")) _command = UnityEditor.AssetDatabase.LoadAssetAtPath<CommandDataSO>("Assets/Data/Commands/Study.asset");
+                else if (name.Contains("Train")) _command = UnityEditor.AssetDatabase.LoadAssetAtPath<CommandDataSO>("Assets/Data/Commands/Train.asset");
+                else if (name.Contains("Rest")) _command = UnityEditor.AssetDatabase.LoadAssetAtPath<CommandDataSO>("Assets/Data/Commands/Rest.asset");
+            }
+#endif
         }
 
         private void OnDisable()

@@ -65,27 +65,28 @@ namespace Game.Tests.EditMode
                 GameFlowController controller = CreateController(rules, catalog, relicResolver);
                 controller.StartGame();
 
-                // 24ターン分シミュレーション
-                for (int t = 0; t < 30; t++)
+                // 24ターン分確実に完走するまで実行
+                int guard = 0;
+                while (controller.CurrentPhase != GamePhase.GameClear && controller.CurrentPhase != GamePhase.GameOver && guard++ < 300)
                 {
-                    if (controller.CurrentPhase == GamePhase.GameClear || controller.CurrentPhase == GamePhase.GameOver)
-                    {
-                        break;
-                    }
-
                     if (controller.CurrentPhase == GamePhase.ShowingEvent)
                     {
                         controller.OnEventDismissed();
                     }
 
+                    if (controller.CurrentPhase == GamePhase.ShowingRelicDraft)
+                    {
+                        controller.OnRelicAcquired(rand.Next(1, 3));
+                    }
+
                     if (controller.CurrentPhase == GamePhase.WaitingInput)
                     {
-                        // ランダムにコマンドを選択（実行可能なものから選択）
                         CommandDataSO chosen = commands[rand.Next(commands.Length)];
+                        int turnBefore = controller.CurrentState.CurrentTurn;
                         controller.ExecuteCommand(chosen);
 
-                        // 実行不可だった場合は休養
-                        if (controller.CurrentPhase == GamePhase.WaitingInput)
+                        // 実行不可（ターンが進まなかった）だった場合は休養
+                        if (controller.CurrentPhase == GamePhase.WaitingInput && controller.CurrentState.CurrentTurn == turnBefore)
                         {
                             controller.ExecuteCommand(rest);
                         }
@@ -100,6 +101,13 @@ namespace Game.Tests.EditMode
                 else if (controller.CurrentPhase == GamePhase.GameOver)
                 {
                     gameOverCount++;
+                }
+                else
+                {
+                    if (run < 3)
+                    {
+                        Debug.LogError($"[MonteCarlo Diagnostic] Run {run} stopped at Phase: {controller.CurrentPhase}, Turn: {controller.CurrentState.CurrentTurn}, Stamina: {controller.CurrentState.Stamina}, Mental: {controller.CurrentState.Mental}, Guard: {guard}");
+                    }
                 }
             }
 
@@ -141,13 +149,10 @@ namespace Game.Tests.EditMode
 
                 controller.StartGame();
 
-                for (int t = 0; t < 40; t++)
+                // 24ターン分確実に完走するまで実行
+                int guard = 0;
+                while (controller.CurrentPhase != GamePhase.GameClear && controller.CurrentPhase != GamePhase.GameOver && guard++ < 300)
                 {
-                    if (controller.CurrentPhase == GamePhase.GameClear || controller.CurrentPhase == GamePhase.GameOver)
-                    {
-                        break;
-                    }
-
                     if (controller.CurrentPhase == GamePhase.ShowingEvent)
                     {
                         controller.OnEventDismissed();
@@ -162,9 +167,10 @@ namespace Game.Tests.EditMode
                     if (controller.CurrentPhase == GamePhase.WaitingInput)
                     {
                         CommandDataSO chosen = commands[rand.Next(commands.Length)];
+                        int turnBefore = controller.CurrentState.CurrentTurn;
                         controller.ExecuteCommand(chosen);
 
-                        if (controller.CurrentPhase == GamePhase.WaitingInput)
+                        if (controller.CurrentPhase == GamePhase.WaitingInput && controller.CurrentState.CurrentTurn == turnBefore)
                         {
                             controller.ExecuteCommand(rest);
                         }
@@ -252,13 +258,10 @@ namespace Game.Tests.EditMode
 
                 controller.StartGame();
 
-                for (int t = 0; t < 40; t++)
+                // 24ターン分確実に完走するまで実行
+                int guard = 0;
+                while (controller.CurrentPhase != GamePhase.GameClear && controller.CurrentPhase != GamePhase.GameOver && guard++ < 300)
                 {
-                    if (controller.CurrentPhase == GamePhase.GameClear || controller.CurrentPhase == GamePhase.GameOver)
-                    {
-                        break;
-                    }
-
                     if (controller.CurrentPhase == GamePhase.ShowingEvent)
                     {
                         controller.OnEventDismissed();
@@ -272,9 +275,10 @@ namespace Game.Tests.EditMode
                     if (controller.CurrentPhase == GamePhase.WaitingInput)
                     {
                         CommandDataSO chosen = commands[rand.Next(commands.Length)];
+                        int turnBefore = controller.CurrentState.CurrentTurn;
                         controller.ExecuteCommand(chosen);
 
-                        if (controller.CurrentPhase == GamePhase.WaitingInput)
+                        if (controller.CurrentPhase == GamePhase.WaitingInput && controller.CurrentState.CurrentTurn == turnBefore)
                         {
                             controller.ExecuteCommand(rest);
                         }
@@ -412,6 +416,10 @@ namespace Game.Tests.EditMode
             EndingDecidedChannelSO endingDecidedChannel = ScriptableObject.CreateInstance<EndingDecidedChannelSO>();
             _createdObjects.Add(endingDecidedChannel);
 
+            BossCatalogSO bossCatalog = CreateFourActBossCatalog();
+            AutoBattleResolverSO autoBattleResolver = ScriptableObject.CreateInstance<AutoBattleResolverSO>();
+            _createdObjects.Add(autoBattleResolver);
+
             SetField(controller, "_gameRules", rules);
             SetField(controller, "_commandResolver", commandResolver);
             SetField(controller, "_eventCatalog", eventCatalog);
@@ -420,6 +428,9 @@ namespace Game.Tests.EditMode
             SetField(controller, "_endingResolver", endingResolver);
             SetField(controller, "_relicCatalog", catalog);
             SetField(controller, "_relicResolver", relicResolver);
+            SetField(controller, "_bossCatalog", bossCatalog);
+            SetField(controller, "_autoBattleResolver", autoBattleResolver);
+            SetField(controller, "_bossBattleTurns", new List<int> { 6, 12, 18, 24 });
             SetField(controller, "_gameStateChannel", gameStateChannel);
             SetField(controller, "_eventFiredChannel", eventFiredChannel);
             SetField(controller, "_endingDecidedChannel", endingDecidedChannel);

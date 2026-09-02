@@ -83,6 +83,7 @@ namespace Game.Features.GameFlow
         public void EnsureDependencies()
         {
 #if UNITY_EDITOR
+            if (!Application.isPlaying) return;
             if (_gameRules == null) _gameRules = UnityEditor.AssetDatabase.LoadAssetAtPath<GameRulesSO>("Assets/Data/Rules/GameRules.asset");
             if (_commandResolver == null) _commandResolver = UnityEditor.AssetDatabase.LoadAssetAtPath<CommandResolverSO>("Assets/Data/Commands/CommandResolver.asset");
             if (_eventCatalog == null) _eventCatalog = UnityEditor.AssetDatabase.LoadAssetAtPath<GameEventCatalogSO>("Assets/Data/Events/GameEventCatalog.asset");
@@ -346,7 +347,7 @@ namespace Game.Features.GameFlow
             }
 
             _currentState = _currentState with { AcquiredRelicIds = newIds };
-            _gameStateChannel.Raise(_currentState);
+            _gameStateChannel?.Raise(_currentState);
             _currentPhase = GamePhase.WaitingInput;
         }
     }
