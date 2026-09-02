@@ -1,11 +1,19 @@
 // SPDX-AI-Disclosure: ai-generated
 #if UNITY_EDITOR
+using Game.Core;
+using Game.Features.Boss;
+using Game.Features.Command;
+using Game.Features.Ending;
+using Game.Features.Event;
 using Game.Features.GameFlow;
+using Game.Features.MetaProgression;
+using Game.Features.Relic;
 using Game.UI;
 using TMPro;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
 namespace Game.EditorScripts
@@ -30,12 +38,15 @@ namespace Game.EditorScripts
         [MenuItem("Tools/Setup Complete UI Layout (Simple Shapes)")]
         public static void SetupCompleteLayout()
         {
+            // 1. スプライト生成とインポートを完了
             ProceduralSpriteGenerator.GenerateAllSprites();
+            AssetDatabase.SaveAssets();
 
+            // 2. シーンを開いて新規参照を取得
             string scenePath = "Assets/Scenes/MainGame.unity";
-            EditorSceneManager.OpenScene(scenePath, OpenSceneMode.Single);
+            Scene scene = EditorSceneManager.OpenScene(scenePath, OpenSceneMode.Single);
 
-            // 1. Canvas の初期化
+            // 3. Canvas の取得
             Canvas canvas = Object.FindFirstObjectByType<Canvas>();
             if (canvas == null)
             {
@@ -55,10 +66,18 @@ namespace Game.EditorScripts
                 new GameObject("EventSystem", typeof(UnityEngine.EventSystems.EventSystem), typeof(UnityEngine.EventSystems.StandaloneInputModule));
             }
 
-            // 2. 全画面背景
+            // 古い壊れた子オブジェクトを一括クリア（クリーンビルド）
+            int childCount = canvas.transform.childCount;
+            for (int i = childCount - 1; i >= 0; i--)
+            {
+                Transform child = canvas.transform.GetChild(i);
+                Object.DestroyImmediate(child.gameObject);
+            }
+
+            // 4. 全画面背景
             CreateOrUpdateBackground(canvas.transform);
 
-            // 3. 各 UI パネルの完全構築
+            // 5. 各 UI パネルの完全構築
             SetupStatusPanel(canvas.transform);
             SetupCommandPanel(canvas.transform);
             SetupEventDialogPanel(canvas.transform);
@@ -67,11 +86,12 @@ namespace Game.EditorScripts
             SetupMetaShopDialogPanel(canvas.transform);
             SetupEndingPanel(canvas.transform);
 
-            // 4. GameFlowController へのバインド
+            // 6. GameFlowController へのバインド
             RebindGameFlowControllerReferences(canvas.transform);
 
-            EditorSceneManager.SaveScene(EditorSceneManager.GetActiveScene());
-            Debug.Log("[UILayoutBuilder] Full UI Layout with Renderers & Sprites successfully built and saved.");
+            EditorSceneManager.MarkSceneDirty(scene);
+            EditorSceneManager.SaveScene(scene);
+            Debug.Log("[UILayoutBuilder] Full UI Layout successfully built and saved without errors.");
         }
 
         private static Sprite LoadSprite(string name)
@@ -151,9 +171,9 @@ namespace Game.EditorScripts
             GameFlowController flowController = Object.FindFirstObjectByType<GameFlowController>();
 
             // 3つのコマンドボタン（勉強、特訓、休息）を完全配線
-            SetupCommandButton(rect, "StudyButton", "Icon_Study", "勉強 (Study)\nSkill+5", new Vector2(-400, 0), "Assets/Data/Commands/Cmd_Study.asset", flowController);
-            SetupCommandButton(rect, "TrainButton", "Icon_Train", "特訓 (Train)\nSkill+10", new Vector2(0, 0), "Assets/Data/Commands/Cmd_Train.asset", flowController);
-            SetupCommandButton(rect, "RestButton", "Icon_Rest", "休息 (Rest)\nStamina+30", new Vector2(400, 0), "Assets/Data/Commands/Cmd_Rest.asset", flowController);
+            SetupCommandButton(rect, "StudyButton", "Icon_Study", "勉強 (Study)\nSkill+5", new Vector2(-400, 0), "Assets/Data/Commands/Study.asset", flowController);
+            SetupCommandButton(rect, "TrainButton", "Icon_Train", "特訓 (Train)\nSkill+10", new Vector2(0, 0), "Assets/Data/Commands/Train.asset", flowController);
+            SetupCommandButton(rect, "RestButton", "Icon_Rest", "休息 (Rest)\nStamina+30", new Vector2(400, 0), "Assets/Data/Commands/Rest.asset", flowController);
         }
 
         private static void SetupCommandButton(RectTransform parent, string name, string iconName, string text, Vector2 pos, string cmdAssetPath, GameFlowController controller)
@@ -320,7 +340,7 @@ namespace Game.EditorScripts
             rootImg.color = bgColor;
         }
 
-        private static void CreateGaugeGroup(RectTransform parent, string name, string iconName, Color barColor, Vector2 pos, string label)
+        private static GameObject CreateGaugeGroup(RectTransform parent, string name, string iconName, Color barColor, Vector2 pos, string label)
         {
             Transform existing = parent.Find(name);
             GameObject groupGo = existing != null ? existing.gameObject : new GameObject(name, typeof(RectTransform));
@@ -354,6 +374,7 @@ namespace Game.EditorScripts
 
             // ラベル
             CreateLabel(rect, "Label", label, new Vector2(20, 15), new Vector2(220, 24), 18, TextAlignmentOptions.Center);
+            return groupGo;
         }
 
         private static void CreateCommandButton(RectTransform parent, string name, string iconName, string text, Vector2 pos)
@@ -435,7 +456,7 @@ namespace Game.EditorScripts
             img.raycastTarget = false;
         }
 
-        private static void CreateLabel(RectTransform parent, string name, string text, Vector2 pos, Vector2 size, float fontSize, TextAlignmentOptions alignment)
+        private static GameObject CreateLabel(RectTransform parent, string name, string text, Vector2 pos, Vector2 size, float fontSize, TextAlignmentOptions alignment)
         {
             Transform existing = parent.Find(name);
             GameObject labelGo = existing != null ? existing.gameObject : new GameObject(name, typeof(RectTransform), typeof(TextMeshProUGUI));
@@ -451,6 +472,7 @@ namespace Game.EditorScripts
             tmp.alignment = alignment;
             tmp.color = Color.white;
             tmp.raycastTarget = false;
+            return labelGo;
         }
 
         private static void RebindGameFlowControllerReferences(Transform canvasTr)
@@ -460,11 +482,11 @@ namespace Game.EditorScripts
 
             SerializedObject so = new SerializedObject(controller);
             so.FindProperty("_gameRules").objectReferenceValue = AssetDatabase.LoadAssetAtPath<GameRulesSO>("Assets/Data/Rules/GameRules.asset");
-            so.FindProperty("_commandResolver").objectReferenceValue = AssetDatabase.LoadAssetAtPath<CommandResolverSO>("Assets/Data/Rules/CommandResolver.asset");
+            so.FindProperty("_commandResolver").objectReferenceValue = AssetDatabase.LoadAssetAtPath<CommandResolverSO>("Assets/Data/Commands/CommandResolver.asset");
             so.FindProperty("_eventCatalog").objectReferenceValue = AssetDatabase.LoadAssetAtPath<GameEventCatalogSO>("Assets/Data/Events/GameEventCatalog.asset");
-            so.FindProperty("_eventResolver").objectReferenceValue = AssetDatabase.LoadAssetAtPath<EventResolverSO>("Assets/Data/Rules/EventResolver.asset");
+            so.FindProperty("_eventResolver").objectReferenceValue = AssetDatabase.LoadAssetAtPath<EventResolverSO>("Assets/Data/Events/EventResolver.asset");
             so.FindProperty("_endingRules").objectReferenceValue = AssetDatabase.LoadAssetAtPath<EndingRulesSO>("Assets/Data/Endings/EndingRules.asset");
-            so.FindProperty("_endingResolver").objectReferenceValue = AssetDatabase.LoadAssetAtPath<EndingResolverSO>("Assets/Data/Rules/EndingResolver.asset");
+            so.FindProperty("_endingResolver").objectReferenceValue = AssetDatabase.LoadAssetAtPath<EndingResolverSO>("Assets/Data/Endings/EndingResolver.asset");
             so.FindProperty("_gameStateChannel").objectReferenceValue = AssetDatabase.LoadAssetAtPath<GameStateEventChannelSO>("Assets/Data/Channels/GameStateEventChannel.asset");
             so.FindProperty("_eventFiredChannel").objectReferenceValue = AssetDatabase.LoadAssetAtPath<GameEventFiredChannelSO>("Assets/Data/Channels/GameEventFiredChannel.asset");
             so.FindProperty("_endingDecidedChannel").objectReferenceValue = AssetDatabase.LoadAssetAtPath<EndingDecidedChannelSO>("Assets/Data/Channels/EndingDecidedChannel.asset");

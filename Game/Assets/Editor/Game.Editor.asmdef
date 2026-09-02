@@ -3,6 +3,10 @@
     "rootNamespace": "Game.Editor",
     "references": [
         "Game.Core",
+        "Game.Features.Command",
+        "Game.Features.Event",
+        "Game.Features.Ending",
+        "Game.Features.Relic",
         "Game.Features.Boss",
         "Game.Features.MetaProgression",
         "Game.Features.GameFlow",
