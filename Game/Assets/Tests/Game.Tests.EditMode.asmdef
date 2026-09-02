@@ -8,7 +8,10 @@
         "Game.Features.Command",
         "Game.Features.Event",
         "Game.Features.Ending",
-        "Game.Features.GameFlow"
+        "Game.Features.GameFlow",
+        "Game.UI",
+        "Unity.TextMeshPro",
+        "UnityEngine.UI"
     ],
     "includePlatforms": [
         "Editor"
