@@ -451,6 +451,29 @@ Unity-MCP 経由で前提アセット（`Assets/Features/Ending/Scripts/` フォ
 
 ---
 
+### Step 7：ゲーム進行マネージャー
+
+`GamePhase` / `GameFlowController` / `GameFlowControllerTests`
+
+#### 計画レビュー
+
+Unity-MCP 経由で前提アセット（`Assets/Features/GameFlow/Scripts/` フォルダ、`Game.Features.GameFlow.asmdef`、テスト参照追加）を作成後、Claude Code に実装を委譲した。
+
+- 承認理由: 指示書 #4 第3節の要件（MonoBehaviour に計算ロジックを持たせず各 Resolver SO / TurnRules に完全委譲、EventChannelSO 経由での状態変化・イベント通知、テスト6項目）に完全に適合していたため
+
+#### 実行結果
+
+| 項目 | 結果 |
+|---|---|
+| 使用モデル | Sonnet 5 |
+| 書き込み範囲の逸脱 | なし（指定の3ファイルのみ作成、既存コード変更0件） |
+| 人間による差し戻し | 0件 |
+| エージェント自身の自己修正 | 0回 |
+| テスト結果 | 38/38 通過（EditMode、既存32件＋新規6件） |
+| コミット | `9e45bec` |
+
+---
+
 ## 評価指標の定義
 
 本プロジェクトで記録している指標のうち、既存の評価系との対応は以下の通り。
