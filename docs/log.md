@@ -869,6 +869,44 @@ Antigravity (Gemini) による直接 C# 実装体制への移行後、指示書 
 
 ## 2026-09-04
 
+### 第8週 Step 24: ピクトグラムを MainGame.unity に実バインド（09 指示書 2.2）
+
+#### 1. やったこと
+
+- `Tools/Setup Complete UI Layout (Simple Shapes)`（`UILayoutBuilder.SetupCompleteLayout`）を
+  Unity バッチモードの `-executeMethod` で実行し、`MainGame.unity` を再構築・保存した。
+- `UILayoutBuilder.cs` は既に `Frame_Card` / 各 `Icon_*` / `Boss_Emblem_Act1` を
+  `LoadSprite` 経由で割り当てる実装になっていたため、コード変更は不要だった。
+  未消化だったのは「実行してシーンに焼き込む」工程のみで、そこを埋めた。
+
+#### 2. 検証（実測）
+
+| 手段 | 結果 |
+|---|---|
+| Unity バッチモード `-executeMethod UILayoutBuilder.SetupCompleteLayout` | exit 0。`[UILayoutBuilder] Full UI Layout successfully built and saved without errors.` |
+| ログ内の `error CS` / `Exception:` | 0 件 |
+| `MainGame.unity` 内の `m_Sprite` 参照 | 58 箇所中 40 箇所が非 null（= スプライトが実際にシーンへ焼き込まれた） |
+| EditMode テスト（バッチモード） | 113 件収集 / 94 passed / 0 failed / 19 skipped（`[Explicit]` 凍結）。Step 23 から回帰なし |
+
+#### 3. 指示書の不備の指摘
+
+- 09 指示書 2.3 の「EditMode 127件・100% Green」は凍結分（`[Explicit]` 19 件）を含む古い値で、
+  現行の実測値と一致しない。`docs/STATUS.md` 側の記載に合わせて指示書を修正した。
+- 「Unity-MCP で `run_tests`」とあるが、本セッションに Unity-MCP ツールは提供されていなかったため、
+  同等の Unity バッチモード `-runTests` で代替した。
+
+#### 4. 夜間ガードとの衝突（人間の確認が必要）
+
+- 本コミットの差分は `MainGame.unity` 単体で **約 8,266 行**（4,109 追加 / 4,157 削除）になり、
+  `scripts/nightly_gate.py` の `MAX_CHANGED_LINES = 3000` を超過する。
+- 原因は `UILayoutBuilder` が Canvas の子を毎回 `DestroyImmediate` して作り直す設計のため、
+  シーン内の全 fileID が振り直されることにある。実質的な変更は「スプライト参照の付与」だけで、
+  暴走ではない。
+- 削減するには `UILayoutBuilder` を冪等な差分更新に作り替える必要があるが、
+  これは 09 指示書の範囲外の設計変更であり、勝手にはやらない。
+  ガードの除外規則（生成物である `.unity` を行数カウントから外す等）を入れるかどうかは人間の判断に委ねる。
+
+
 ### 自律開発インフラ実地検証と夜間運用トラブル（Hour 12-14）
 
 #### 1. 人間ディレクターからの指導と規約改定
