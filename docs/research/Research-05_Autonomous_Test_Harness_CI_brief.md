@@ -1,54 +1,48 @@
-# Deep Research 調査指示書 05：自律型AIゲーム開発におけるテストハーネス・CI/CD・自律自己修復調査
+# Deep Research 調査指示書 05：Unity 6 WebGL 用 GameCI と auto_runner.py の完全自動化実装
 
-## 1. 調査の背景と目的
+## 1. 調査対象のプロジェクト（完全な具体環境）
 
-AI エージェント（Gemini, Claude Code, Cursor 等）にゲーム開発を委託し、人間が「1日1回だけ確認してあとは手放す（夜間自律走行含む）」状態を実現しようとすると、以下の致命的リスクが発生する：
-
-1. **Reward Hacking（偽のテスト合格）**:
-   - AI は EditMode 単体テスト（モック）をパスさせることだけを追求し、実機の Unity 画面が壊れていても「全テスト合格（緑）」と嘘をついて手戻りを生む。
-2. **夜間暴走とコード破壊**:
-   - 人間が寝ている間に自律エージェントを走らせると、1つのエラーを直すために別の10箇所を破壊し、朝起きたらプロジェクト全体がコンパイル不能になっている。
-3. **人間の過剰な監視負荷**:
-   - AI の手足が信用できないため、人間が 5 分おきに画面をチェックしなければならず、かえって人間の疲弊と非効率を招く。
-
-**目的**:
-2024年〜2026年現在、世界の最先端エンジニアが **「AIエージェントを安全に放し飼いにする（自律走行させる）ために、どのようなテストハーネス、GameCI（GitHub Actions）、自動ロールバック機構を構築しているか」** の具体的工学プラクティスを徹底調査する。
-
----
-
-## 2. 重点調査項目（Research Axes）
-
-### 軸1：Reward Hacking を物理的に防ぐテストハーネス設計
-* **PlayMode 統合テスト / スモークテスト（Tracer Bullet）の実践例**:
-  * モックを使わず、「本物の Scene を起動し、uGUI ボタンを押し、画面とステータスが更新され、Console 例外が 0 件であること」を証明するテスト設計の標準。
-  * テスト実行時間と安定性のバランス（ドメインリロードやタイムアウトへの対処法）。
-* **ビジュアルリグレッションテスト / 画面スナップショット検証**:
-  * ヘッドレス環境や CI 上でゲーム画面が正しく描画されているかを自動判定する手法（WebGL ビルドの自動スクショ、画像差分検知等）。
-
-### 軸2：GameCI（GitHub Actions）による「絶対的防壁（Gate）」の構築
-* **GameCI（game.ci）の 2025〜2026 年最新の運用構成**:
-  * Unity プロジェクトに対する GitHub Actions パイプラインの業界標準テンプレート。
-  * **PR / プッシュ時の自動テスト実行（PlayMode / EditMode）**
-  * **WebGL ビルドの自動生成と GitHub Pages / itch.io / Cloudflare Pages への自動デプロイ**
-  * ライセンス管理（Unity Personal / Professional）を GitHub Actions Secrets で安全に扱う実践手法。
-* **Branch Protection（ブランチ保護ルール）**:
-  * CI のテスト・ビルドが通らないコードを物理的に `main` ブランチへマージさせない厳格な設定。
-
-### 軸3：自律エージェントの自己修復（Self-Healing）と自動ロールバック
-* **エージェントが自律走行する際の安全プロトコル**:
-  * AI がコードを修正した後、自動でテストを実行し、テストが赤になった場合に **「自動で `git reset --hard` を叩いて元の安全な状態に巻き戻す」** 自律回復サイクルの実装例。
-  * エージェントが「テストを通すためにテストコード自体を改変する」「プロダクションコードに自己修復ハックを埋め込む」不正（Cheating）を物理検知・遮断するフック設計。
-* **翌朝の「朝刊サマリーレポート（Executive Briefing）」**:
-  * 夜間にエージェントが試行した内容、通ったテスト、ロールバックされた失敗、現在のビルド URL を人間が 1 画面で把握できるレポートのフォーマット。
+* **Unity バージョン**: `6000.3.23f1` (Unity 6 LTS)
+* **ターゲットプラットフォーム**: WebGL
+* **OS**: Windows 11
+* **連携ツール**:
+  - `com.coplaydev.unity-mcp` (v10.0.0): Unity Editor と通信する Model Context Protocol サーバー（ポート接続、`run_tests`, `get_test_job` 等をサポート）
+  - Python: `3.12`（Windows環境）
+  - Git: ローカルリポジトリ（`main` ブランチ）
+* **現在のテスト構成**:
+  - EditMode: 94件 Passed（`Game.Tests.EditMode.asmdef`）
+  - PlayMode: 1件 Passed（`SmokeTest.cs`, `Game.Tests.PlayMode.asmdef`）
+* **現状の課題（今直面している壁）**:
+  - 先ほどタスクスケジューラで「深夜 1:00〜6:00 に 30分間隔で `scripts/auto_runner.py` を実行」と設定したが、**`auto_runner.py` にはまだ「PlayMode テストが落ちたら自律で git reset して元の安全な状態に戻す」防壁ロジックが組み込まれていない**。
+  - GitHub Actions で Unity 6 + WebGL のビルドとテストを回す `main.yml` がまだなく、プッシュしてもクラウドでテストが走らない。
 
 ---
 
-## 3. 要求成果物（Deliverables）
+## 2. 調査・回答を求める具体的課題（Scope を限定）
 
-1. **実稼働可能な GitHub Actions ワークフロー YAML（GameCI）**
-   - PlayMode テスト自動実行
-   - WebGL 自動ビルド＆自動デプロイ
-2. **自律エージェント用「自動ロールバック＆安全ハーネス」の実装スクリプト（Python / Bash）**
-   - 変更 → テスト実行 → 合格ならコミット / 失敗なら即座に `git reset` → ログ記録 の堅牢な自律ループ。
-3. **人間が「手放し」を確信するための最小監視チェックリスト**
-   - 人間は朝起きて何を見るべきか（どのログ、どのメトリクスを見れば健全性が担保されるか）。
+### 課題A：Unity 6 LTS (6000.3.23f1) + WebGL 用の完全な GameCI GitHub Actions YAML
+* **条件**:
+  - Unity 6 の公式 Docker イメージまたは GameCI v4+ を使用。
+  - **Job 1**: `EditMode` および `PlayMode` の全テスト実行（1件でも落ちたら失敗）。
+  - **Job 2**: WebGL ビルドの作成。
+  - **Job 3**: GitHub Pages への自動デプロイ（任意または成果物アップロード）。
+  - Unity Personal ライセンス（無料版）でのアクティベーション設定（Unity Activation GitHub Action）を含む。
+* **求めるもの**:
+  - そのまま `.github/workflows/gameci.yml` にコピペして動く**完全な YAML コード**。
+
+### 課題B：`scripts/auto_runner.py` 用の「自律ロールバック・テスト検査」ループの Python 実装
+* **条件**:
+  - Python 3.12 から、ローカルの Unity MCP サーバー（または Unity CLI）を呼び出す。
+  - または、ローカルの Unity エディタが起動中の場合、MCP を叩いて `run_tests(mode="PlayMode")` を実行し完了を待つ。
+  - もしテストが `Passed` なら → `git commit` を維持。
+  - もしテストが `Failed`、またはコンパイルエラーが出たなら → **即座に `git reset --hard HEAD` を実行してコードを巻き戻す**。
+  - 実行結果（成功/ロールバック）を `docs/log.md` または専用ログに 1 行追記する。
+* **求めるもの**:
+  - この一連の防壁ループを実行する、**コピペで動く完全な Python スクリプトコード**。
+
+---
+
+## 3. 要求成果物（コードのみ・解説は最小限）
+
+1. **`.github/workflows/gameci.yml` の全文**
+2. **`scripts/auto_runner.py` に組み込む自己修復・ロールバック防壁関数の全文（Python）**
