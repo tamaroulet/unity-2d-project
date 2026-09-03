@@ -819,6 +819,21 @@ Antigravity (Gemini) による直接 C# 実装体制への移行後、指示書 
   - `docs/workflow/TRIAD_PROTOCOL.md` を Claude Opus 自身の手で策定・確定。
   - ①【Claude】大枠提示 → ②【人間】承認・判断 → ③【Claude】Tasklist 指示書発行 → ④【Gemini】100% 忠実実装・コマンド出力報告のみ、という厳格なサイクルを文章化。
   - Gemini 単独の自己判断・勝手な別解提案を完全禁止とし、主導権を Claude Opus に恒久固定。
+- **Gate 4（Hour 4-8）サイクル 1 周目 — ①大枠 → ②承認 → ③指示書発行**:
+  - ① Claude が案A（最小曳光弾 1 本）/ 案B / 案C を提示。
+  - ② 人間ディレクターが **案A を承認**。あわせて `Game.Tests.PlayMode.asmdef` の新設と
+    `00_rules.md` の例外 asmdef 規定の改訂（Editor 1 枚 + テスト 2 枚）を承認。
+  - ③ Claude が `docs/research/GATE4-01_PlayMode_smoke_instruction.md` を発行。
+    - 実機ファイル調査で判明した重要事実: **シーンに `Slider` は 1 つも存在せず**
+      （`StatusView._staminaGauge` 等は `fileID: 0`）、ゲージは
+      `Canvas/StatusPanel/*Group/BarBg/BarFill` の `RectTransform.anchorMax.x` で表現されている。
+      指示書のアサーションはこれに合わせてある。
+    - 曳光弾の検証内容: `MainGame` ロード → `ExecuteEvents.pointerClickHandler` による
+      実 uGUI クリック → `TURN 1 → 2` / Stamina 100→90 / Skill 0→5 / Mental 50→55 /
+      BarFill 1.00→0.90・0.00→0.05・0.50→0.55 / `TURN 2 / 24` / 例外 0 件。
+    - `.asmdef` は `guard.js` によりツールレベルで書き込み拒否されるため、
+      asmdef 新設は **人間の Unity エディタ作業（§1）** として指示書に切り出した。
+  - ④ Gemini の実装・報告は未着手。
 
 ---
 
