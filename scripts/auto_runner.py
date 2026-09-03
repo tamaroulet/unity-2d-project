@@ -174,7 +174,7 @@ def get_next_prompt(quotas: dict) -> tuple:
 {strategy_note}
 
 【作業規律】
-1. .agents/rules/00_role.md の全行動規範（平素な文体、ノンストップ自律チェーン、Unity-MCP検証）を遵守すること。
+1. .agents/rules/00_rules.md の全行動規範（平素な文体、ノンストップ自律チェーン、Unity-MCP検証）を遵守すること。
 2. 作業完了後は必ず docs/instructions/08_polish_and_balance.md の対応するチェックボックスを - [x] に更新すること。
 3. docs/STATUS.md および docs/log.md を同期し、Git コミット＆プッシュ（origin/main）まで同一ターンで完了させること。
 【夜間モードの絶対禁止事項（違反した成果物は自動的に隔離され、main から巻き戻される）】
@@ -223,7 +223,7 @@ async def run_with_sdk(prompt: str):
     config = LocalAgentConfig(
         system_instructions=(
             "あなたは unity-2d-project の自律開発エージェントです。"
-            ".agents/rules/00_role.md の全行動規範に従って作業してください。"
+            ".agents/rules/00_rules.md の全行動規範に従って作業してください。"
             "淡々とした工学的・事務的な平素の日本語で応答し、指示された計画タスクを確実に前倒し完遂してください。"
         ),
         capabilities=CapabilitiesConfig(),

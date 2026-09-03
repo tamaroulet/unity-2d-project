@@ -1,6 +1,7 @@
 # AI 開発者向けオンボーディング・マスターガイド（引き継ぎ書）
 
 初見の AI エージェント（Claude / Gemini / その他）は、作業前に**必ずこの文書を最初に通読**してください。
+また、作業着手前には必ず [`docs/STATUS.md`](file:///c:/dev/unity-2d-project/docs/STATUS.md)（現在地）と [`docs/log.md`](file:///c:/dev/unity-2d-project/docs/log.md)（直近の決定事項）を確認し、前提のズレを防いでください。
 このプロジェクトには過去の失敗から得られた厳格なルールと仕組みがあります。
 
 ---
@@ -75,6 +76,8 @@ AIは言われたコードを高速に生成できるが、暗黙の了解や実
    - `scripts/nightly_gate.py` がサイクル前後の HEAD を監視。
    - テスト失敗、ハックコード（`[Ignore]` や `Find` 系の混入）、保護領域の改変を検知した場合、**全成果物を `nightly-reject/<timestamp>` ブランチへ保全した上で `main` を自動ロールバック**する。
    - **注意**: 夜間ランナーを動かす際は、**必ず Unity エディタを閉じておく**こと（開いていると Library 排他ロックにより `UNVERIFIED` で全巻き戻しになる）。
+   - **ガードの非対称性**: `.claude/hooks/guard.js` によるリアルタイム遮断は Claude Code にのみ作用する。Gemini や夜間ランナーの不正コードは、`scripts/nightly_gate.py` による事後の diff 検査でのみ捕捉・隔離される。
+   - **起動成否の監視**: エージェント起動に失敗した場合、単なる「変化なし（NO_CHANGE）」ではなく「起動失敗（AGENT_UNAVAILABLE）」として朝刊に出力される。
 2. **朝刊レポート（`scripts/morning_report.py`）**:
    - 毎朝 06:10 に自動実行され、[`docs/nightly/YYYY-MM-DD.md`](file:///c:/dev/unity-2d-project/docs/nightly/) に昨夜の「受理 / 隔離 / 未検証」が 1 画面で出力される。
 3. **クラウド CI（GameCI / GitHub Actions）**:

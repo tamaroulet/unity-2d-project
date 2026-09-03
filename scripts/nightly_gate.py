@@ -46,6 +46,7 @@ VERDICT_REJECT_POLICY = "REJECT_POLICY"
 VERDICT_REJECT_TESTS = "REJECT_TESTS"
 VERDICT_UNVERIFIED = "UNVERIFIED"
 VERDICT_ABORTED_DIRTY = "ABORTED_DIRTY"
+VERDICT_AGENT_UNAVAILABLE = "AGENT_UNAVAILABLE"
 
 
 # ==============================================================================
@@ -445,8 +446,12 @@ def finalize_cycle(cycle: Cycle, agent_ok: bool = True) -> dict:
     record["work_head"] = work_head
 
     if work_head == cycle.snapshot:
-        record["verdict"] = VERDICT_NO_CHANGE
-        record["reasons"].append("差分なし。エージェントは何も変更しなかった。")
+        if not agent_ok:
+            record["verdict"] = VERDICT_AGENT_UNAVAILABLE
+            record["reasons"].append("エージェントの起動に失敗した（SDK/CLI無応答）。成果物なし。")
+        else:
+            record["verdict"] = VERDICT_NO_CHANGE
+            record["reasons"].append("差分なし。エージェントは正常起動したが変更を行わなかった。")
         _write_record(record)
         return record
 

@@ -18,26 +18,26 @@
 | **第2週 Step 6** | エンディング判定（32/32テスト通過） | 完了 | `cdeb9fe` |
 | **第3週 Step 7** | ゲーム進行マネージャー（38/38テスト通過） | 完了 | `9e45bec` |
 | **第3週 Step 8** | UI ビューコンポーネント（47/47テスト通過） | 完了 | `c4d332d` |
-| **第3週 Step 9** | シーン結合 & アセット構成（MainGame.unity） | 完了（第3週全工程ゴール達成！🎉） | `be571a0` |
+| **第3週 Step 9** | シーン結合 & アセット構成（MainGame.unity） | 完了 | `be571a0` |
 | **監査事前補強** | イベント上限ulong拡張・フェーズガード修正 | 完了 | `154fa2e` |
-| **第4週 Step 10** | レリック（パッシブ能力）基盤（57/57テスト通過） | **完了 🎉** | `6681d5d` |
-| **第4週 Step 11** | レリック3択ドラフトUI & GameFlowController結合（64/64テスト通過） | **完了 🎉** | `HEAD` |
-| **第5週 Step 12** | ボスデータ基盤（BossState, BossSO, BossCatalogSO） | **完了** | `59b86d5` |
-| **第5週 Step 13** | オートバトルResolver（AutoBattleResolverSO, 84/84テスト通過） | **完了** | `59b86d5` |
-| **第5週 Step 14** | GameFlowController ボスバトル統合 & ステート遷移（88/88テスト通過） | **完了** | `90aae0c` |
-| **第5週 Step 15** | BossBattleDialogView & MainGameシーン配置 & 1,000回シミュレーション（93/93テスト通過） | **完了 🎉** | `648565c` |
-| **第6週 Step 16** | 周回メタ基盤（MetaProfileState, MetaUnlockSO, MetaPointResolverSO） | **完了** | `HEAD` |
-| **第6週 Step 17** | 単体テスト（MetaPointResolverTests, 41件一括通過） | **完了** | `HEAD` |
-| **第6週 Step 18** | GameFlowController 周回メタ統合 & 初期ステータス底上げ | **完了** | `HEAD` |
-| **第6週 Step 19** | MetaShopDialogView & MainGameシーン結合 & 1,000回周回シミュレーション（125/125テスト通過） | **完了 🎉** | `HEAD` |
-| **第7週 Step 20** | ボス4段階化（Act 1〜4）・マルチAct対応・127件テスト（100% Green） | **完了 🎉** | `814cc19` |
-| **第7週 Step 21** | 単純図形UIワイヤーフレーム配置（UILayoutBuilder）＆シーン完全バインド | **完了 🎉** | `814cc19` |
-| **第7週 Step 22** | WebGL ローカルビルド確定（WASM 8.4MB / Data 4.5MB）＆ AutoRunner 常駐 | **完了 🎉** | `54704c5` |
+| **第4週 Step 10** | レリック（パッシブ能力）基盤（57/57テスト通過） | 完了 | `6681d5d` |
+| **第4週 Step 11** | レリック3択ドラフトUI & GameFlowController結合（64/64テスト通過） | 完了 | `HEAD` |
+| **第5週 Step 12** | ボスデータ基盤（BossState, BossSO, BossCatalogSO） | 完了 | `59b86d5` |
+| **第5週 Step 13** | オートバトルResolver（AutoBattleResolverSO, 84/84テスト通過） | 完了 | `59b86d5` |
+| **第5週 Step 14** | GameFlowController ボスバトル統合 & ステート遷移（88/88テスト通過） | 完了 | `90aae0c` |
+| **第5週 Step 15** | BossBattleDialogView & MainGameシーン配置 & 1,000回シミュレーション（93/93テスト通過） | 完了 | `648565c` |
+| **第6週 Step 16** | 周回メタ基盤（MetaProfileState, MetaUnlockSO, MetaPointResolverSO） | 完了 | `HEAD` |
+| **第6週 Step 17** | 単体テスト（MetaPointResolverTests, 41件一括通過） | 完了 | `HEAD` |
+| **第6週 Step 18** | GameFlowController 周回メタ統合 & 初期ステータス底上げ | 完了 | `HEAD` |
+| **第6週 Step 19** | MetaShopDialogView & MainGameシーン結合 & 1,000回周回シミュレーション（125/125テスト通過） | 完了 | `HEAD` |
+| **第7週 Step 20** | ボス4段階化（Act 1〜4）・マルチAct対応・127件テスト（100% Green） | 完了 | `814cc19` |
+| **第7週 Step 21** | 単純図形UIワイヤーフレーム配置（UILayoutBuilder）＆シーン完全バインド | 完了 | `814cc19` |
+| **第7週 Step 22** | WebGL ローカルビルド確定（WASM 8.4MB / Data 4.5MB）＆ AutoRunner 常駐 | 完了 | `54704c5` |
 
 ---
 
-| **Gate 4** | PlayMode 曳光弾 `SmokeTest.cs`（MainGame 実ロード＋実 uGUI クリック） | **完了 🎉 100% Passed** | `36cb67b` |
-| **Gate 5** | 手放し自動化インフラ（GameCI / 夜間安全ハーネス / 朝刊レポート）配備 | **完了 🎉（実証テスト合格）** | `bb1f3e9` |
+| **Gate 4** | PlayMode 曳光弾 `SmokeTest.cs`（MainGame 実ロード＋実 uGUI クリック） | 完了（100% Passed） | `36cb67b` |
+| **Gate 5** | 手放し自動化インフラ（GameCI / 夜間安全ハーネス / 朝刊レポート）配備 | 完了（実証テスト合格） | `bb1f3e9` |
 
 ---
 

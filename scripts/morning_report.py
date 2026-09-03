@@ -26,6 +26,7 @@ LABEL = {
     "REJECT_TESTS": "隔離(テスト)",
     "UNVERIFIED": "未検証",
     "ABORTED_DIRTY": "中止(作業中)",
+    "AGENT_UNAVAILABLE": "起動失敗",
 }
 
 
@@ -77,7 +78,12 @@ def build_report(date_key: str) -> str:
             f"隔離 {counts.get('REJECT_POLICY', 0) + counts.get('REJECT_TESTS', 0)} / "
             f"未検証 {counts.get('UNVERIFIED', 0)} / "
             f"変化なし {counts.get('NO_CHANGE', 0)} / "
-            f"中止 {counts.get('ABORTED_DIRTY', 0)}**")
+            f"中止 {counts.get('ABORTED_DIRTY', 0)} / "
+            f"起動失敗 {counts.get('AGENT_UNAVAILABLE', 0)}**")
+        if counts.get("AGENT_UNAVAILABLE", 0):
+            lines.append("")
+            lines.append("> エージェントの起動に失敗したサイクルがあります（SDK/CLI無応答）。"
+                         "logs/auto_runner/ のログを確認してください。")
         if counts.get("ABORTED_DIRTY", 0):
             lines.append("")
             lines.append("> 未コミットの作業が残っていたためサイクルが中止された。"
