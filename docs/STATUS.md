@@ -1,6 +1,6 @@
 # プロジェクト現在地（STATUS）
 
-最終更新日：2026-09-03
+最終更新日：2026-09-04
 
 ---
 
@@ -33,6 +33,7 @@
 | **第7週 Step 20** | ボス4段階化（Act 1〜4）・マルチAct対応・127件テスト（100% Green） | 完了 | `814cc19` |
 | **第7週 Step 21** | 単純図形UIワイヤーフレーム配置（UILayoutBuilder）＆シーン完全バインド | 完了 | `814cc19` |
 | **第7週 Step 22** | WebGL ローカルビルド確定（WASM 8.4MB / Data 4.5MB）＆ AutoRunner 常駐 | 完了 | `54704c5` |
+| **第8週 Step 23** | 幾何学ピクトグラム生成器の是正（Study 独立化 / Act 別 N 角形紋章 / 角丸カード枠） | 完了 | `HEAD` |
 
 ---
 
@@ -54,7 +55,8 @@
 
 ## 3. リソース・自動化状態（最新実測値）
 
-- **EditMode テスト**: **127 / 127 passed（100% Green）**
+- **EditMode テスト**: **113 件収集 / 94 passed / 0 failed / 19 は `[Explicit]` 凍結**
+  （凍結分は `GameFlowControllerTests` / `GameFlowControllerRelicTests` / `GameMonteCarloSimulationTests` の 3 クラス。コミット `8f1e8b6` で PlayMode 曳光弾へ移管済み。以前ここに記載していた「127 / 127（100% Green）」は凍結分を含む古い値だった）
 - **PlayMode テスト**: **1 / 1 passed（SmokeTest 100% Green）**
 - **安全ハーネス**: `scripts/nightly_gate.py`（不正コード検知時の自動隔離・ロールバック実証済み）
 - **朝刊レポート**: `scripts/morning_report.py`（Task Scheduler `UnityProject_MorningReport` 06:10 登録済み）

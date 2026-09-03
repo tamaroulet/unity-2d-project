@@ -901,6 +901,65 @@ Antigravity (Gemini) による直接 C# 実装体制への移行後、指示書 
   2. SDK 失敗を正しく検知し、本命 **Claude Code (Opus)** が自動起動。
   3. バックグラウンドで自律実装が開始されることを完全実証（コミット `92e9aed`）。
 
+### 幾何学ピクトグラム生成器の是正（指示書 09 / 2.1）
+
+#### 1. 着手時点の実態
+
+`ProceduralSpriteGenerator.cs` はファイル自体が既に存在し、15 枚の PNG も生成済みだった。
+ただし指示書の記載と実物を突き合わせた結果、次の 3 点が仕様から外れていた。
+
+| 箇所 | 症状 | 原因 |
+|---|---|---|
+| `Icon_Study.png` | `Icon_Skill.png` とバイト単位で完全一致（`CreateStudyIcon` が `CreateSkillIcon` を呼ぶだけ） | 指示書の「ペン・アカデミックアイコン」が未実装 |
+| `Boss_Emblem_Act1〜4.png` | 4 枚とも同一の円リング。色しか違わない | `CreateBossEmblem` の `sides` 引数を一度も使っていなかった |
+| `Frame_Card.png` | 角が直角 | `CreateCardFrame` の `radius` 引数を一度も使っていなかった |
+
+いずれも「引数は受け取るが使わない」型の書き漏らしで、コンパイルは通るため気付きにくい。
+
+#### 2. 対応
+
+- 被覆率サンプリング（1 px あたり 3x3）による描画ヘルパー `Draw` / `Coverage` / `Blend` を追加し、
+  アンチエイリアス付きで図形を重ね描きできるようにした。
+- 幾何プリミティブとして `InRegularPolygon`（正 N 角形）、`InRoundedRect`（角丸長方形の符号付き距離）、
+  `InPolygon`（多角形の内外判定）、`Rotate` を追加。
+- `Icon_Study` をペン軸＋持ち手バンド＋ペン先スリット＋罫線に差し替え、`Icon_Skill` と独立させた。
+- ボス紋章を Act ごとに 3 / 4 / 5 / 6 角形（外周リング＋半ステップ回転させた内側多角形）に変更。
+- カード枠を角丸（半径 18 px）にし、`spriteBorder` を 28 px に設定して 9 スライス化した。
+  拡大表示でも角丸が潰れない。
+- `Bar_Fill` を単色白から縦方向のグラデーションに変更（Image の着色で艶が出る）。
+
+変更は既存 8 アイコンには触れていない。`.agents/rules/00_rules.md` の停止条件
+（1 タスク 300 行超）に収めるため、既存アイコンのアンチエイリアス化は次サイクルに送る。
+現状はアンチエイリアスの有無がアイコン間で不揃いである。
+
+#### 3. 検証（すべて実測）
+
+| 手段 | 結果 |
+|---|---|
+| `dotnet build Game.Editor.csproj`（Unity 6000.3.23f1 の参照アセンブリを使用） | 0 エラー |
+| Unity バッチモード `-executeMethod ProceduralSpriteGenerator.GenerateAllSprites` | 成功。PNG 7 枚と `Frame_Card.png.meta` のみ差分 |
+| 生成 PNG の目視確認 | ペン・N 角形紋章・角丸枠とも意図通り |
+| EditMode テスト（バッチモード） | 113 件収集 / 94 passed / 0 failed / 19 skipped |
+| PlayMode テスト（バッチモード） | 1 / 1 passed（`SmokeTest` 例外 0） |
+
+Unity-MCP は本セッションでは接続されていなかったため、同等の検証をバッチモード CLI で実施した。
+
+#### 4. 報告事項：EditMode の件数表記の誤り
+
+`docs/STATUS.md` に「EditMode 127 / 127 passed（100% Green）」と記載されていたが、実測は
+**113 件収集・94 passed・19 skipped** である。skipped の 19 件は
+`GameFlowControllerTests` / `GameFlowControllerRelicTests` / `GameMonteCarloSimulationTests` の
+3 クラスに付いた `[Explicit("PlayMode 曳光弾で置換予定")]` によるもので、
+コミット `8f1e8b6`（Gate 3 Step 3）で意図的に凍結された既存の状態である。今回の変更とは無関係。
+STATUS の数値を実測値に修正した。凍結の解除（PlayMode への移管完了）は未着手のまま残っている。
+
+#### 5. 未着手（指示書 09 の残り）
+
+- 2.2 `UILayoutBuilder.cs` のスプライト割り当てとシーン更新。
+  スプライトの GUID は変わっていないため、`MainGame.unity` は再ビルドなしで新しい絵を参照する。
+- 2.3 の「EditMode 127 件 100% Green」は上記の理由で現状の実測と一致しないため未チェックのまま。
+- 2.4 のうち push は夜間規約により実施していない（コミットまで）。
+
 ---
 
 ## 評価指標の定義
