@@ -21,6 +21,7 @@ namespace Game.UI
         [SerializeField] private TextMeshProUGUI _titleText;
         [SerializeField] private TextMeshProUGUI _bodyText;
         [SerializeField] private Button _okButton;
+        [SerializeField] private GameFlowController _gameFlowController;
 
         /// <summary>
         /// パネルの表示状態。
@@ -117,10 +118,9 @@ namespace Game.UI
                 _panelRoot.SetActive(false);
             }
 
-            GameFlowController controller = Object.FindFirstObjectByType<GameFlowController>();
-            if (controller != null && controller.CurrentPhase == GamePhase.ShowingEvent)
+            if (_gameFlowController != null && _gameFlowController.CurrentPhase == GamePhase.ShowingEvent)
             {
-                controller.OnEventDismissed();
+                _gameFlowController.OnEventDismissed();
             }
         }
 

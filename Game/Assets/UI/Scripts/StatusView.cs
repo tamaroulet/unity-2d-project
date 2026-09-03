@@ -25,6 +25,8 @@ namespace Game.UI
         [SerializeField] private RectTransform _staminaBarFill;
         [SerializeField] private RectTransform _skillBarFill;
         [SerializeField] private RectTransform _mentalBarFill;
+        [SerializeField] private GameFlowController _gameFlowController;
+        [SerializeField] private BossBattleDialogView _bossBattleDialog;
 
         /// <summary>
         /// 直近に受信した GameState。TMP Essential Resources 未インポート環境では
@@ -34,42 +36,28 @@ namespace Game.UI
 
         private void Awake()
         {
-            EnsureReferences();
         }
 
         private void Start()
         {
-            EnsureReferences();
-            SyncFromFlowController();
             HookFlowControllerEvents();
-        }
-
-        private void Update()
-        {
-            if (Application.isPlaying)
-            {
-                SyncFromFlowController();
-                HookFlowControllerEvents();
-            }
         }
 
         private void HookFlowControllerEvents()
         {
-            GameFlowController controller = Object.FindFirstObjectByType<GameFlowController>();
-            if (controller != null)
+            if (_gameFlowController != null)
             {
-                controller.OnBossBattleOccurred -= HandleBossBattle;
-                controller.OnBossBattleOccurred += HandleBossBattle;
+                _gameFlowController.OnBossBattleOccurred -= HandleBossBattle;
+                _gameFlowController.OnBossBattleOccurred += HandleBossBattle;
             }
         }
 
         private void HandleBossBattle(BossSO boss, FullBattleResult result, System.Action callback)
         {
-            BossBattleDialogView dialog = Object.FindFirstObjectByType<BossBattleDialogView>(FindObjectsInactive.Include);
-            if (dialog != null)
+            if (_bossBattleDialog != null)
             {
-                dialog.gameObject.SetActive(true);
-                dialog.Show(boss, result, callback);
+                _bossBattleDialog.gameObject.SetActive(true);
+                _bossBattleDialog.Show(boss, result, callback);
             }
             else
             {
@@ -77,26 +65,8 @@ namespace Game.UI
             }
         }
 
-        private void SyncFromFlowController()
-        {
-            GameFlowController controller = Object.FindFirstObjectByType<GameFlowController>();
-            if (controller != null && controller.CurrentState != null)
-            {
-                if (LastDisplayedState == null ||
-                    LastDisplayedState.CurrentTurn != controller.CurrentState.CurrentTurn ||
-                    LastDisplayedState.Stamina != controller.CurrentState.Stamina ||
-                    LastDisplayedState.Skill != controller.CurrentState.Skill ||
-                    LastDisplayedState.Mental != controller.CurrentState.Mental)
-                {
-                    OnGameStateChanged(controller.CurrentState);
-                }
-            }
-        }
-
         private void OnEnable()
         {
-            EnsureReferences();
-            SyncFromFlowController();
             HookFlowControllerEvents();
             if (_gameStateChannel != null)
             {
@@ -104,30 +74,13 @@ namespace Game.UI
             }
         }
 
-        private void EnsureReferences()
-        {
-#if UNITY_EDITOR
-            if (!Application.isPlaying) return;
-            if (_gameStateChannel == null)
-            {
-                _gameStateChannel = UnityEditor.AssetDatabase.LoadAssetAtPath<GameStateEventChannelSO>("Assets/Data/Channels/GameStateEventChannel.asset");
-            }
-#endif
-            if (_turnText == null) _turnText = transform.Find("TurnText")?.GetComponent<TextMeshProUGUI>();
-            if (_staminaText == null) _staminaText = transform.Find("StaminaGroup/Label")?.GetComponent<TextMeshProUGUI>();
-            if (_skillText == null) _skillText = transform.Find("SkillGroup/Label")?.GetComponent<TextMeshProUGUI>();
-            if (_mentalText == null) _mentalText = transform.Find("MentalGroup/Label")?.GetComponent<TextMeshProUGUI>();
-            if (_staminaGauge == null) _staminaGauge = transform.Find("StaminaGroup")?.GetComponent<Slider>();
-            if (_skillGauge == null) _skillGauge = transform.Find("SkillGroup")?.GetComponent<Slider>();
-            if (_mentalGauge == null) _mentalGauge = transform.Find("MentalGroup")?.GetComponent<Slider>();
-
-            if (_staminaBarFill == null) _staminaBarFill = transform.Find("StaminaGroup/BarBg/BarFill")?.GetComponent<RectTransform>();
-            if (_skillBarFill == null) _skillBarFill = transform.Find("SkillGroup/BarBg/BarFill")?.GetComponent<RectTransform>();
-            if (_mentalBarFill == null) _mentalBarFill = transform.Find("MentalGroup/BarBg/BarFill")?.GetComponent<RectTransform>();
-        }
-
         private void OnDisable()
         {
+            if (_gameFlowController != null)
+            {
+                _gameFlowController.OnBossBattleOccurred -= HandleBossBattle;
+            }
+
             if (_gameStateChannel != null)
             {
                 _gameStateChannel.OnEventRaised -= OnGameStateChanged;

@@ -36,12 +36,6 @@ namespace Game.UI
 
         private void EnsureReferences()
         {
-            if (_panelRoot == null) _panelRoot = transform.Find("PanelRoot")?.gameObject ?? gameObject;
-            if (_bossNameText == null) _bossNameText = transform.Find("PanelRoot/BossTitleText")?.GetComponent<TextMeshProUGUI>();
-            if (_bossHpText == null) _bossHpText = transform.Find("PanelRoot/BossHpGroup/Label")?.GetComponent<TextMeshProUGUI>();
-            if (_shieldText == null) _shieldText = transform.Find("PanelRoot/BossShieldGroup/Label")?.GetComponent<TextMeshProUGUI>();
-            if (_dismissButton == null) _dismissButton = transform.Find("PanelRoot/AutoBattleNextButton")?.GetComponent<Button>();
-
             if (_dismissButtonText == null)
             {
                 _dismissButtonText = ResolveDismissButtonText();
@@ -85,27 +79,6 @@ namespace Game.UI
             {
                 _dismissButton.onClick.RemoveListener(OnDismissButtonClicked);
                 _dismissButton.onClick.AddListener(OnDismissButtonClicked);
-            }
-        }
-
-        private void Update()
-        {
-            if (!Application.isPlaying) return;
-
-            GameFlowController controller = UnityEngine.Object.FindFirstObjectByType<GameFlowController>();
-            if (controller != null && (controller.CurrentPhase == GamePhase.ShowingRelicDraft || controller.CurrentPhase == GamePhase.GameOver) && controller.LastEncounteredBoss != null && !IsPanelActive)
-            {
-                Show(controller.LastEncounteredBoss, controller.LastBossBattleResult, () =>
-                {
-                    if (controller.CurrentPhase == GamePhase.ShowingRelicDraft)
-                    {
-                        controller.OnRelicAcquired(controller.LastEncounteredBoss.BossId);
-                    }
-                    else if (controller.CurrentPhase == GamePhase.GameOver)
-                    {
-                        controller.StartGame();
-                    }
-                });
             }
         }
 

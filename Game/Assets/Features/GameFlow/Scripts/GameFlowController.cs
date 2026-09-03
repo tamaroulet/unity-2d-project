@@ -71,47 +71,18 @@ namespace Game.Features.GameFlow
         private void Awake()
         {
             _bossBattleTurns = new List<int> { 6, 12, 18, 24 };
-            EnsureDependencies();
         }
 
         private void Start()
         {
             _bossBattleTurns = new List<int> { 6, 12, 18, 24 };
-            EnsureDependencies();
             if (_autoStartOnPlay)
             {
                 StartGame();
             }
         }
 
-        /// <summary>
-        /// 依存する ScriptableObject が未割り当ての場合に自動補完するセーフティネット。
-        /// </summary>
-        public void EnsureDependencies()
-        {
-#if UNITY_EDITOR
-            if (_gameRules == null) _gameRules = UnityEditor.AssetDatabase.LoadAssetAtPath<GameRulesSO>("Assets/Data/Rules/GameRules.asset");
-            if (_commandResolver == null) _commandResolver = UnityEditor.AssetDatabase.LoadAssetAtPath<CommandResolverSO>("Assets/Data/Commands/CommandResolver.asset");
-            if (_eventCatalog == null) _eventCatalog = UnityEditor.AssetDatabase.LoadAssetAtPath<GameEventCatalogSO>("Assets/Data/Events/GameEventCatalog.asset");
-            if (_eventResolver == null) _eventResolver = UnityEditor.AssetDatabase.LoadAssetAtPath<EventResolverSO>("Assets/Data/Events/EventResolver.asset");
-            if (_endingRules == null) _endingRules = UnityEditor.AssetDatabase.LoadAssetAtPath<EndingRulesSO>("Assets/Data/Endings/EndingRules.asset");
-            if (_endingResolver == null) _endingResolver = UnityEditor.AssetDatabase.LoadAssetAtPath<EndingResolverSO>("Assets/Data/Endings/EndingResolver.asset");
-            if (_gameStateChannel == null) _gameStateChannel = UnityEditor.AssetDatabase.LoadAssetAtPath<GameStateEventChannelSO>("Assets/Data/Channels/GameStateEventChannel.asset");
-            if (_eventFiredChannel == null) _eventFiredChannel = UnityEditor.AssetDatabase.LoadAssetAtPath<GameEventFiredChannelSO>("Assets/Data/Channels/GameEventFiredChannel.asset");
-            if (_endingDecidedChannel == null) _endingDecidedChannel = UnityEditor.AssetDatabase.LoadAssetAtPath<EndingDecidedChannelSO>("Assets/Data/Channels/EndingDecidedChannel.asset");
-            if (_relicCatalog == null) _relicCatalog = UnityEditor.AssetDatabase.LoadAssetAtPath<RelicCatalogSO>("Assets/Features/Relic/Instances/RelicCatalog.asset");
-            if (_relicResolver == null) _relicResolver = UnityEditor.AssetDatabase.LoadAssetAtPath<RelicResolverSO>("Assets/Features/Relic/Instances/RelicResolver.asset");
-            if (_bossCatalog == null) _bossCatalog = UnityEditor.AssetDatabase.LoadAssetAtPath<BossCatalogSO>("Assets/Features/Boss/Instances/BossCatalog.asset");
-            if (_autoBattleResolver == null) _autoBattleResolver = UnityEditor.AssetDatabase.LoadAssetAtPath<AutoBattleResolverSO>("Assets/Features/Boss/Instances/AutoBattleResolver.asset");
-            if (_metaPointResolver == null) _metaPointResolver = UnityEditor.AssetDatabase.LoadAssetAtPath<MetaPointResolverSO>("Assets/Features/MetaProgression/Instances/MetaPointResolver.asset");
-            if (_metaUnlockCatalog == null) _metaUnlockCatalog = UnityEditor.AssetDatabase.LoadAssetAtPath<MetaUnlockCatalogSO>("Assets/Features/MetaProgression/Instances/MetaUnlockCatalog.asset");
 
-            if (_bossBattleTurns == null || _bossBattleTurns.Count == 0 || _bossBattleTurns.Contains(1))
-            {
-                _bossBattleTurns = new List<int> { 6, 12, 18, 24 };
-            }
-#endif
-        }
 
         private void OnEnable()
         {
@@ -140,7 +111,6 @@ namespace Game.Features.GameFlow
         /// </summary>
         public void StartGame()
         {
-            EnsureDependencies();
             _activeRelics.Clear();
             _bossDefeatedCount = 0;
             _currentPhase = GamePhase.Initializing;
@@ -169,8 +139,6 @@ namespace Game.Features.GameFlow
         /// </summary>
         public void ExecuteCommand(CommandDataSO command)
         {
-            EnsureDependencies();
-
             if (_currentPhase != GamePhase.WaitingInput)
             {
                 Debug.LogWarning($"[GameFlowController] Cannot execute command {command?.name}: Not in WaitingInput phase (Current phase: {_currentPhase})");
@@ -214,8 +182,6 @@ namespace Game.Features.GameFlow
         /// </summary>
         public void AdvanceTurn()
         {
-            EnsureDependencies();
-
             if (_relicResolver != null && _activeRelics.Count > 0)
             {
                 _currentState = _relicResolver.ApplyTurnEndRelics(_currentState, _activeRelics, _gameRules);
@@ -249,7 +215,6 @@ namespace Game.Features.GameFlow
         /// </summary>
         private void BeginTurn()
         {
-            EnsureDependencies();
             _currentPhase = GamePhase.TurnStart;
 
             if (_relicResolver != null && _activeRelics.Count > 0)
