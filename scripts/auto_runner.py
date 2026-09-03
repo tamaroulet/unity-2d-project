@@ -132,8 +132,6 @@ def parse_instruction_uncompleted_tasks() -> list:
                     "task": task_text,
                     "raw_line": line
                 })
-        if uncompleted:
-            break
 
     return uncompleted
 
@@ -143,16 +141,44 @@ def sanitize_text(text: str) -> str:
     return text.encode("utf-8", errors="ignore").decode("utf-8")
 
 
+def get_recently_rejected_tasks() -> set:
+    """本日 REJECT されたタスクのテキスト集合を返す（同一タスクでの足踏みを防ぐため）。"""
+    today_key = datetime.now().strftime("%Y%m%d")
+    cycle_file = PROJECT_ROOT / "logs" / "nightly" / f"cycles-{today_key}.jsonl"
+    if not cycle_file.exists():
+        return set()
+    rejected = set()
+    for line in cycle_file.read_text(encoding="utf-8").splitlines():
+        if not line.strip():
+            continue
+        try:
+            rec = json.loads(line)
+            if rec.get("verdict") in ("REJECT_TESTS", "REJECT_POLICY"):
+                target = rec.get("target_task", "")
+                if target:
+                    rejected.add(target[:40])  # 前方一致
+        except Exception:
+            pass
+    return rejected
+
+
 def get_next_prompt(quotas: dict) -> tuple:
     """未完了タスクとロードマップを照合し、次に実行すべき高精度プロンプトを構築する。"""
     uncompleted_tasks = parse_instruction_uncompleted_tasks()
-    status_path = PROJECT_ROOT / "docs" / "STATUS.md"
-    status_text = status_path.read_text(encoding="utf-8") if status_path.exists() else ""
+    rejected_tasks = get_recently_rejected_tasks()
+
+    # REJECT されたタスクは後回しにし、未挑戦のタスクを最優先して先行実装を進める
+    eligible_tasks = [
+        t for t in uncompleted_tasks
+        if not any(rej in t["task"] for rej in rejected_tasks)
+    ]
+    if not eligible_tasks and uncompleted_tasks:
+        eligible_tasks = uncompleted_tasks  # 全て挑戦済みの場合は最初に戻る
 
     target_task_description = ""
-    if uncompleted_tasks:
-        target = uncompleted_tasks[0]
-        target_task_description = f"【最優先実行目標】\nセクション: {target['section']}\nタスク: {target['task']}\n"
+    if eligible_tasks:
+        target = eligible_tasks[0]
+        target_task_description = f"【最優先実行目標】\nファイル: {target['file']}\nセクション: {target['section']}\nタスク: {target['task']}\n"
     else:
         target_task_description = "【最優先実行目標】\n全指示書タスクの検証・ドキュメント同期・ビルド健全性の確認\n"
 
