@@ -1,6 +1,6 @@
 # プロジェクト現在地（STATUS）
 
-最終更新日：2026-09-02
+最終更新日：2026-09-03
 
 ---
 
@@ -38,9 +38,13 @@
 
 ## 2. 次にやること
 
-1. **第7週 最終同期（Step 2.5）**:
+1. **ワークフロー改善（Fix Gate Protocol）** ← **本日実施済み**:
+   - `.agents/rules/10_workflow.md` に第1.5節 Fix Gate Protocol を新設
+   - `.agents/rules/00_role.md` に Fix Gate Enforcement 条項を追加
+   - `docs/research/workflow_research.md` にリサーチ結果を記録
+2. **第7週 最終同期（Step 2.5）**:
    - `docs/log.md` および `README.md` の最終化と Git コミット＆プッシュ。
-2. **成果発表用まとめの準備**:
+3. **成果発表用まとめの準備**:
    - ゲーム構造・AI自律開発プロセスの発表用レポートの整理。
 
 ---
