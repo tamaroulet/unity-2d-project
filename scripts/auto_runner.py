@@ -166,6 +166,8 @@ def get_next_prompt(quotas: dict) -> tuple:
     """未完了タスクとロードマップを照合し、次に実行すべき高精度プロンプトを構築する。"""
     uncompleted_tasks = parse_instruction_uncompleted_tasks()
     rejected_tasks = get_recently_rejected_tasks()
+    status_path = PROJECT_ROOT / "docs" / "STATUS.md"
+    status_text = status_path.read_text(encoding="utf-8") if status_path.exists() else ""
 
     # REJECT されたタスクは後回しにし、未挑戦のタスクを最優先して先行実装を進める
     eligible_tasks = [
