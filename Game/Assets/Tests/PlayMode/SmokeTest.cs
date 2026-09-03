@@ -61,6 +61,11 @@ namespace Game.Tests.PlayMode
         [UnityTest]
         public IEnumerator MainGame_StudyButtonClick_AdvancesTurnFrom1To2_WithZeroExceptions()
         {
+            LogAssert.Expect(LogType.Log, "[GameFlowController] Game Started! Initial State: Turn=1, Stamina=100, Skill=0, Mental=50");
+            LogAssert.Expect(LogType.Log, "[CommandButtonView] Clicked button for command: Study");
+            LogAssert.Expect(LogType.Log, new System.Text.RegularExpressions.Regex(@"^\[SmokeTest\] BEFORE.*"));
+            LogAssert.Expect(LogType.Log, new System.Text.RegularExpressions.Regex(@"^\[SmokeTest\] AFTER.*"));
+
             // ---------- Arrange: MainGame をロードし、入力待ちまで進める ----------
             AsyncOperation load = SceneManager.LoadSceneAsync(SceneName, LoadSceneMode.Single);
             Assert.IsTrue(
