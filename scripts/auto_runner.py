@@ -112,25 +112,28 @@ def should_use_claude(quotas: dict) -> bool:
 
 
 def parse_instruction_uncompleted_tasks() -> list:
-    """docs/instructions/08_polish_and_balance.md から未完了タスク (- [ ]) を抽出する。"""
-    instruction_path = PROJECT_ROOT / "docs" / "instructions" / "08_polish_and_balance.md"
-    if not instruction_path.exists():
+    """docs/instructions/*.md から未完了タスク (- [ ]) を順に抽出する。"""
+    instructions_dir = PROJECT_ROOT / "docs" / "instructions"
+    if not instructions_dir.exists():
         return []
 
-    lines = instruction_path.read_text(encoding="utf-8").splitlines()
     uncompleted = []
-    current_section = ""
-
-    for line in lines:
-        if line.startswith("### "):
-            current_section = line.replace("### ", "").strip()
-        elif line.strip().startswith("- [ ]"):
-            task_text = line.strip().replace("- [ ]", "").strip()
-            uncompleted.append({
-                "section": current_section,
-                "task": task_text,
-                "raw_line": line
-            })
+    for md_file in sorted(instructions_dir.glob("*.md")):
+        lines = md_file.read_text(encoding="utf-8").splitlines()
+        current_section = ""
+        for line in lines:
+            if line.startswith("### ") or line.startswith("## "):
+                current_section = f"[{md_file.name}] " + line.lstrip("#").strip()
+            elif line.strip().startswith("- [ ]"):
+                task_text = line.strip().replace("- [ ]", "").strip()
+                uncompleted.append({
+                    "file": md_file.name,
+                    "section": current_section,
+                    "task": task_text,
+                    "raw_line": line
+                })
+        if uncompleted:
+            break
 
     return uncompleted
 
@@ -267,6 +270,27 @@ def run_with_cli_fallback(prompt: str):
     return None
 
 
+def run_with_claude_fallback(prompt: str):
+    """invoke_claude_safe.ps1 経由で Claude Code による自律実行を行う。"""
+    log("[Claude] Claude Code (Sonnet) による自律実行を開始中...")
+    try:
+        script_path = PROJECT_ROOT / "scripts" / "invoke_claude_safe.ps1"
+        result = subprocess.run(
+            ["powershell", "-ExecutionPolicy", "Bypass", "-NoProfile",
+             "-File", str(script_path), "-Prompt", prompt, "-Model", "sonnet"],
+            capture_output=True, text=True, timeout=1800,
+            cwd=str(PROJECT_ROOT)
+        )
+        if result.returncode == 0:
+            log(f"[Claude] Claude Code 完了。出力長: {len(result.stdout)} 文字")
+            return result.stdout
+        else:
+            log(f"[Claude] Claude Code 失敗: {result.stderr[:500]}")
+    except Exception as e:
+        log(f"[Claude] Claude Code 実行エラー: {e}")
+    return None
+
+
 # ==============================================================================
 # 4. メインルーチン
 # ==============================================================================
@@ -300,10 +324,12 @@ async def main():
         return
     log(f"[GATE] cycle={cycle.cycle_id} snapshot={cycle.snapshot[:8]}")
 
-    # 4. エージェント起動（SDK 優先、CLI フォールバック）
+    # 4. エージェント起動（SDK 優先、CLI フォールバック、Claude フォールバック）
     result = await run_with_sdk(prompt)
     if result is None:
         result = run_with_cli_fallback(prompt)
+    if result is None:
+        result = run_with_claude_fallback(prompt)
 
     # 5. 安全ハーネス: 検査 -> 受理 or 隔離＋巻き戻し
     record = finalize_cycle(cycle, agent_ok=result is not None)
