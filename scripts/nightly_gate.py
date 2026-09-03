@@ -66,7 +66,16 @@ def head_sha() -> str:
 
 
 def is_dirty() -> bool:
-    return bool(git("status", "--porcelain").strip())
+    """人間の作業（未コミットの変更）があるか判定する。自動生成レポート等は除外する。"""
+    lines = git("status", "--porcelain").splitlines()
+    meaningful_changes = []
+    for l in lines:
+        cleaned = l.strip()
+        # docs/nightly/ 配下の朝刊レポートやログファイルは人間の作業ではないため除外
+        if "docs/nightly/" in cleaned or "logs/" in cleaned:
+            continue
+        meaningful_changes.append(l)
+    return bool(meaningful_changes)
 
 
 # ==============================================================================
