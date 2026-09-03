@@ -133,6 +133,21 @@ Test Runner 上で単体テストが可能になる。
 
 ---
 
+## 4.1. ゲーム進行ステートマシン（GamePhase）の厳格な契約
+
+`GameFlowController` のフェーズ遷移において、対症療法的な自己解決（Auto-recovery）を厳禁とし、以下の契約を厳守する。
+
+1. **`GamePhase.ShowingEvent`**:
+   - イベント発生時に遷移する。
+   - **必ず外部（`EventDialogView.OnEventDismissed()` 等）からの明示的な解除呼び出し（`OnEventDismissed()`）を待つ**。
+   - `ExecuteCommand` 内で勝手に `WaitingInput` へ復帰させる Auto-recovery を禁止する。
+2. **`GamePhase.ShowingRelicDraft`**:
+   - ボス撃破時に遷移する。
+   - **必ず外部（ドラフトUIまたはコールバック）からの明示的なレリック選択（`OnRelicAcquired()`）を待つ**。
+   - 購読者不在を理由とした即時自己呼び出し・勝手なフェーズ終了を禁止する。
+
+---
+
 ## 5. `record` 型の使用制約
 
 Unity のシリアライズ機構は C# の `record` に対応していない。

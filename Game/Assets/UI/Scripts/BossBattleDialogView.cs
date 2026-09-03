@@ -22,6 +22,7 @@ namespace Game.UI
         [SerializeField] private TextMeshProUGUI _shieldText;
         [SerializeField] private TextMeshProUGUI _battleLogText;
         [SerializeField] private Button _dismissButton;
+        [SerializeField] private TextMeshProUGUI _dismissButtonText;
 
         private Action _onDismissedCallback;
 
@@ -41,14 +42,40 @@ namespace Game.UI
             if (_shieldText == null) _shieldText = transform.Find("PanelRoot/BossShieldGroup/Label")?.GetComponent<TextMeshProUGUI>();
             if (_dismissButton == null) _dismissButton = transform.Find("PanelRoot/AutoBattleNextButton")?.GetComponent<Button>();
 
-            if (_dismissButton != null)
+            if (_dismissButtonText == null)
             {
-                TextMeshProUGUI btnText = _dismissButton.GetComponentInChildren<TextMeshProUGUI>();
-                if (btnText != null)
-                {
-                    btnText.text = "AUTO BATTLE / NEXT";
-                }
+                _dismissButtonText = ResolveDismissButtonText();
             }
+
+            if (_dismissButtonText != null)
+            {
+                _dismissButtonText.text = "AUTO BATTLE / NEXT";
+            }
+        }
+
+        /// <summary>
+        /// 決定ボタンのラベルを解決する。ボス名・HP・シールド・戦闘ログとして
+        /// 既にバインドされているテキストは、誤ってボタンラベルとして上書きしないよう除外する。
+        /// </summary>
+        private TextMeshProUGUI ResolveDismissButtonText()
+        {
+            if (_dismissButton == null)
+            {
+                return null;
+            }
+
+            foreach (TextMeshProUGUI candidate in _dismissButton.GetComponentsInChildren<TextMeshProUGUI>(true))
+            {
+                if (candidate == _bossNameText || candidate == _bossHpText ||
+                    candidate == _shieldText || candidate == _battleLogText)
+                {
+                    continue;
+                }
+
+                return candidate;
+            }
+
+            return null;
         }
 
         private void OnEnable()
@@ -104,15 +131,16 @@ namespace Game.UI
                 _bossNameText.text = boss != null ? boss.BossName : "BOSS BATTLE";
             }
 
-            if (_dismissButton != null)
+            if (_dismissButtonText == null)
             {
-                TextMeshProUGUI btnText = _dismissButton.GetComponentInChildren<TextMeshProUGUI>();
-                if (btnText != null)
-                {
-                    btnText.text = battleResult != null && battleResult.Outcome == BattleOutcomeKind.Victory
-                        ? "VICTORY / NEXT ACT"
-                        : "DEFEAT / RESTART";
-                }
+                _dismissButtonText = ResolveDismissButtonText();
+            }
+
+            if (_dismissButtonText != null)
+            {
+                _dismissButtonText.text = battleResult != null && battleResult.Outcome == BattleOutcomeKind.Victory
+                    ? "VICTORY / NEXT ACT"
+                    : "DEFEAT / RESTART";
             }
 
             if (battleResult != null)

@@ -1,0 +1,24 @@
+【Deep Research レポート受領：48時間立て直し計画の監査および直近移行指示の要請】
+
+Claude Opus アーキテクトへ：
+
+人間から Deep Research の調査レポートが提供され、`docs/research/Research-02_DeepResearch_report.md` に配置されました。
+あなたが作成した指示書（Research-02_DeepResearch_brief.md）に基づき、軸A〜Fの全領域と添付成果物（GameCI YAML、PlayModeテストC#、フック設定、48時間計画）が網羅されています。
+
+【レポートの要点】
+1. 失敗の本質：
+   - METRのTask Horizon限界（16時間）を超過した32時間の自律稼働による自律性喪失
+   - EditMode 127件の単体テストを合格させること自体を目的化した典型的な Reward Hacking（報酬ハッキング）
+   - 34KBの自然言語ルールの認知負荷超過（Threshold Decay）による指示脱落
+2. 推奨される抜本的処方箋：
+   - 34KBの自然言語ルールを破棄し、Claude Code Hooks（PreToolUse / PostToolUse）および GameCI による物理ブロック機構へ移行
+   - 12アセンブリ分割・不要モックテスト・対症療法コード（約4,000行）を統合・解体
+   - 人間によるシンプルなシーン構築 ＋ PlayMode スモークテスト（Tracer Bullet）による「触れる状態」の最優先開通
+   - 48時間立て直し計画（Hour 0-4: 解体と清掃、Hour 4-8: 曳光弾開通、Hour 8-12: CI/CD設置...）
+
+【Claude Opus に求めるタスク】
+1. この Deep Research レポートおよび 48時間立て直し計画に対するアーキテクトとしての総合評価・承認
+2. 本日直ちに着手する「Hour 0〜4: 解体と清掃（Scrap & Clean）」の具体的な実行計画と、Gemini が言われた通りに動くための確定指示書の発行：
+   - 34KBルールの整理と `.claude/settings.json` の物理フック設定
+   - 12アセンブリの統合手順（どのasmdefをどう扱うか）
+   - 既存コード・テストの整理基準

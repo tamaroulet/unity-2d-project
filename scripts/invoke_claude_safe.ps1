@@ -5,6 +5,7 @@
 param (
     [Parameter(Mandatory=$true)]
     [string]$Prompt,
+    [string]$Model = "opus",
     [switch]$Force
 )
 
@@ -17,8 +18,8 @@ if (-not $Force -and (-not $quota.IsAvailable -or $quota.SessionUsedPercent -ge 
     exit 1
 }
 
-Write-Host "[ALLOWED] Claude Code session usage is $($quota.SessionUsedPercent)%. Executing prompt..."
-& claude --dangerously-skip-permissions -p $Prompt
+Write-Host "[ALLOWED] Claude Code session usage is $($quota.SessionUsedPercent)%. Executing prompt with model: $Model..."
+$null | & claude --dangerously-skip-permissions --model $Model -p $Prompt
 
 # 実行後の最新残量を再取得
 Write-Host "`n[POST-EXECUTION] Checking updated Claude Code quota..."

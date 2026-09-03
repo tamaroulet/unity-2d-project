@@ -173,16 +173,8 @@ namespace Game.Features.GameFlow
 
             if (_currentPhase != GamePhase.WaitingInput)
             {
-                if (_currentPhase == GamePhase.ShowingRelicDraft || _currentPhase == GamePhase.ShowingEvent || _currentPhase == GamePhase.TurnStart)
-                {
-                    Debug.Log($"[GameFlowController] Auto-recovering phase {_currentPhase} to WaitingInput for player command execution.");
-                    _currentPhase = GamePhase.WaitingInput;
-                }
-                else
-                {
-                    Debug.LogWarning($"[GameFlowController] Cannot execute command {command?.name}: Not in WaitingInput phase (Current phase: {_currentPhase})");
-                    return;
-                }
+                Debug.LogWarning($"[GameFlowController] Cannot execute command {command?.name}: Not in WaitingInput phase (Current phase: {_currentPhase})");
+                return;
             }
 
             if (_commandResolver == null || _gameRules == null)
@@ -290,17 +282,10 @@ namespace Game.Features.GameFlow
                     {
                         _bossDefeatedCount++;
                         _currentPhase = GamePhase.ShowingRelicDraft;
-                        if (OnBossBattleOccurred != null)
-                        {
-                            OnBossBattleOccurred.Invoke(boss, battleResult, () =>
-                            {
-                                OnRelicAcquired(bossId);
-                            });
-                        }
-                        else
+                        OnBossBattleOccurred?.Invoke(boss, battleResult, () =>
                         {
                             OnRelicAcquired(bossId);
-                        }
+                        });
                         return;
                     }
                     else

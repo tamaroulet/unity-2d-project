@@ -1,6 +1,7 @@
 // SPDX-AI-Disclosure: ai-generated
 using System.Collections.Generic;
 using Game.Core;
+using Game.Features.GameFlow;
 using Game.Features.Event;
 using TMPro;
 using UnityEngine;
@@ -114,6 +115,12 @@ namespace Game.UI
             if (_panelRoot != null)
             {
                 _panelRoot.SetActive(false);
+            }
+
+            GameFlowController controller = Object.FindFirstObjectByType<GameFlowController>();
+            if (controller != null && controller.CurrentPhase == GamePhase.ShowingEvent)
+            {
+                controller.OnEventDismissed();
             }
         }
 
