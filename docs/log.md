@@ -952,6 +952,46 @@ Antigravity (Gemini) による直接 C# 実装体制への移行後、指示書 
 
 ---
 
+### UI パネルへのスプライト割り当て（09 指示書 2.2）
+
+#### 1. 実施内容（`UILayoutBuilder.cs`）
+
+- `ApplySprite(Image, spriteName, Color)` を追加し、スプライトの割り当てと `Image.Type` の決定を 1 か所に集約した。
+  `spriteBorder` が設定されている `Frame_Card` は `Sliced`、border を持たない `Bar_Fill` は `Simple` で伸ばす。
+  スプライト未生成時は単色のまま構築を続行する（レイアウト構築が止まらない）。
+- 単色のままだった `StatusPanel` と `CommandPanel` の背景 `Image` に `Frame_Card` を割り当てた。
+- ゲージの `BarBg` / `BarFill` に `Bar_Fill` を割り当てた。生成済みだが一度も使われていなかったスプライトである。
+  ボス戦ダイアログの HP / シールドゲージも同じ `CreateGaugeGroup` を通るため同時に反映される。
+- 既存の `Frame_Card` 直書き 5 か所を `ApplySprite` に置き換えた（挙動は同じ）。
+- `StatusView` の `_staminaBarFill` / `_skillBarFill` / `_mentalBarFill` を `FindBarFill()` でバインドするようにした。
+  シーン側では人間が Inspector で割り当て済みだったが、ビルダーは Canvas 配下を全削除してから再構築するため、
+  バインドを持たないままでは `Tools/Setup Complete UI Layout` を再実行した瞬間にゲージが動かなくなる状態だった。
+
+#### 2. 検証（実測）
+
+| 手段 | 結果 |
+|---|---|
+| `dotnet build Game.Editor.csproj` | 0 エラー（警告 3 件はいずれも既存の MSB3277 参照競合） |
+
+#### 3. 人間に引き渡す作業と、その理由
+
+指示書 2.2 の 2 つ目「`Tools/Setup Complete UI Layout (Simple Shapes)` を実行して `MainGame.unity` を更新・保存する」は
+**実行せずに残した**。`.agents/rules/00_rules.md` により `.unity` の更新は人間がエディタで行う領分であることに加え、
+現時点で実行すると以下の実害があるためである。
+
+- ビルダーは Canvas 配下を全削除して再構築するが、`BossBattleDialogView` / `MetaShopDialogView` /
+  `RelicDraftDialogView` の各フィールドを再バインドしない。
+- 実際に `MainGame.unity` には人間が割り当てた `_dismissButtonText: {fileID: 1834536044}` が残っており、
+  いま再実行するとこの参照が失われる（他のフィールドは元から `fileID: 0` のため影響なし）。
+- また `RelicDraftDialogPanel` にはそもそも `RelicDraftDialogView` / `RelicCardView` が付いていない。
+  これらのビュー結線は「どのカードを何枚、どのチャンネル SO に繋ぐか」という設計判断を含み、
+  09 指示書には記載がないため、独断で決めずに停止する。
+
+ビュー結線をビルダーに実装してから再実行するのが安全な順序であり、次の指示書で扱うべき範囲と考える。
+
+---
+
+
 ## 評価指標の定義
 
 本プロジェクトで記録している指標のうち、既存の評価系との対応は以下の通り。

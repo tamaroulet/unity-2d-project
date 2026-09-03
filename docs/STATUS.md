@@ -34,6 +34,7 @@
 | **第7週 Step 21** | 単純図形UIワイヤーフレーム配置（UILayoutBuilder）＆シーン完全バインド | 完了 | `814cc19` |
 | **第7週 Step 22** | WebGL ローカルビルド確定（WASM 8.4MB / Data 4.5MB）＆ AutoRunner 常駐 | 完了 | `54704c5` |
 | **第8週 Step 23** | 幾何学ピクトグラム生成器の是正（Study 独立化 / Act 別 N 角形紋章 / 角丸カード枠） | 完了 | `HEAD` |
+| **第8週 Step 24** | UI パネルへのスプライト割り当て（`UILayoutBuilder`: Frame_Card / Bar_Fill、ゲージ RectTransform バインド） | コード完了・シーン反映は人間待ち | `HEAD` |
 
 ---
 
@@ -44,6 +45,11 @@
 
 ## 2. 次にやること
 
+0. **`Tools/Setup Complete UI Layout (Simple Shapes)` の実行（人間・Unity エディタ）**:
+   - `UILayoutBuilder.cs` 側のスプライト割り当ては完了済み。実行すればパネル背景とゲージに図形スプライトが乗る。
+   - ただし実行前に、ビルダーが `BossBattleDialogView` / `MetaShopDialogView` / `RelicDraftDialogView` の
+     フィールドを再バインドしない点を解消する必要がある。現状のまま実行すると、シーンに残っている
+     `_dismissButtonText` の参照が消える（詳細は `docs/log.md` 2026-09-04 の該当節）。
 1. **モック通しプレイの開通（基本図形のまま完走）**:
    - `GameFlowController` で一時停止する `ShowingRelicDraft`（レリック3択）の配線を完了させ、24ターン〜ボス戦〜エンディングまで一気通貫で動く動的モックを完成させる。
 2. **AI主導ゲーム開発フレームワークの体系化資料まとめ**:

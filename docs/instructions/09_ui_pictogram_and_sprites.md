@@ -23,7 +23,7 @@ AI画像生成や外部イラスト素材を使わず、純粋な C# プロシ�
   - `Bar_Fill.png`（なめらかなゲージ塗り用スプライト）
 
 ### 2.2 UI パネルへのスプライト割り当てとシーン更新
-- [ ] `UILayoutBuilder.cs` を更新し、`StatusPanel`, `CommandButtonsPanel`, `BossBattleDialogPanel`, `RelicDraftDialogPanel`, `MetaShopDialogPanel` の各 `Image` に上記スプライトをアサインする。
+- [x] `UILayoutBuilder.cs` を更新し、`StatusPanel`, `CommandButtonsPanel`, `BossBattleDialogPanel`, `RelicDraftDialogPanel`, `MetaShopDialogPanel` の各 `Image` に上記スプライトをアサインする。
 - [ ] `Tools/Setup Complete UI Layout (Simple Shapes)` を実行して `MainGame.unity` を更新・保存する。
 
 ### 2.3 単体テスト・シミュレーション検証

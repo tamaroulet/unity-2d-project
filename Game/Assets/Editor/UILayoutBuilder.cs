@@ -119,6 +119,24 @@ namespace Game.EditorScripts
             return AssetDatabase.LoadAssetAtPath<Sprite>($"Assets/UI/Sprites/{name}.png");
         }
 
+        /// <summary>
+        /// パネル背景やゲージなど、引き伸ばして使う Image にスプライトを割り当てる。
+        /// 9-slice の枠（border あり）は Sliced、境界のないグラデーションは Simple で伸ばす。
+        /// スプライトが未生成の場合は単色のまま残し、レイアウト構築自体は続行する。
+        /// </summary>
+        private static void ApplySprite(Image image, string spriteName, Color color)
+        {
+            if (image == null) return;
+
+            Sprite sprite = LoadSprite(spriteName);
+            if (sprite != null)
+            {
+                image.sprite = sprite;
+                image.type = sprite.border == Vector4.zero ? Image.Type.Simple : Image.Type.Sliced;
+            }
+            image.color = color;
+        }
+
         private static void CreateOrUpdateBackground(Transform canvasTr)
         {
             Transform bgTr = canvasTr.Find("Background");
@@ -149,7 +167,7 @@ namespace Game.EditorScripts
             rect.offsetMax = new Vector2(-20f, -10f);
 
             Image img = go.GetComponent<Image>() ?? go.AddComponent<Image>();
-            img.color = ColorBgHeader;
+            ApplySprite(img, "Frame_Card", ColorBgHeader);
 
             StatusView view = go.GetComponent<StatusView>() ?? go.AddComponent<StatusView>();
 
@@ -169,6 +187,9 @@ namespace Game.EditorScripts
             so.FindProperty("_staminaText").objectReferenceValue = staminaGo.transform.Find("Label").GetComponent<TextMeshProUGUI>();
             so.FindProperty("_skillText").objectReferenceValue = skillGo.transform.Find("Label").GetComponent<TextMeshProUGUI>();
             so.FindProperty("_mentalText").objectReferenceValue = mentalGo.transform.Find("Label").GetComponent<TextMeshProUGUI>();
+            so.FindProperty("_staminaBarFill").objectReferenceValue = FindBarFill(staminaGo);
+            so.FindProperty("_skillBarFill").objectReferenceValue = FindBarFill(skillGo);
+            so.FindProperty("_mentalBarFill").objectReferenceValue = FindBarFill(mentalGo);
             so.ApplyModifiedProperties();
         }
 
@@ -186,7 +207,7 @@ namespace Game.EditorScripts
             rect.offsetMax = new Vector2(-20f, 15f);
 
             Image img = go.GetComponent<Image>() ?? go.AddComponent<Image>();
-            img.color = ColorBgFooter;
+            ApplySprite(img, "Frame_Card", ColorBgFooter);
 
             GameFlowController flowController = Object.FindFirstObjectByType<GameFlowController>();
 
@@ -207,9 +228,7 @@ namespace Game.EditorScripts
             rect.sizeDelta = new Vector2(300, 120);
 
             Image img = btnGo.GetComponent<Image>() ?? btnGo.AddComponent<Image>();
-            img.sprite = LoadSprite("Frame_Card");
-            img.type = Image.Type.Sliced;
-            img.color = ColorButtonBg;
+            ApplySprite(img, "Frame_Card", ColorButtonBg);
 
             AttachIcon(rect, "Icon", LoadSprite(iconName), new Vector2(-80, 0), new Vector2(56, 56));
             GameObject labelGo = CreateLabel(rect, "Text", text, new Vector2(40, 0), new Vector2(180, 80), 22, TextAlignmentOptions.Center);
@@ -331,6 +350,17 @@ namespace Game.EditorScripts
             return rect;
         }
 
+        /// <summary>
+        /// CreateGaugeGroup が組んだ "BarBg/BarFill" の RectTransform を返す。
+        /// StatusView 側の伸縮対象として SerializedObject にバインドするために使う。
+        /// </summary>
+        private static RectTransform FindBarFill(GameObject gaugeGroup)
+        {
+            if (gaugeGroup == null) return null;
+            Transform barFill = gaugeGroup.transform.Find("BarBg/BarFill");
+            return barFill != null ? barFill.GetComponent<RectTransform>() : null;
+        }
+
         private static void ConfigureModalPanel(Transform panelTr, Vector2 size, Color bgColor)
         {
             EnsureRectTransform(panelTr.gameObject);
@@ -355,9 +385,7 @@ namespace Game.EditorScripts
             rootRect.anchoredPosition = Vector2.zero;
 
             Image rootImg = rootGo.GetComponent<Image>() ?? rootGo.AddComponent<Image>();
-            rootImg.sprite = LoadSprite("Frame_Card");
-            rootImg.type = Image.Type.Sliced;
-            rootImg.color = bgColor;
+            ApplySprite(rootImg, "Frame_Card", bgColor);
         }
 
         private static GameObject CreateGaugeGroup(RectTransform parent, string name, string iconName, Color barColor, Vector2 pos, string label)
@@ -380,7 +408,7 @@ namespace Game.EditorScripts
             RectTransform barBgRect = EnsureRectTransform(barBgGo);
             barBgRect.anchoredPosition = new Vector2(20, -5);
             barBgRect.sizeDelta = new Vector2(220, 24);
-            barBgGo.GetComponent<Image>().color = ColorBarBg;
+            ApplySprite(barBgGo.GetComponent<Image>(), "Bar_Fill", ColorBarBg);
 
             // ゲージバー
             Transform barFillTr = barBgRect.Find("BarFill");
@@ -390,7 +418,7 @@ namespace Game.EditorScripts
             barFillRect.anchorMin = Vector2.zero;
             barFillRect.anchorMax = new Vector2(0.7f, 1f); // 70% 仮置き
             barFillRect.sizeDelta = Vector2.zero;
-            barFillGo.GetComponent<Image>().color = barColor;
+            ApplySprite(barFillGo.GetComponent<Image>(), "Bar_Fill", barColor);
 
             // ラベル
             CreateLabel(rect, "Label", label, new Vector2(20, 15), new Vector2(220, 24), 18, TextAlignmentOptions.Center);
@@ -408,9 +436,7 @@ namespace Game.EditorScripts
             rect.sizeDelta = new Vector2(300, 120);
 
             Image img = btnGo.GetComponent<Image>() ?? btnGo.AddComponent<Image>();
-            img.sprite = LoadSprite("Frame_Card");
-            img.type = Image.Type.Sliced;
-            img.color = ColorButtonBg;
+            ApplySprite(img, "Frame_Card", ColorButtonBg);
 
             AttachIcon(rect, "Icon", LoadSprite(iconName), new Vector2(-80, 0), new Vector2(56, 56));
             CreateLabel(rect, "Text", text, new Vector2(40, 0), new Vector2(180, 80), 22, TextAlignmentOptions.Center);
@@ -427,9 +453,7 @@ namespace Game.EditorScripts
             rect.sizeDelta = size;
 
             Image img = btnGo.GetComponent<Image>() ?? btnGo.AddComponent<Image>();
-            img.sprite = LoadSprite("Frame_Card");
-            img.type = Image.Type.Sliced;
-            img.color = new Color(0.25f, 0.45f, 0.85f, 1.0f);
+            ApplySprite(img, "Frame_Card", new Color(0.25f, 0.45f, 0.85f, 1.0f));
 
             CreateLabel(rect, "Text", text, Vector2.zero, size, 22, TextAlignmentOptions.Center);
         }
@@ -445,9 +469,7 @@ namespace Game.EditorScripts
             rect.sizeDelta = new Vector2(280, 380);
 
             Image img = cardGo.GetComponent<Image>() ?? cardGo.AddComponent<Image>();
-            img.sprite = LoadSprite("Frame_Card");
-            img.type = Image.Type.Sliced;
-            img.color = ColorButtonBg;
+            ApplySprite(img, "Frame_Card", ColorButtonBg);
 
             AttachIcon(rect, "Icon", LoadSprite("Icon_Relic"), new Vector2(0, 80), new Vector2(80, 80));
             CreateLabel(rect, "Text", text, new Vector2(0, -60), new Vector2(240, 120), 20, TextAlignmentOptions.Center);
