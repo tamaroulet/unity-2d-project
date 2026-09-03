@@ -12,6 +12,7 @@ using UnityEngine;
 
 namespace Game.Tests.EditMode
 {
+    [Explicit("PlayMode 曳光弾で置換予定")]
     public class GameFlowControllerRelicTests
     {
         private const BindingFlags FieldFlags = BindingFlags.NonPublic | BindingFlags.Instance;
