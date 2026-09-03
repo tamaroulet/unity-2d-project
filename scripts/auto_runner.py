@@ -378,10 +378,7 @@ async def heal_with_opus(cycle, record: dict, target_task: str) -> dict:
 # ==============================================================================
 # 4. メインルーチン
 # ==============================================================================
-async def main():
-    log("=" * 60)
-    log("[START] AutoRunner 計画駆動型自律実行サイクル開始")
-
+async def run_single_cycle():
     # 1. クォータ取得
     quotas = get_quotas()
     if quotas:
@@ -396,9 +393,13 @@ async def main():
 
     # 2. 計画ロードマップと指示書から具体的プロンプトを構築
     prompt, remaining_tasks = get_next_prompt(quotas)
-    target_task = remaining_tasks[0]["task"] if remaining_tasks else "(検証・同期タスク)"
-    log(f"[PLAN] 残り未完了タスク数: {len(remaining_tasks)} 件")
-    log(f"[PLAN] 今回のターゲット: {target_task}")
+    if not remaining_tasks:
+        log("[PLAN] 全タスク完了。追加検証・ドキュメント同期を実行します。")
+        target_task = "(全タスク完了後の検証・同期)"
+    else:
+        target_task = remaining_tasks[0]["task"]
+        log(f"[PLAN] 残り未完了タスク数: {len(remaining_tasks)} 件")
+        log(f"[PLAN] 今回のターゲット: {target_task}")
 
     # 3. 隔離環境の確保: main ではなく auto/wip ブランチで作業する
     current_branch = subprocess.run(["git", "branch", "--show-current"], capture_output=True, text=True, cwd=str(PROJECT_ROOT)).stdout.strip()
@@ -408,12 +409,13 @@ async def main():
 
     cycle = begin_cycle(target_task=target_task, quotas=quotas)
     if cycle is None:
-        log("[GATE] ワーキングツリーが未コミット状態のため一旦 stash/commit して継続します。")
+        log("[GATE] ワーキングツリーが未コミット状態のため一旦 commit して継続します。")
         subprocess.run(["git", "add", "-A"], cwd=str(PROJECT_ROOT))
         subprocess.run(["git", "commit", "-m", "wip: save in-progress work"], cwd=str(PROJECT_ROOT))
         cycle = begin_cycle(target_task=target_task, quotas=quotas)
 
-    log(f"[GATE] cycle={cycle.cycle_id} snapshot={cycle.snapshot[:8]}")
+    if cycle:
+        log(f"[GATE] cycle={cycle.cycle_id} snapshot={cycle.snapshot[:8]}")
 
     # 4. エージェント起動（SDK 優先、CLI フォールバック、Claude フォールバック）
     result = await run_with_sdk(prompt)
@@ -428,8 +430,39 @@ async def main():
     log(f"[PIPELINE] タスク「{target_task[:40]}」の実装を auto/wip にコミットしました。止まらず次へ進みます。")
 
     # 6. テスト実測（現状把握・評価用）
-    record = finalize_cycle(cycle, agent_ok=result is not None)
-    log(f"[GATE] 現状テスト判定: verdict={record['verdict']} diff={record['diff_stat']}")
+    if cycle:
+        record = finalize_cycle(cycle, agent_ok=result is not None)
+        log(f"[GATE] 現状テスト判定: verdict={record['verdict']} diff={record['diff_stat']}")
+
+    return len(remaining_tasks)
+
+
+async def main():
+    log("=" * 60)
+    log("[START] AutoRunner ノンストップ通し自律実行ループ開始")
+    log("[POLICY] 隔離環境(auto/wip)上で止まらず前進。本流(main)は一切汚しません。")
+
+    cycle_count = 0
+    while True:
+        now = datetime.now()
+        # 13:00 (PM 1:00) を過ぎたら一括レビューのためループを抜ける
+        if now.hour >= 13:
+            log("[TIME] 13:00 (PM 1:00) 到達。自律作業ループを終了し、Opus 一括評価へ移行します。")
+            break
+
+        cycle_count += 1
+        log(f"\n--- [CYCLE {cycle_count}] 通し自律実行ステップ ---")
+        try:
+            remaining = await run_single_cycle()
+            if remaining == 0:
+                log("[COMPLETE] 全指示書タスクが完了しました！13:00 の Opus 最終評価を待ちます。")
+                break
+        except Exception as e:
+            log(f"[ERROR] サイクル実行中エラー: {e}。隔離環境のため停止せず次へ進みます。")
+
+        # インターバルを置かずに次タスクへ通しで即座に進む（10秒のクールダウンのみ）
+        log("[CONTINUE] 止まらずに直ちに次のタスクへ通し実行を継続します...")
+        await asyncio.sleep(10)
 
     log("=" * 60)
 
