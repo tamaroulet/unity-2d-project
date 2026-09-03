@@ -36,36 +36,27 @@
 
 ---
 
-| **Gate 4** | PlayMode 曳光弾 `SmokeTest.cs`（MainGame 実ロード＋実 uGUI クリック） | **完了 🎉 100% Passed** | `HEAD` |
-| **Gate 5** | 手放し自動化インフラ（GameCI / 夜間安全ハーネス / 朝刊レポート）指示書発行 | **指示書発行済み**（`docs/research/GATE5-01_Hour8-12_automation_instruction.md`） | — |
+| **Gate 4** | PlayMode 曳光弾 `SmokeTest.cs`（MainGame 実ロード＋実 uGUI クリック） | **完了 🎉 100% Passed** | `36cb67b` |
+| **Gate 5** | 手放し自動化インフラ（GameCI / 夜間安全ハーネス / 朝刊レポート）配備 | **完了 🎉（実証テスト合格）** | `bb1f3e9` |
 
 ---
 
 ## 2. 次にやること
 
-1. **ワークフロー改善（Fix Gate Protocol）** ← **本日実施済み**:
-   - `.agents/rules/10_workflow.md` に第1.5節 Fix Gate Protocol を新設
-   - `.agents/rules/00_role.md` に Fix Gate Enforcement 条項を追加
-   - `docs/research/workflow_research.md` にリサーチ結果を記録
-2. **第7週 最終同期（Step 2.5）**:
-   - `docs/log.md` および `README.md` の最終化と Git コミット＆プッシュ。
-3. **成果発表用まとめの準備**:
-   - ゲーム構造・AI自律開発プロセスの発表用レポートの整理。
-4. **Gate 5（Hour 8-12）手放し自動化インフラ** ← **最優先**:
-   - 【Gemini】`.github/workflows/unity-test.yml` ほか CI 3 本の配備（指示書 §2）
-   - 【Gemini】`scripts/nightly_gate.py` / `morning_report.py` / `auto_runner.py` 改修（指示書 §3）
-   - 【Gemini】§4 の受け入れ検証（**ポリシー検知の実証が最重要**）
-   - 【人間】Unity ライセンスの `.ulf` 取得と GitHub Secrets 登録（指示書 §1-A）
-   - 【人間】未 push の 18 コミットのレビューと `git push origin main`（指示書 §1-C）
-   - 【人間・毎晩】**寝る前に Unity エディタを閉じる**（開いていると全サイクルが未検証で巻き戻る）
+1. **モック通しプレイの開通（基本図形のまま完走）**:
+   - `GameFlowController` で一時停止する `ShowingRelicDraft`（レリック3択）の配線を完了させ、24ターン〜ボス戦〜エンディングまで一気通貫で動く動的モックを完成させる。
+2. **AI主導ゲーム開発フレームワークの体系化資料まとめ**:
+   - 今回実証された「PlayMode CI ✕ 隔離ハーネス ✕ Triad Protocol」を、次回作（2.5Dアクション等）で即座に流用できる汎用テンプレートとしてドキュメント化する。
+3. **人間ディレクターの夜間ルーティン**:
+   - 就寝前に Unity エディタを終了する（夜間ランナーが Library ロックで停止するのを防ぐため）。
 
 ---
 
-## 3. リソース管理・自律監視状態（最新実測値）
+## 3. リソース・自動化状態（最新実測値）
 
-- **Claude Code 週間枠**: **5% used（残り 95%）**
-- **Claude Code 5h枠**: **79% used（残り 21%）**
-- **Gemini 5h枠**: **96.5%（ほぼ全快）**
-- **Gemini 週間枠**: **79.6%**
-- **EditMode テスト**: **127 / 127 passed（Unity-MCP 実測 100% Green達成）**
-- **AutoRunner**: Windows Task Scheduler（`UnityProject_AutoRunner` 30分間隔）常駐中
+- **EditMode テスト**: **127 / 127 passed（100% Green）**
+- **PlayMode テスト**: **1 / 1 passed（SmokeTest 100% Green）**
+- **安全ハーネス**: `scripts/nightly_gate.py`（不正コード検知時の自動隔離・ロールバック実証済み）
+- **朝刊レポート**: `scripts/morning_report.py`（Task Scheduler `UnityProject_MorningReport` 06:10 登録済み）
+- **夜間自律ランナー**: Task Scheduler（`UnityProject_AutoRunner` 毎日 01:00〜06:00、30分間隔）登録済み
+- **引き継ぎマスターガイド**: `docs/workflow/ONBOARDING.md` 整備完了
