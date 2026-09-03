@@ -16,7 +16,11 @@ trigger: always_on
 ## アーキテクチャ
 
 - ランタイムアセンブリは `Game.asmdef` **1 つ**。機能ごとの asmdef 分割は禁止。
-  例外は `Game.Editor.asmdef`（Editor 専用）と `Game.Tests.asmdef`（テスト）の 2 つのみ。
+  例外は次の 3 枚のみ（Editor 1 枚 + テスト 2 枚）。これ以外の asmdef 新設は禁止。
+  - `Game.Editor.asmdef` — Editor 専用（`includePlatforms: ["Editor"]`）
+  - `Game.Tests.EditMode.asmdef` — EditMode テスト（`includePlatforms: ["Editor"]`）
+  - `Game.Tests.PlayMode.asmdef` — PlayMode テスト（`includePlatforms: []`）
+  テスト用 asmdef は EditMode / PlayMode で必ず別フォルダに置く。
 - DI コンテナ（Zenject / VContainer）、Addressables、新規イベントチャネル SO の追加は禁止。
 - 抽象（interface / 基底クラス）は、実装が 2 つ以上存在してから作る。
 
@@ -33,6 +37,7 @@ trigger: always_on
 ## テスト
 
 - 結合の正しさは PlayMode テスト（`[UnityTest]`）でのみ証明する。
+- PlayMode テストは `Game/Assets/Tests/PlayMode/` 配下にのみ置く。EditMode テストは `Game/Assets/Tests/` 直下に置く。
 - EditMode テストは「入力と出力が純粋な計算」に限る。MonoBehaviour / シーン / SO の
   モックを組み立てるテストは書かない。
 - テストを通すためにプロダクションコードへ分岐や自己修復を足すことは禁止。
