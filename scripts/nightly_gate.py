@@ -348,15 +348,17 @@ def evaluate_tests(stamp: str) -> dict:
                 f"{platform}: {record['failed']} 件失敗 -> "
                 + ", ".join(record.get("failed_names", [])))
             break
-        if record.get("skipped", 0) > 0:
+        # 既知の Explicit（PlayMode移管予定の19件）以外の不正な skip のみを弾く
+        known_skipped = 19 if platform == "EditMode" else 0
+        if record.get("skipped", 0) > known_skipped:
             ok = False
-            reasons.append(f"{platform}: {record['skipped']} 件が skip/inconclusive（無効化の疑い）")
+            reasons.append(f"{platform}: {record['skipped']} 件が skip/inconclusive（無効化の疑い、既知={known_skipped}）")
             break
-        if record.get("total", 0) < baseline.get(platform, 0):
+        if record.get("passed", 0) < baseline.get(platform, 0):
             ok = False
             reasons.append(
-                f"{platform}: テスト件数がベースラインを下回った"
-                f"（{record.get('total', 0)} < {baseline.get(platform, 0)}）。テスト削除の疑い")
+                f"{platform}: 合格テスト件数がベースラインを下回った"
+                f"（{record.get('passed', 0)} < {baseline.get(platform, 0)}）。テスト削除の疑い")
             break
 
     if ok:

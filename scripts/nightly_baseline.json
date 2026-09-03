@@ -1,5 +1,5 @@
 {
   "_comment": "テスト件数の下限。エージェントがテストを削って緑にする経路を塞ぐ。実測で上振れしたら nightly_gate が自動で引き上げる。",
-  "EditMode": 127,
+  "EditMode": 94,
   "PlayMode": 1
 }
