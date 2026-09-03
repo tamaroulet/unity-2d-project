@@ -1,6 +1,7 @@
 # Logs
 logs/
 *.log
+# 朝刊レポート（docs/nightly/）は logs/ と違い追跡対象。除外しないこと。
 
 # Python
 __pycache__/

@@ -1,0 +1,76 @@
+name: Unity Tests
+
+on:
+  push:
+    branches:
+      - main
+      - 'nightly/**'
+    paths-ignore:
+      - 'docs/**'
+      - 'logs/**'
+      - '**/*.md'
+      - '.github/ISSUE_TEMPLATE/**'
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+# 同一 ref の実行は最新 1 本だけ残す（夜間の連続 push で分数を溶かさないため）
+concurrency:
+  group: unity-test-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  checks: write
+
+jobs:
+  test:
+    name: EditMode + PlayMode
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+          lfs: false
+
+      # unityci/editor イメージは展開後 20GB 超。標準ランナーの空きでは足りない
+      - name: Free disk space
+        run: |
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc \
+                      /opt/hostedtoolcache/CodeQL /usr/local/share/boost
+          df -h
+
+      # 固定キー。ヒットしたら保存はスキップされる（10GB のリポジトリキャッシュ上限を守る）
+      - name: Cache Library
+        uses: actions/cache@v4
+        with:
+          path: Game/Library
+          key: Library-Game-${{ hashFiles('Game/Packages/packages-lock.json', 'Game/ProjectSettings/ProjectVersion.txt') }}
+          restore-keys: |
+            Library-Game-
+
+      - name: Run tests
+        id: tests
+        uses: game-ci/unity-test-runner@v4
+        env:
+          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+          UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
+          UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
+        with:
+          projectPath: Game
+          unityVersion: 6000.3.23f1
+          testMode: all
+          artifactsPath: test-artifacts
+          githubToken: ${{ secrets.GITHUB_TOKEN }}
+          checkName: Unity Test Results
+
+      - name: Upload test artifacts
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: unity-test-results
+          path: test-artifacts
+          retention-days: 14

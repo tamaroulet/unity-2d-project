@@ -1,0 +1,63 @@
+name: WebGL Build (manual)
+
+# I-3: 1 回 25〜40 分かかる。private リポジトリの 2,000 分/月 を守るため push では走らせない。
+on:
+  workflow_dispatch:
+    inputs:
+      reason:
+        description: 'このビルドを回す理由（記録用）'
+        required: false
+        default: 'manual verification'
+
+concurrency:
+  group: webgl-build
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build WebGL
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Free disk space
+        run: |
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc \
+                      /opt/hostedtoolcache/CodeQL /usr/local/share/boost
+          df -h
+
+      - name: Cache Library
+        uses: actions/cache@v4
+        with:
+          path: Game/Library
+          key: Library-Game-WebGL-${{ hashFiles('Game/Packages/packages-lock.json', 'Game/ProjectSettings/ProjectVersion.txt') }}
+          restore-keys: |
+            Library-Game-WebGL-
+            Library-Game-
+
+      - name: Build
+        uses: game-ci/unity-builder@v5
+        env:
+          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+          UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
+          UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
+        with:
+          projectPath: Game
+          unityVersion: 6000.3.23f1
+          targetPlatform: WebGL
+          buildName: WebGL
+          buildsPath: build
+
+      - name: Upload build
+        uses: actions/upload-artifact@v4
+        with:
+          name: webgl-build-${{ github.sha }}
+          path: build/WebGL
+          retention-days: 7

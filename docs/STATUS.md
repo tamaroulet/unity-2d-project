@@ -36,6 +36,11 @@
 
 ---
 
+| **Gate 4** | PlayMode 曳光弾 `SmokeTest.cs`（MainGame 実ロード＋実 uGUI クリック） | **完了 🎉 100% Passed** | `HEAD` |
+| **Gate 5** | 手放し自動化インフラ（GameCI / 夜間安全ハーネス / 朝刊レポート）指示書発行 | **指示書発行済み**（`docs/research/GATE5-01_Hour8-12_automation_instruction.md`） | — |
+
+---
+
 ## 2. 次にやること
 
 1. **ワークフロー改善（Fix Gate Protocol）** ← **本日実施済み**:
@@ -46,6 +51,13 @@
    - `docs/log.md` および `README.md` の最終化と Git コミット＆プッシュ。
 3. **成果発表用まとめの準備**:
    - ゲーム構造・AI自律開発プロセスの発表用レポートの整理。
+4. **Gate 5（Hour 8-12）手放し自動化インフラ** ← **最優先**:
+   - 【Gemini】`.github/workflows/unity-test.yml` ほか CI 3 本の配備（指示書 §2）
+   - 【Gemini】`scripts/nightly_gate.py` / `morning_report.py` / `auto_runner.py` 改修（指示書 §3）
+   - 【Gemini】§4 の受け入れ検証（**ポリシー検知の実証が最重要**）
+   - 【人間】Unity ライセンスの `.ulf` 取得と GitHub Secrets 登録（指示書 §1-A）
+   - 【人間】未 push の 18 コミットのレビューと `git push origin main`（指示書 §1-C）
+   - 【人間・毎晩】**寝る前に Unity エディタを閉じる**（開いていると全サイクルが未検証で巻き戻る）
 
 ---
 

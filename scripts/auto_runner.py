@@ -15,6 +15,7 @@ import subprocess
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
+from nightly_gate import begin_cycle, finalize_cycle, VERDICT_ACCEPT
 
 # プロジェクトルート
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
@@ -176,6 +177,16 @@ def get_next_prompt(quotas: dict) -> tuple:
 1. .agents/rules/00_role.md の全行動規範（平素な文体、ノンストップ自律チェーン、Unity-MCP検証）を遵守すること。
 2. 作業完了後は必ず docs/instructions/08_polish_and_balance.md の対応するチェックボックスを - [x] に更新すること。
 3. docs/STATUS.md および docs/log.md を同期し、Git コミット＆プッシュ（origin/main）まで同一ターンで完了させること。
+【夜間モードの絶対禁止事項（違反した成果物は自動的に隔離され、main から巻き戻される）】
+1. `git push origin main` を実行してはならない。push は安全ハーネスが nightly/<日付> ブランチへ行う。
+2. テストを緑にするためにテストコードを弱めてはならない
+   （[Ignore] / [Explicit] / Assert.Pass / Assert.Ignore / アサーション削除 / テストファイル削除）。
+   赤は情報である。直せないなら「直せない理由」をコミットメッセージに書いて止まれ。
+3. 次のファイルを変更してはならない: .github/workflows/**, .claude/**, .agents/rules/**,
+   scripts/nightly_gate.py, scripts/morning_report.py, scripts/nightly_baseline.json, scripts/auto_runner.py
+4. ランタイムコードに #if UNITY_EDITOR / AssetDatabase / UnityEditor / Find 系のシーン検索を入れてはならない。
+5. 1 サイクルの変更量は 3,000 行以内に収めること。それ以上は暴走とみなして自動的に巻き戻される。
+6. 作業が終わったら必ずコミットまで済ませること（push は不要）。
 
 【未完了タスク一覧】
 {json.dumps([t['task'] for t in uncompleted_tasks[:5]], ensure_ascii=False, indent=2)}
@@ -277,19 +288,38 @@ async def main():
 
     # 2. 計画ロードマップと指示書から具体的プロンプトを構築
     prompt, remaining_tasks = get_next_prompt(quotas)
+    target_task = remaining_tasks[0]["task"] if remaining_tasks else "(検証・同期タスク)"
     log(f"[PLAN] 残り未完了タスク数: {len(remaining_tasks)} 件")
-    if remaining_tasks:
-        log(f"[PLAN] 今回のターゲット: {remaining_tasks[0]['task']}")
+    log(f"[PLAN] 今回のターゲット: {target_task}")
 
-    # 3. エージェント起動（SDK 優先、CLI フォールバック）
+    # 3. 安全ハーネス: クリーンな状態からのみ開始する
+    cycle = begin_cycle(target_task=target_task, quotas=quotas)
+    if cycle is None:
+        log("[GATE] ワーキングツリーが未コミット状態のためサイクルを中止した。人間の作業を上書きしない。")
+        log("=" * 60)
+        return
+    log(f"[GATE] cycle={cycle.cycle_id} snapshot={cycle.snapshot[:8]}")
+
+    # 4. エージェント起動（SDK 優先、CLI フォールバック）
     result = await run_with_sdk(prompt)
     if result is None:
         result = run_with_cli_fallback(prompt)
 
-    if result:
-        log("[DONE] 自律実行サイクル正常完了。")
+    # 5. 安全ハーネス: 検査 -> 受理 or 隔離＋巻き戻し
+    record = finalize_cycle(cycle, agent_ok=result is not None)
+    verdict = record["verdict"]
+    log(f"[GATE] verdict={verdict} diff={record['diff_stat']}")
+    for reason in record.get("reasons", []):
+        log(f"[GATE]   理由: {reason}")
+    for warning in record.get("warnings", []):
+        log(f"[GATE]   注意: {warning}")
+    if record.get("quarantine_branch"):
+        log(f"[GATE] 成果物を隔離ブランチ {record['quarantine_branch']} に保全し、"
+            f"{cycle.snapshot[:8]} へ巻き戻した。作業は失われていない。")
+    if verdict == VERDICT_ACCEPT:
+        log(f"[DONE] 受理。push 先: {record.get('pushed_branch') or '(ローカルのみ)'}")
     else:
-        log("[FAIL] エージェント実行失敗。次回スケジュール（30分後）で再試行します。")
+        log("[HOLD] 受理せず。詳細は朝刊レポートを参照。")
 
     log("=" * 60)
 

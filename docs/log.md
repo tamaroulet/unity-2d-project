@@ -834,6 +834,34 @@ Antigravity (Gemini) による直接 C# 実装体制への移行後、指示書 
     - `.asmdef` は `guard.js` によりツールレベルで書き込み拒否されるため、
       asmdef 新設は **人間の Unity エディタ作業（§1）** として指示書に切り出した。
   - ④ Gemini の実装・報告は未着手。
+- **Gate 4（Hour 4-8）完了**:
+  - `Game/Assets/Tests/PlayMode/SmokeTest.cs` が実機 Unity で **100% Passed**。
+    指示書 §4-C の要求ログ（BEFORE / AFTER）が完全一致で出力され、
+    MainGame ロード → uGUI クリック → TURN 1→2 → ゲージ変動 → 例外 0 件が実証された。
+- **Gate 5（Hour 8-12）— 方針転換と指示書発行**:
+  - 人間ディレクターの決定: **演出・ゲームデザインは決めない。人間が手放して自律化するための
+    フレームワーク・環境整備に本日の残りを全投入する。**
+  - Claude が `docs/research/GATE5-01_Hour8-12_automation_instruction.md` を発行。
+    成果物は (A) GameCI クラウド CI、(B) 夜間ランナーの安全ハーネス、(C) 朝刊レポートの 3 点。
+  - 指示書作成にあたり Claude が実測した事実:
+    - GameCI イメージ `unityci/editor:ubuntu-6000.3.23f1-webgl-3` は**実在**する（Docker Hub API 200）。
+    - **リポジトリは private** のため Actions 無料枠は月 2,000 分。Unity テストは 1 回 15〜25 分、
+      WebGL ビルドは 25〜40 分。**毎 push で CI を回すと数日で枠が枯れる。**
+      → 夜間の一次ゲートはローカル Unity batchmode、クラウドは二次の網、WebGL は手動専用と決定。
+    - ローカル main は origin より **18 コミット先行（未 push）**。CI は push まで 1 度も走らない。
+    - `SmokeTest.cs.meta` が**未追跡**。CI 側で GUID 再生成の危険があるため追跡対象にする。
+  - 設計の中核は「**受理しないものは、隔離ブランチへ保全してから巻き戻す**」。
+    テスト失敗・ハックコード検知・検証不能のいずれでも作業は 1 行も失われない。
+  - ハック検知は `guard.js` の禁止事項を「事後の diff」に適用したもの
+    （テスト弱体化 / Find 系再導入 / `#if UNITY_EDITOR` 混入 / 自己ガードレール改変 / 秘密情報 / 暴走量）。
+  - **指示書に載せたコードは Claude が実際にコンパイル・実行して検証済み**:
+    Python 4 ブロック全て compile OK、YAML 3 本 safe_load OK、JSON 1 本 OK。
+    `check_policy()` を実リポジトリに適用し、通常コミットで誤検知 0 件、
+    `HEAD~18..HEAD` でガードレール改変と `.asmdef` 削除を正しく検知することを実測した。
+  - あわせて実測で判明した運用上の制約（指示書 §0-6 に明記）:
+    **Unity エディタが開いていると batchmode が Library ロックで失敗し、全サイクルが未検証で巻き戻る。
+    また未コミットの作業があるとサイクル自体が起動しない。** 寝る前チェックリストを指示書に追加した。
+  - ④ Gemini の実装・報告は未着手。
 
 ---
 
