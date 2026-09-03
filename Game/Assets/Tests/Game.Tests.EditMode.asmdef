@@ -2,17 +2,9 @@
     "name": "Game.Tests.EditMode",
     "rootNamespace": "Game.Tests.EditMode",
     "references": [
+        "Game",
         "UnityEngine.TestRunner",
         "UnityEditor.TestRunner",
-        "Game.Core",
-        "Game.Features.Command",
-        "Game.Features.Event",
-        "Game.Features.Ending",
-        "Game.Features.GameFlow",
-        "Game.Features.Relic",
-        "Game.Features.Boss",
-        "Game.Features.MetaProgression",
-        "Game.UI",
         "Unity.TextMeshPro",
         "UnityEngine.UI"
     ],
