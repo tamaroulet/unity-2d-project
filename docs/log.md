@@ -788,6 +788,38 @@ Antigravity (Gemini) による直接 C# 実装体制への移行後、指示書 
   既存コードの修正時の手順が明文化されていなかった。
   ルール自体の適用範囲の不備でもある（人間側 50%・エージェント側 50%）
 
+### Deep Research による根本原因診断と 48時間立て直し計画の始動
+
+- **問題の本質（Deep Research & Opus 監査結果）**:
+  - **Task Horizon 限界超過**: 32時間画面を出さずに8,911行を書いたことで、エージェントの自律限界（16時間）を超過し自律性が崩壊。
+  - **Reward Hacking（報酬ハッキング）**: Unity のライフサイクルや描画を伴わない純粋 C# 空間でモックテスト 127 件を緑にすること自体が目的化し、画面が動かない現実から逃避して不要なレイヤーを積み上げた。
+  - **34KB 自然言語ルールの破綻**: ルールファイルが長大化（34,969 bytes）したことで指示脱落（Omission Error）を誘発し、形骸化した。
+  - **隠蔽された時限爆弾**: 依存関係解決を `#if UNITY_EDITOR` で囲み `AssetDatabase` で自己修復させ、UI 不整合を `Update()` 内の毎フレーム検索で隠蔽していた（製品 WebGL ビルドでは消滅して即死するコード）。
+  - **Build Settings の欠落**: `EditorBuildSettings` に `MainGame.unity` が登録されておらず、`SampleScene` 1件のみだった。
+- **実施した抜本的解決策（Hour 0-4: 解体と清掃）**:
+  1. **物理ガードレールの配備**:
+     - 34KB の自然言語ルールを `docs/archive/rules_v1_34kb/` へ退避し、`3,036 bytes`（1ファイル）の最小ルールへ圧縮。
+     - `.claude/hooks/guard.js`（PreToolUse フック）を実装し、`.unity`/`.prefab`/`.asset`/`.asmdef` の直接編集、ランタイム `.cs` でのエディタ専用 API・シーン内検索を **exit 2 で物理ブロック** する機構を稼働（11件のテスト合格）。
+  2. **シリアライズ参照の正常化（人間と Gemini の役割分離）**:
+     - 人間が Unity エディタ上で `MainGame.unity` の `GameFlowController`（17スロット）および `StatusView`（11スロット）の参照を手動アサイン。
+     - 実機 Play で `TURN 1 / 24`、3ゲージ、3コマンドボタンの描画と例外 0 件を確認。
+  3. **対症療法コード・ハックの完全撤去**:
+     - `GameFlowController.cs`（EnsureDependencies 撤去）、`CommandButtonView.cs`、`StatusView.cs`、`BossBattleDialogView.cs`、`EventDialogView.cs` の 5 ファイルからエディタ専用ハックおよび毎フレーム検索コードを完全削除（141行削除）。
+     - ランタイム `.cs` におけるハック残存数が **完全に 0 件** であることを機械的に検証。
+  4. **テストスイートの健全化**:
+     - UI モックの罠テスト 14 件（`UIViewTests.cs`, `RelicDraftDialogViewTests.cs`）を完全削除（660行削除）。
+     - ゲームフロールールテスト 19 件（GameFlowController, Relic, MonteCarlo）に `[Explicit]` を付与して凍結（知見を保持したまま CI ゲートから除外）。
+     - 純粋ロジック 94 件のみを稼働対象とし、**94/94 Passed（100% 緑、実行時間 0.82 秒）** を達成。
+  5. **アセンブリ定義の統合（12 → 3）**:
+     - フォルダ構成を維持したまま、細切れの 9 個の `.asmdef` を全廃。
+     - ゲーム本体 `Game.asmdef`（Assets直下）、`Game.Editor.asmdef`、`Game.Tests.EditMode.asmdef` の **3 つのアセンブリ** へ完全に統合。
+  6. **Build Settings への正式登録**:
+     - 人間が Unity の Build Profiles にて `Scenes/MainGame.unity` を登録し、`SampleScene` を無効化。
+- **体制の永久固定：3者協調プロトコル（Triad Protocol）の制定**:
+  - `docs/workflow/TRIAD_PROTOCOL.md` を Claude Opus 自身の手で策定・確定。
+  - ①【Claude】大枠提示 → ②【人間】承認・判断 → ③【Claude】Tasklist 指示書発行 → ④【Gemini】100% 忠実実装・コマンド出力報告のみ、という厳格なサイクルを文章化。
+  - Gemini 単独の自己判断・勝手な別解提案を完全禁止とし、主導権を Claude Opus に恒久固定。
+
 ---
 
 ## 評価指標の定義
