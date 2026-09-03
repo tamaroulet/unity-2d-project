@@ -24,11 +24,7 @@ $action = New-ScheduledTaskAction `
     -Argument "`"$scriptPath`"" `
     -WorkingDirectory $projectRoot
 
-$trigger = New-ScheduledTaskTrigger `
-    -Once `
-    -At (Get-Date).AddMinutes(1) `
-    -RepetitionInterval (New-TimeSpan -Minutes $IntervalMinutes) `
-    -RepetitionDuration (New-TimeSpan -Days 365)
+$trigger = New-ScheduledTaskTrigger -Daily -At "01:00"
 
 $settings = New-ScheduledTaskSettingsSet `
     -AllowStartIfOnBatteries `
@@ -43,13 +39,24 @@ Register-ScheduledTask `
     -Action $action `
     -Trigger $trigger `
     -Settings $settings `
-    -Description "unity-2d-project Autonomous Background Runner (Antigravity SDK / ${IntervalMinutes}m interval)" `
+    -Description "unity-2d-project Autonomous Background Runner (Night-only: 01:00-06:00, ${IntervalMinutes}m interval)" `
     -Force | Out-Null
+
+# Configure Repetition via COM object to bypass PowerShell cmdlet parameter set limitations
+$service = New-Object -ComObject Schedule.Service
+$service.Connect()
+$root = $service.GetFolder("\")
+$task = $root.GetTask($TaskName)
+$def = $task.Definition
+$def.Triggers.Item(1).Repetition.Interval = "PT${IntervalMinutes}M"
+$def.Triggers.Item(1).Repetition.Duration = "PT5H"
+$root.RegisterTaskDefinition($TaskName, $def, 6, $null, $null, 3) | Out-Null
 
 Write-Host "========================================"
 Write-Host " Task Scheduler Registration Successful"
 Write-Host "========================================"
 Write-Host "  Task Name:    $TaskName"
+Write-Host "  Active Hours: 01:00 - 06:00 (Night Only)"
 Write-Host "  Interval:     $IntervalMinutes min"
 Write-Host "  Python:       $pythonExe"
 Write-Host "  Script:       $scriptPath"
