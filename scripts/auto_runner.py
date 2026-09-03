@@ -271,10 +271,29 @@ def run_with_cli_fallback(prompt: str):
 
 
 def run_with_claude_fallback(prompt: str):
-    """invoke_claude_safe.ps1 経由で Claude Code による自律実行を行う。"""
-    log("[Claude] Claude Code (Sonnet) による自律実行を開始中...")
+    """invoke_claude_safe.ps1 経由で Claude Code による自律実行を行う。本命: opus、代打: sonnet。"""
+    script_path = PROJECT_ROOT / "scripts" / "invoke_claude_safe.ps1"
+
+    # 1. 本命: Opus
+    log("[Claude] 本命 Claude Code (Opus) による自律実行を開始中...")
     try:
-        script_path = PROJECT_ROOT / "scripts" / "invoke_claude_safe.ps1"
+        result = subprocess.run(
+            ["powershell", "-ExecutionPolicy", "Bypass", "-NoProfile",
+             "-File", str(script_path), "-Prompt", prompt, "-Model", "opus"],
+            capture_output=True, text=True, timeout=1800,
+            cwd=str(PROJECT_ROOT)
+        )
+        if result.returncode == 0 and "API Error: 529" not in result.stdout:
+            log(f"[Claude] Opus 実行完了。出力長: {len(result.stdout)} 文字")
+            return result.stdout
+        else:
+            log("[Claude] Opus が過負荷(529)または失敗。代打の Sonnet へフォールバックします。")
+    except Exception as e:
+        log(f"[Claude] Opus 実行エラー: {e}。代打の Sonnet へフォールバックします。")
+
+    # 2. 代打: Sonnet
+    log("[Claude] 代打 Claude Code (Sonnet) による自律実行を開始中...")
+    try:
         result = subprocess.run(
             ["powershell", "-ExecutionPolicy", "Bypass", "-NoProfile",
              "-File", str(script_path), "-Prompt", prompt, "-Model", "sonnet"],
@@ -282,12 +301,13 @@ def run_with_claude_fallback(prompt: str):
             cwd=str(PROJECT_ROOT)
         )
         if result.returncode == 0:
-            log(f"[Claude] Claude Code 完了。出力長: {len(result.stdout)} 文字")
+            log(f"[Claude] Sonnet 実行完了。出力長: {len(result.stdout)} 文字")
             return result.stdout
         else:
-            log(f"[Claude] Claude Code 失敗: {result.stderr[:500]}")
+            log(f"[Claude] Sonnet 実行失敗: {result.stderr[:500]}")
     except Exception as e:
-        log(f"[Claude] Claude Code 実行エラー: {e}")
+        log(f"[Claude] Sonnet 実行エラー: {e}")
+
     return None
 
 
