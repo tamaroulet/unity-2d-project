@@ -8,7 +8,7 @@ AI画像生成や外部イラスト素材を使わず、純粋な C# プロシ�
 ## 2. 実施タスク一覧（Checklist）
 
 ### 2.1 幾何学ピクトグラム・スプライトの自動生成
-- [ ] `ProceduralSpriteGenerator.cs` を作成し、`Assets/UI/Sprites/` に以下の単純図形スプライト（PNG / Sprite）を生成する。
+- [x] `ProceduralSpriteGenerator.cs` を作成し、`Assets/UI/Sprites/` に以下の単純図形スプライト（PNG / Sprite）を生成する。
   - `Icon_Stamina.png`（雷・エネルギーマーク）
   - `Icon_Skill.png`（本・ダイヤモンドマーク）
   - `Icon_Mental.png`（ハート・クロスライン）

@@ -914,6 +914,44 @@ Antigravity (Gemini) による直接 C# 実装体制への移行後、指示書 
 
 ---
 
+### 幾何学ピクトグラム生成器の是正（指示書 09 / 2.1 実装成果物）
+
+#### 1. 着手時点の実態
+
+`ProceduralSpriteGenerator.cs` はファイル自体が既に存在し、15 枚の PNG も生成済みだった。
+ただし指示書の記載と実物を突き合わせた結果、次の 3 点が仕様から外れていた。
+
+| 箇所 | 症状 | 原因 |
+|---|---|---|
+| `Icon_Study.png` | `Icon_Skill.png` とバイト単位で完全一致（`CreateStudyIcon` が `CreateSkillIcon` を呼ぶだけ） | 指示書の「ペン・アカデミックアイコン」が未実装 |
+| `Boss_Emblem_Act1〜4.png` | 4 枚とも同一の円リング。色しか違わない | `CreateBossEmblem` の `sides` 引数を一度も使っていなかった |
+| `Frame_Card.png` | 角が直角 | `CreateCardFrame` の `radius` 引数を一度も使っていなかった |
+
+いずれも「引数は受け取るが使わない」型の書き漏らしで、コンパイルは通るため気付きにくい。
+
+#### 2. 対応
+
+- 被覆率サンプリング（1 px あたり 3x3）による描画ヘルパー `Draw` / `Coverage` / `Blend` を追加し、アンチエイリアス付きで図形を重ね描きできるようにした。
+- 幾何プリミティブとして `InRegularPolygon`（正 N 角形）、`InRoundedRect`（角丸長方形の符号付き距離）、`InPolygon`（多角形の内外判定）、`Rotate` を追加。
+- `Icon_Study` をペン軸＋持ち手バンド＋ペン先スリット＋罫線に差し替え、`Icon_Skill` と独立させた。
+- ボス紋章を Act ごとに 3 / 4 / 5 / 6 角形（外周リング＋半ステップ回転させた内側多角形）に変更。
+- カード枠を角丸（半径 18 px）にし、`spriteBorder` を 28 px に設定して 9 スライス化した。拡大表示でも角丸が潰れない。
+- `Bar_Fill` を単色白から縦方向のグラデーションに変更（Image の着色で艶が出る）。
+
+変更は既存 8 アイコンには触れていない。`.agents/rules/00_rules.md` の停止条件（1 タスク 300 行超）に収めるため、既存アイコンのアンチエイリアス化は次サイクルに送る。
+
+#### 3. 検証（実測）
+
+| 手段 | 結果 |
+|---|---|
+| `dotnet build Game.Editor.csproj` | 0 エラー |
+| Unity バッチモード `-executeMethod ProceduralSpriteGenerator.GenerateAllSprites` | 成功。PNG 7 枚と `Frame_Card.png.meta` のみ差分 |
+| 生成 PNG の目視確認 | ペン・N 角形紋章・角丸枠とも意図通り |
+| EditMode テスト（バッチモード） | 113 件収集 / 94 passed / 0 failed / 19 skipped（Explicit） |
+| PlayMode テスト（バッチモード） | 1 / 1 passed（`SmokeTest` 例外 0） |
+
+---
+
 ## 評価指標の定義
 
 本プロジェクトで記録している指標のうち、既存の評価系との対応は以下の通り。

@@ -37,7 +37,7 @@ namespace Game.EditorScripts
             SaveTexture("Boss_Emblem_Act4", CreateBossEmblem(256, new Color(0.9f, 0.2f, 0.2f), 6)); // 六角形
 
             // 3. UI 枠・ゲージ (128x128 / 64x64)
-            SaveTexture("Frame_Card", CreateCardFrame(256, 320, 16));
+            SaveTexture("Frame_Card", CreateCardFrame(256, 320, 18));
             SaveTexture("Bar_Fill", CreateBarFill(64, 64));
 
             AssetDatabase.Refresh();
@@ -68,6 +68,11 @@ namespace Game.EditorScripts
                     importer.alphaIsTransparency = true;
                     importer.mipmapEnabled = false;
                     importer.filterMode = FilterMode.Bilinear;
+                    importer.wrapMode = TextureWrapMode.Clamp;
+                    // カード枠は 9 スライスにして、拡大時も角丸が潰れないようにする
+                    importer.spriteBorder = path.EndsWith("Frame_Card.png")
+                        ? new Vector4(28.0f, 28.0f, 28.0f, 28.0f)
+                        : Vector4.zero;
                     importer.SaveAndReimport();
                 }
             }
@@ -198,7 +203,43 @@ namespace Game.EditorScripts
 
         private static Texture2D CreateStudyIcon(int w, int h)
         {
-            return CreateSkillIcon(w, h);
+            Texture2D tex = CreateClearTexture(w, h);
+            Color body = new Color(0.62f, 0.55f, 0.95f, 1.0f);
+            Color dark = new Color(0.30f, 0.26f, 0.55f, 1.0f);
+
+            // ペン軸のローカル座標（v- 側がペン先）
+            Vector2[] pen =
+            {
+                new Vector2(0.00f, -0.95f),
+                new Vector2(0.17f, -0.58f),
+                new Vector2(0.17f, 0.60f),
+                new Vector2(0.00f, 0.80f),
+                new Vector2(-0.17f, 0.60f),
+                new Vector2(-0.17f, -0.58f)
+            };
+
+            Draw(tex, body, (u, v) => InPolygon(ToPenLocal(u, v), pen));
+            // 持ち手のバンドとペン先のスリット
+            Draw(tex, dark, (u, v) =>
+            {
+                Vector2 l = ToPenLocal(u, v);
+                return InPolygon(l, pen) && l.y >= 0.12f && l.y <= 0.38f;
+            });
+            Draw(tex, dark, (u, v) =>
+            {
+                Vector2 l = ToPenLocal(u, v);
+                return Mathf.Abs(l.x) <= 0.045f && l.y >= -0.90f && l.y <= -0.40f;
+            });
+            // アカデミックアイコンとしての罫線
+            Draw(tex, body, (u, v) => u >= -0.60f && u <= 0.78f && v >= -0.95f && v <= -0.80f);
+
+            tex.Apply();
+            return tex;
+        }
+
+        private static Vector2 ToPenLocal(float u, float v)
+        {
+            return Rotate(new Vector2(u - 0.06f, v - 0.14f), 32.0f);
         }
 
         private static Texture2D CreateTrainIcon(int w, int h)
@@ -271,25 +312,22 @@ namespace Game.EditorScripts
         private static Texture2D CreateBossEmblem(int size, Color mainColor, int sides)
         {
             Texture2D tex = CreateClearTexture(size, size);
-            float radius = size * 0.40f;
-            Vector2 center = new Vector2(size * 0.5f, size * 0.5f);
+            Color core = mainColor * 0.85f;
+            core.a = 1.0f;
+            Color inner = mainColor * 0.45f + new Color(0.10f, 0.10f, 0.10f, 0.0f);
+            inner.a = 1.0f;
 
-            for (int y = 0; y < size; y++)
+            // 外周リング
+            Draw(tex, mainColor, (u, v) =>
             {
-                for (int x = 0; x < size; x++)
-                {
-                    Vector2 p = new Vector2(x, y) - center;
-                    float dist = p.magnitude;
-                    if (dist < radius && dist > radius * 0.75f)
-                    {
-                        tex.SetPixel(x, y, mainColor);
-                    }
-                    else if (dist < radius * 0.45f)
-                    {
-                        tex.SetPixel(x, y, mainColor * 0.8f);
-                    }
-                }
-            }
+                float r = Mathf.Sqrt(u * u + v * v);
+                return r >= 0.74f && r <= 0.94f;
+            });
+            // Act ごとに辺数の異なる正多角形コア
+            Draw(tex, core, (u, v) => InRegularPolygon(u, v, 0.60f, sides, 90.0f));
+            // 半ステップ回転させた内側多角形で紋章らしい重なりを作る
+            Draw(tex, inner, (u, v) => InRegularPolygon(u, v, 0.30f, sides, 90.0f + 180.0f / sides));
+
             tex.Apply();
             return tex;
         }
@@ -299,15 +337,14 @@ namespace Game.EditorScripts
             Texture2D tex = CreateClearTexture(w, h);
             Color bg = new Color(0.16f, 0.19f, 0.26f, 0.95f);
             Color border = new Color(0.35f, 0.42f, 0.55f, 1.0f);
+            const float BorderWidth = 3.0f;
 
-            for (int y = 0; y < h; y++)
-            {
-                for (int x = 0; x < w; x++)
-                {
-                    bool isBorder = (x < 3 || x >= w - 3 || y < 3 || y >= h - 3);
-                    tex.SetPixel(x, y, isBorder ? border : bg);
-                }
-            }
+            Draw(tex, border, (u, v) =>
+                InRoundedRect(ToPixel(u, w), ToPixel(v, h), 0.0f, 0.0f, w, h, radius));
+            Draw(tex, bg, (u, v) =>
+                InRoundedRect(ToPixel(u, w), ToPixel(v, h), BorderWidth, BorderWidth,
+                    w - BorderWidth * 2.0f, h - BorderWidth * 2.0f, Mathf.Max(radius - BorderWidth, 1.0f)));
+
             tex.Apply();
             return tex;
         }
@@ -315,11 +352,120 @@ namespace Game.EditorScripts
         private static Texture2D CreateBarFill(int w, int h)
         {
             Texture2D tex = new Texture2D(w, h, TextureFormat.RGBA32, false);
-            Color[] white = new Color[w * h];
-            for (int i = 0; i < white.Length; i++) white[i] = Color.white;
-            tex.SetPixels(white);
+            Color[] pixels = new Color[w * h];
+            for (int y = 0; y < h; y++)
+            {
+                // 上端をわずかに明るくし、Image の着色で滑らかな艶が出るようにする
+                float value = Mathf.Lerp(0.78f, 1.0f, (y + 0.5f) / h);
+                for (int x = 0; x < w; x++)
+                {
+                    pixels[y * w + x] = new Color(value, value, value, 1.0f);
+                }
+            }
+            tex.SetPixels(pixels);
             tex.Apply();
             return tex;
+        }
+
+        // --- 被覆率サンプリング描画と幾何プリミティブ ---
+
+        // (u, v) は中心を原点とする -1..1 の正規化座標で、v の正方向が上。
+        private delegate bool ShapeTest(float u, float v);
+
+        // 1 ピクセルあたり SubSamples x SubSamples 個のサンプルで被覆率を求めアンチエイリアスする。
+        private const int SubSamples = 3;
+
+        private static void Draw(Texture2D tex, Color color, ShapeTest test)
+        {
+            int w = tex.width;
+            int h = tex.height;
+            for (int y = 0; y < h; y++)
+            {
+                for (int x = 0; x < w; x++)
+                {
+                    float coverage = Coverage(x, y, w, h, test);
+                    if (coverage <= 0.0f) continue;
+
+                    Color src = color;
+                    src.a *= coverage;
+                    tex.SetPixel(x, y, Blend(src, tex.GetPixel(x, y)));
+                }
+            }
+        }
+
+        private static float Coverage(int x, int y, int w, int h, ShapeTest test)
+        {
+            int hit = 0;
+            for (int sy = 0; sy < SubSamples; sy++)
+            {
+                for (int sx = 0; sx < SubSamples; sx++)
+                {
+                    float u = (x + (sx + 0.5f) / SubSamples) / w * 2.0f - 1.0f;
+                    float v = (y + (sy + 0.5f) / SubSamples) / h * 2.0f - 1.0f;
+                    if (test(u, v)) hit++;
+                }
+            }
+            return (float)hit / (SubSamples * SubSamples);
+        }
+
+        private static Color Blend(Color src, Color dst)
+        {
+            float a = src.a + dst.a * (1.0f - src.a);
+            if (a <= 0.0f) return Color.clear;
+
+            float inv = dst.a * (1.0f - src.a);
+            return new Color(
+                (src.r * src.a + dst.r * inv) / a,
+                (src.g * src.a + dst.g * inv) / a,
+                (src.b * src.a + dst.b * inv) / a,
+                a);
+        }
+
+        private static float ToPixel(float normalized, int size)
+        {
+            return (normalized + 1.0f) * 0.5f * size;
+        }
+
+        private static Vector2 Rotate(Vector2 p, float degrees)
+        {
+            float rad = degrees * Mathf.Deg2Rad;
+            float cos = Mathf.Cos(rad);
+            float sin = Mathf.Sin(rad);
+            return new Vector2(p.x * cos - p.y * sin, p.x * sin + p.y * cos);
+        }
+
+        // 頂点が rotationDegrees 方向を向く正多角形。内接半径との比較で内外を判定する。
+        private static bool InRegularPolygon(float u, float v, float radius, int sides, float rotationDegrees)
+        {
+            float r = Mathf.Sqrt(u * u + v * v);
+            if (r <= Mathf.Epsilon) return true;
+
+            float step = Mathf.PI * 2.0f / sides;
+            float angle = Mathf.Atan2(v, u) - rotationDegrees * Mathf.Deg2Rad;
+            float offset = Mathf.Repeat(angle, step) - step * 0.5f;
+            return r * Mathf.Cos(offset) <= radius * Mathf.Cos(step * 0.5f);
+        }
+
+        private static bool InRoundedRect(float x, float y, float left, float bottom, float w, float h, float radius)
+        {
+            float dx = Mathf.Abs(x - (left + w * 0.5f)) - (w * 0.5f - radius);
+            float dy = Mathf.Abs(y - (bottom + h * 0.5f)) - (h * 0.5f - radius);
+            float outside = Mathf.Sqrt(Mathf.Max(dx, 0.0f) * Mathf.Max(dx, 0.0f) + Mathf.Max(dy, 0.0f) * Mathf.Max(dy, 0.0f));
+            return outside + Mathf.Min(Mathf.Max(dx, dy), 0.0f) <= radius;
+        }
+
+        private static bool InPolygon(Vector2 p, Vector2[] polygon)
+        {
+            bool inside = false;
+            for (int i = 0, j = polygon.Length - 1; i < polygon.Length; j = i++)
+            {
+                if ((polygon[i].y > p.y) != (polygon[j].y > p.y) &&
+                    p.x < (polygon[j].x - polygon[i].x) * (p.y - polygon[i].y) / (polygon[j].y - polygon[i].y) + polygon[i].x)
+                {
+                    inside = !inside;
+                }
+            }
+            return inside;
         }
     }
 }
