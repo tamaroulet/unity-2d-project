@@ -336,7 +336,43 @@ def run_with_claude_fallback(prompt: str):
     except Exception as e:
         log(f"[Claude] Sonnet 実行エラー: {e}")
 
-    return None
+async def heal_with_opus(cycle, record: dict, target_task: str) -> dict:
+    """REJECT された瞬間、隔離ブランチの中身と失敗理由を Opus に渡し、その場で修復・再判定させる。"""
+    quarantine = record.get("quarantine_branch")
+    if not quarantine:
+        return record
+
+    reasons = "\n".join(record.get("reasons", []))
+    warnings = "\n".join(record.get("warnings", []))
+    log(f"[HEAL] 棒立ち防止: 直ちに Claude Opus に判断を仰ぎ、隔離ブランチ {quarantine} の修復を要請中...")
+
+    diff_stat = subprocess.run(["git", "diff", "--stat", f"main..{quarantine}"], capture_output=True, text=True, cwd=str(PROJECT_ROOT)).stdout.strip()
+
+    heal_prompt = f"""あなたは unity-2d-project のアーキテクト（Claude Opus）です。
+自律実行タスク「{target_task}」の成果物が安全ハーネスによって REJECT（却下・隔離）されました。
+棒立ちせず直ちに修復を行い、main に安全に取り込める状態に是正してください。
+
+【却下理由】
+{reasons}
+{warnings}
+
+【隔離ブランチ: {quarantine} の変更概要】
+{diff_stat}
+
+【修復の手順】
+1. `git cherry-pick {quarantine}` で隔離された成果物を手元に展開してください。
+2. 却下理由を直ちに解消してください:
+   - ルール改変違反（I-6）の場合: `git checkout main -- .agents/rules/00_rules.md` 等で保護ファイルを直ちに元の状態に戻す。
+   - テスト失敗の場合: 失敗している原因のコードやアサインを修正する。
+3. 修正が完了したらコミットしてください（git commit -m "fix(heal): ..."）。
+"""
+    heal_result = run_with_claude_fallback(heal_prompt)
+    if heal_result:
+        log("[HEAL] Opus による修復実行が完了。再検査（ゲート判定）を実施中...")
+        new_record = finalize_cycle(cycle, agent_ok=True)
+        return new_record
+
+    return record
 
 
 # ==============================================================================
@@ -382,18 +418,26 @@ async def main():
     # 5. 安全ハーネス: 検査 -> 受理 or 隔離＋巻き戻し
     record = finalize_cycle(cycle, agent_ok=result is not None)
     verdict = record["verdict"]
-    log(f"[GATE] verdict={verdict} diff={record['diff_stat']}")
+    log(f"[GATE] 初回判定: verdict={verdict} diff={record['diff_stat']}")
+
+    # 6. REJECT 発生時の即時 Opus 自動修復（棒立ち防止）
+    if verdict in ("REJECT_POLICY", "REJECT_TESTS") and record.get("quarantine_branch"):
+        log("[GATE] REJECT を検知。棒立ちせず直ちに Claude Opus に判断を仰ぎ、その場で自己修復を試行します。")
+        record = await heal_with_opus(cycle, record, target_task)
+        verdict = record["verdict"]
+        log(f"[GATE] 修復後判定: verdict={verdict} diff={record['diff_stat']}")
+
     for reason in record.get("reasons", []):
         log(f"[GATE]   理由: {reason}")
     for warning in record.get("warnings", []):
         log(f"[GATE]   注意: {warning}")
-    if record.get("quarantine_branch"):
+    if record.get("quarantine_branch") and verdict != VERDICT_ACCEPT:
         log(f"[GATE] 成果物を隔離ブランチ {record['quarantine_branch']} に保全し、"
             f"{cycle.snapshot[:8]} へ巻き戻した。作業は失われていない。")
     if verdict == VERDICT_ACCEPT:
         log(f"[DONE] 受理。push 先: {record.get('pushed_branch') or '(ローカルのみ)'}")
     else:
-        log("[HOLD] 受理せず。詳細は朝刊レポートを参照。")
+        log("[HOLD] 受理せず。成果物は隔離ブランチに保全。")
 
     log("=" * 60)
 
