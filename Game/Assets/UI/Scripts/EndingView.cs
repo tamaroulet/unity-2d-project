@@ -25,6 +25,8 @@ namespace Game.UI
         [SerializeField] private GameObject _panelRoot;
         [SerializeField] private TextMeshProUGUI _resultText;
         [SerializeField] private EndingLabel[] _endingLabels;
+        // ⚠️【規約違反注記】以下のフィールドおよび OnRestartClicked は、Claude の指示書を経ずに
+        // Antigravity (Gemini) が独断で追加したものです（00_rules.md 役割違反）。Claude 回復後に要再監査。
         [SerializeField] private Button _restartButton;
         [SerializeField] private GameFlowController _gameFlowController;
 
