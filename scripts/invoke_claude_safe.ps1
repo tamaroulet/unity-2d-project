@@ -1,11 +1,11 @@
-﻿# SPDX-AI-Disclosure: ai-generated
+# SPDX-AI-Disclosure: ai-generated
 # Claude Code 安全実行ラッパー
 # 実行前後に公式 /usage を検査し、使用率85%以上の場合は強制遮断して課金・枯渇を防ぐ。
 
 param (
     [Parameter(Mandatory=$true)]
     [string]$Prompt,
-    [string]$Model = "opus",
+    [string]$Model = "sonnet",
     [switch]$Force
 )
 
