@@ -71,7 +71,9 @@ UnityEngine.EventSystems.EventSystem:Update () (at ./Library/PackageCache/com.un
 
 ### 8〜9. ボス戦敗北および通常クリア側の健全性
 - ボス戦敗北時もダイアログ dismiss コールバック経由で同様に `EndingKind.Defeat` が Raise され同フローを通ることをコード上確認。
-- 既存 PlayMode テスト（`MainGame_AdvanceToTurn24_AllBossesDefeated_ShowsEndingPanel_WithZeroExceptions`）がパスしており、通常クリア側の進行・エンディング表示も壊れていない。
+- **人間による実機目視確認（TURN 24 完走・通常勝利側）**:
+  - `Train` (11回) / `Rest` (12回) でターンを進め、TURN 24/24 到達。
+  - 通常クリア処理を経て `META PROGRESSION SHOP`（獲得ポイント `POINTS: 620`、所持カード 3 枚、エラー/例外 0 件）が正常表示されることを画面スクリーンショットおよび Console ログにて確認。勝利側フローの健全性を実証完了。
 
 ### 10. `git status --porcelain`
 保護対象ファイルの変更は 0 件。
