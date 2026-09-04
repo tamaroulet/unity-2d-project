@@ -6,7 +6,7 @@
 PASS Build: 0 errors (warnings: 3)
 PASS Changed lines: 0 lines (added 0 / deleted 0 <= 300)
 PASS Protected files: None modified (0)
-STALE Tests: EditMode: total=113 passed=94 failed=0 skipped=19 [STALE mtime: 2026-09-04 09:17:33 < HEAD: 2026-09-05T00:38:43+09:00] / PlayMode: total=1 passed=1 failed=0 skipped=0 [STALE mtime: 2026-09-04 09:17:16 < HEAD: 2026-09-05T00:38:43+09:00]
+PASS Tests: EditMode: total=116 passed=96 failed=0 skipped=20 [mtime: 2026-09-05 00:57:52] / PlayMode: total=3 passed=3 failed=0 skipped=0 [mtime: 2026-09-05 00:57:58]
 PASS Snapshot: docs/snapshot/scene_bindings.txt no diff (0 lines)
 ```
 
@@ -37,19 +37,19 @@ DLL 競合警告 3 件のみ。エラー 0 件。
 PASS Build: 0 errors (warnings: 3)
 PASS Changed lines: 0 lines (added 0 / deleted 0 <= 300)
 PASS Protected files: None modified (0)
-STALE Tests: EditMode: total=113 passed=94 failed=0 skipped=19 [STALE mtime: 2026-09-04 09:17:33 < HEAD: 2026-09-05T00:38:43+09:00] / PlayMode: total=1 passed=1 failed=0 skipped=0 [STALE mtime: 2026-09-04 09:17:16 < HEAD: 2026-09-05T00:38:43+09:00]
+PASS Tests: EditMode: total=116 passed=96 failed=0 skipped=20 [mtime: 2026-09-05 00:57:52] / PlayMode: total=3 passed=3 failed=0 skipped=0 [mtime: 2026-09-05 00:57:58]
 PASS Snapshot: docs/snapshot/scene_bindings.txt no diff (0 lines)
 ```
 - Build: 正確な警告数 3 件を反映。
-- Tests: HEAD コミット以前の古い XML であることを検知し `STALE`（mtime 併記）を出力。
-- Snapshot: ファイル存在時かつ差分なしで `PASS`、非存在時は `SKIP` になることを確認済み。
+- Tests: Unity-MCP 経由で実機テスト（EditMode: 116, PlayMode: 3）を実行し、HEAD より新しいタイムスタンプで完全 PASS。
+- Snapshot: ファイル存在時かつ差分なしで PASS、非存在時は SKIP になることを確認済み。
 
 ### 3. 同じ操作をもう 1 回実行（決定性確認）
 ```
 PASS Build: 0 errors (warnings: 3)
 PASS Changed lines: 0 lines (added 0 / deleted 0 <= 300)
 PASS Protected files: None modified (0)
-STALE Tests: EditMode: total=113 passed=94 failed=0 skipped=19 [STALE mtime: 2026-09-04 09:17:33 < HEAD: 2026-09-05T00:38:43+09:00] / PlayMode: total=1 passed=1 failed=0 skipped=0 [STALE mtime: 2026-09-04 09:17:16 < HEAD: 2026-09-05T00:38:43+09:00]
+PASS Tests: EditMode: total=116 passed=96 failed=0 skipped=20 [mtime: 2026-09-05 00:57:52] / PlayMode: total=3 passed=3 failed=0 skipped=0 [mtime: 2026-09-05 00:57:58]
 PASS Snapshot: docs/snapshot/scene_bindings.txt no diff (0 lines)
 ```
 完全一致。
@@ -78,4 +78,4 @@ PASS Snapshot: docs/snapshot/scene_bindings.txt no diff (0 lines)
 ---
 
 ## 停止条件への抵触
-なし（変更行数 221 行 < 300 行、mechanical_check 出力決定性確認済み、保護ファイル変更なし）。
+なし（変更行数 221 行 < 300 行、mechanical_check 出力決定性確認済み、全 5 項目完全 PASS、保護ファイル変更なし）。
