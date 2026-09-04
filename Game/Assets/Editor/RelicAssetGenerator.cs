@@ -21,12 +21,12 @@ namespace Game.Features.Relic.Editor
 
             List<RelicSO> relics = new List<RelicSO>();
 
-            relics.Add(CreateRelic(dir, "Relic_01_IronBoots", 1, "鉄下駄", "ターン開始時、スタミナが 2 回復する。", RelicTriggerKind.OnTurnStart, 2, 0, 0, 1f));
-            relics.Add(CreateRelic(dir, "Relic_02_FocusBand", 2, "集中ハチマキ", "コマンド実行時、獲得スキルが +3 増加する。", RelicTriggerKind.OnCommandExecuted, 0, 3, 0, 1f));
-            relics.Add(CreateRelic(dir, "Relic_03_EnergyDrink", 3, "エナジードリンク", "ターン終了時、メンタルが 2 回復する。", RelicTriggerKind.OnTurnEnd, 0, 0, 2, 1f));
-            relics.Add(CreateRelic(dir, "Relic_04_LightArmor", 4, "軽量防具", "コマンド実行時のスタミナ消費が 20% 軽減される。", RelicTriggerKind.OnCommandExecuted, 0, 0, 0, 0.8f));
-            relics.Add(CreateRelic(dir, "Relic_05_MeditationRing", 5, "瞑想の指輪", "ターン開始時、メンタルが 3 回復する。", RelicTriggerKind.OnTurnStart, 0, 0, 3, 1f));
-            relics.Add(CreateRelic(dir, "Relic_06_PowerWrist", 6, "剛力のリストバンド", "コマンド実行時、スキルが +5 増加するがスタミナ消費 +3。", RelicTriggerKind.OnCommandExecuted, -3, 5, 0, 1f));
+            relics.Add(CreateRelic(dir, "Relic_01_IronBoots", 1, "Iron Geta", "Recover 2 Stamina at the start of each turn.", RelicTriggerKind.OnTurnStart, 2, 0, 0, 1f));
+            relics.Add(CreateRelic(dir, "Relic_02_FocusBand", 2, "Focus Headband", "Gain +3 extra Skill on each command.", RelicTriggerKind.OnCommandExecuted, 0, 3, 0, 1f));
+            relics.Add(CreateRelic(dir, "Relic_03_EnergyDrink", 3, "Energy Drink", "Recover 2 Mental at the end of each turn.", RelicTriggerKind.OnTurnEnd, 0, 0, 2, 1f));
+            relics.Add(CreateRelic(dir, "Relic_04_LightArmor", 4, "Light Armor", "Stamina cost of commands reduced by 20%.", RelicTriggerKind.OnCommandExecuted, 0, 0, 0, 0.8f));
+            relics.Add(CreateRelic(dir, "Relic_05_MeditationRing", 5, "Meditation Ring", "Recover 3 Mental at the start of each turn.", RelicTriggerKind.OnTurnStart, 0, 0, 3, 1f));
+            relics.Add(CreateRelic(dir, "Relic_06_PowerWrist", 6, "Power Wristband", "Gain +5 Skill on each command, but Stamina cost +3.", RelicTriggerKind.OnCommandExecuted, -3, 5, 0, 1f));
 
             RelicCatalogSO catalog = ScriptableObject.CreateInstance<RelicCatalogSO>();
             FieldInfo field = typeof(RelicCatalogSO).GetField("_relics", BindingFlags.NonPublic | BindingFlags.Instance);

@@ -13,9 +13,8 @@ MonoBehaviour:
   m_Name: Relic_04_LightArmor
   m_EditorClassIdentifier: Game.Features.Relic::Game.Features.Relic.RelicSO
   _relicId: 4
-  _displayName: "\u8EFD\u91CF\u9632\u5177"
-  _description: "\u30B3\u30DE\u30F3\u30C9\u5B9F\u884C\u6642\u306E\u30B9\u30BF\u30DF\u30CA\u6D88\u8CBB\u304C
-    20% \u8EFD\u6E1B\u3055\u308C\u308B\u3002"
+  _displayName: Light Armor
+  _description: Stamina cost of commands reduced by 20%.
   _triggerKind: 1
   _staminaDeltaBonus: 0
   _skillDeltaBonus: 0

@@ -13,9 +13,8 @@ MonoBehaviour:
   m_Name: Relic_06_PowerWrist
   m_EditorClassIdentifier: Game.Features.Relic::Game.Features.Relic.RelicSO
   _relicId: 6
-  _displayName: "\u525B\u529B\u306E\u30EA\u30B9\u30C8\u30D0\u30F3\u30C9"
-  _description: "\u30B3\u30DE\u30F3\u30C9\u5B9F\u884C\u6642\u3001\u30B9\u30AD\u30EB\u304C
-    +5 \u5897\u52A0\u3059\u308B\u304C\u30B9\u30BF\u30DF\u30CA\u6D88\u8CBB +3\u3002"
+  _displayName: Power Wristband
+  _description: Gain +5 Skill on each command, but Stamina cost +3.
   _triggerKind: 1
   _staminaDeltaBonus: -3
   _skillDeltaBonus: 5

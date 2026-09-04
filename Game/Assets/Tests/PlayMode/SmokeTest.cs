@@ -234,6 +234,7 @@ namespace Game.Tests.PlayMode
             Assert.IsTrue(dismissButton.IsInteractable(), "BossBattleDialogView._dismissButton が interactable でない。");
 
             // ボス戦ダイアログの決定（Dismiss）ボタンをクリック
+            AssertRaycastReachesButton(dismissButton, "dismissButton");
             bool dismissed = ExecuteEvents.Execute(
                 dismissButton.gameObject,
                 new PointerEventData(EventSystem.current),
@@ -253,6 +254,7 @@ namespace Game.Tests.PlayMode
             Button selectButton = GetSerializedField<Button>(cards[0], "_selectButton");
             Assert.IsTrue(selectButton != null, "RelicCardView._selectButton が null。");
 
+            AssertRaycastReachesButton(selectButton, "relicCard[0]._selectButton");
             bool cardClicked = ExecuteEvents.Execute(
                 selectButton.gameObject,
                 new PointerEventData(EventSystem.current),
@@ -334,6 +336,7 @@ namespace Game.Tests.PlayMode
                 if (bossDialog.gameObject.activeInHierarchy && bossDialog.IsVisible)
                 {
                     bossCount++;
+                    AssertRaycastReachesButton(bossDismissButton, "bossDismissButton");
                     bool dismissed = ExecuteEvents.Execute(
                         bossDismissButton.gameObject,
                         new PointerEventData(EventSystem.current),
@@ -345,6 +348,7 @@ namespace Game.Tests.PlayMode
                     draftCount++;
                     Assert.IsTrue(relicCards.Count > 0, "RelicDraftDialogView._cardViews が空。");
                     Button cardBtn = GetSerializedField<Button>(relicCards[0], "_selectButton");
+                    AssertRaycastReachesButton(cardBtn, "relicCard[0]._selectButton");
                     bool cardClicked = ExecuteEvents.Execute(
                         cardBtn.gameObject,
                         new PointerEventData(EventSystem.current),
@@ -482,6 +486,40 @@ namespace Game.Tests.PlayMode
                 $"{target.GetType().Name}.{fieldName} が null。");
 
             return (T)value;
+        }
+
+        /// <summary>
+        /// GraphicRaycaster を通して指定ボタン（またはその子要素）がクリック可能位置の最前面にあるかを検証する。
+        /// 他のモーダルパネル（透明背景など）が上に被さっている場合、検知してテストを失敗させる。
+        /// </summary>
+        private static void AssertRaycastReachesButton(Button button, string buttonName)
+        {
+            Assert.IsTrue(button != null, $"{buttonName} is null.");
+            Assert.IsTrue(button.gameObject.activeInHierarchy, $"{buttonName} is not active in hierarchy.");
+
+            Canvas canvas = button.GetComponentInParent<Canvas>();
+            Assert.IsTrue(canvas != null, $"Canvas not found for {buttonName}.");
+            GraphicRaycaster raycaster = canvas.GetComponent<GraphicRaycaster>();
+            Assert.IsTrue(raycaster != null, $"GraphicRaycaster not found on Canvas for {buttonName}.");
+
+            Camera eventCamera = canvas.renderMode == RenderMode.ScreenSpaceOverlay ? null : canvas.worldCamera;
+            Vector2 screenPoint = RectTransformUtility.WorldToScreenPoint(eventCamera, button.transform.position);
+
+            PointerEventData pointerData = new PointerEventData(EventSystem.current)
+            {
+                position = screenPoint
+            };
+
+            List<RaycastResult> results = new List<RaycastResult>();
+            raycaster.Raycast(pointerData, results);
+
+            Assert.IsTrue(results.Count > 0, $"Raycast hit nothing at {buttonName} screen position {screenPoint}.");
+
+            GameObject topHit = results[0].gameObject;
+            bool isTargetOrChild = topHit == button.gameObject || topHit.transform.IsChildOf(button.transform);
+            Assert.IsTrue(
+                isTargetOrChild,
+                $"Raycast to '{buttonName}' was blocked by '{topHit.name}' (Parent: {topHit.transform.parent?.name}). Target button: {button.gameObject.name}");
         }
     }
 }

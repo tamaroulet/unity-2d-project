@@ -274,7 +274,12 @@ namespace Game.EditorScripts
         private static void SetupBossBattleDialogPanel(Transform canvasTr)
         {
             Transform tr = canvasTr.Find("BossBattleDialogPanel");
-            GameObject go = tr != null ? tr.gameObject : new GameObject("BossBattleDialogPanel", typeof(RectTransform), typeof(Image), typeof(BossBattleDialogView));
+            GameObject go = tr != null ? tr.gameObject : new GameObject("BossBattleDialogPanel", typeof(RectTransform), typeof(Image));
+            BossBattleDialogView oldView = go.GetComponent<BossBattleDialogView>();
+            if (oldView != null)
+            {
+                Object.DestroyImmediate(oldView);
+            }
             go.transform.SetParent(canvasTr, false);
 
             ConfigureModalPanel(go.transform, new Vector2(1250, 750), ColorBgBossDialog);
@@ -337,7 +342,7 @@ namespace Game.EditorScripts
 
             EnsureRectTransform(go);
 
-            // EndingView と RelicDraftDialogView を常時アクティブなホストへ配置
+            // EndingView, RelicDraftDialogView, BossBattleDialogView を常時アクティブなホストへ配置
             if (go.GetComponent<EndingView>() == null)
             {
                 go.AddComponent<EndingView>();
@@ -345,6 +350,10 @@ namespace Game.EditorScripts
             if (go.GetComponent<RelicDraftDialogView>() == null)
             {
                 go.AddComponent<RelicDraftDialogView>();
+            }
+            if (go.GetComponent<BossBattleDialogView>() == null)
+            {
+                go.AddComponent<BossBattleDialogView>();
             }
         }
 
@@ -485,7 +494,7 @@ namespace Game.EditorScripts
             AttachIcon(rect, "Icon", LoadSprite("Icon_Relic"), new Vector2(0, 80), new Vector2(80, 80));
             TextMeshProUGUI nameLbl = CreateLabel(rect, "NameText", relicName, new Vector2(0, 0), new Vector2(240, 40), 22, TextAlignmentOptions.Center).GetComponent<TextMeshProUGUI>();
             TextMeshProUGUI descLbl = CreateLabel(rect, "DescText", desc, new Vector2(0, -60), new Vector2(240, 80), 18, TextAlignmentOptions.Center).GetComponent<TextMeshProUGUI>();
-            CreateModalButton(rect, "SelectButton", "選択する", new Vector2(0, -130), new Vector2(200, 45));
+            CreateModalButton(rect, "SelectButton", "SELECT", new Vector2(0, -130), new Vector2(200, 45));
 
             Transform btnTr = rect.Find("SelectButton");
             Button btn = btnTr != null ? btnTr.GetComponent<Button>() : null;
@@ -592,25 +601,26 @@ namespace Game.EditorScripts
                 return;
             }
 
-            BossBattleDialogView view = bossPanelTr.GetComponent<BossBattleDialogView>();
+            Transform viewsTr = canvasTr.Find("UIViews");
+            if (viewsTr == null)
+            {
+                Debug.LogError("[UILayoutBuilder] UIViews not found on Canvas for BossBattleDialogView.");
+                return;
+            }
+
+            BossBattleDialogView view = viewsTr.GetComponent<BossBattleDialogView>();
             if (view == null)
             {
-                Debug.LogError("[UILayoutBuilder] BossBattleDialogView component not found on BossBattleDialogPanel.");
+                Debug.LogError("[UILayoutBuilder] BossBattleDialogView component not found on UIViews.");
                 return;
             }
 
             SerializedObject so = new SerializedObject(view);
 
-            Transform rootTr = bossPanelTr.Find("PanelRoot");
-            if (rootTr != null)
-            {
-                so.FindProperty("_panelRoot").objectReferenceValue = rootTr.gameObject;
-            }
-            else
-            {
-                Debug.LogError("[UILayoutBuilder] BossBattleDialogPanel/PanelRoot not found for _panelRoot. Existing reference is kept.");
-            }
+            // _panelRoot は BossBattleDialogPanel 全体（全画面モーダル背景含む）を指す
+            so.FindProperty("_panelRoot").objectReferenceValue = bossPanelTr.gameObject;
 
+            Transform rootTr = bossPanelTr.Find("PanelRoot");
             BindComponentReference<TextMeshProUGUI>(so, "_bossNameText", rootTr, "BossBattleDialogPanel", "BossTitleText", "BossNameText");
             BindComponentReference<TextMeshProUGUI>(so, "_bossHpText", rootTr, "BossBattleDialogPanel", "BossHpGroup/Label", "BossHpText");
             BindComponentReference<Slider>(so, "_bossHpSlider", rootTr, "BossBattleDialogPanel", "BossHpSlider", "BossHpGroup/BossHpSlider");
@@ -672,8 +682,8 @@ namespace Game.EditorScripts
             StatusView view = statusTr.GetComponent<StatusView>();
             if (view == null) return;
 
-            Transform bossPanelTr = canvasTr.Find("BossBattleDialogPanel");
-            BossBattleDialogView bossDialog = bossPanelTr != null ? bossPanelTr.GetComponent<BossBattleDialogView>() : null;
+            Transform viewsTr = canvasTr.Find("UIViews");
+            BossBattleDialogView bossDialog = viewsTr != null ? viewsTr.GetComponent<BossBattleDialogView>() : null;
 
             SerializedObject so = new SerializedObject(view);
             so.FindProperty("_gameFlowController").objectReferenceValue = controller;

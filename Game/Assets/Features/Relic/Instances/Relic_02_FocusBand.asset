@@ -13,9 +13,8 @@ MonoBehaviour:
   m_Name: Relic_02_FocusBand
   m_EditorClassIdentifier: Game.Features.Relic::Game.Features.Relic.RelicSO
   _relicId: 2
-  _displayName: "\u96C6\u4E2D\u30CF\u30C1\u30DE\u30AD"
-  _description: "\u30B3\u30DE\u30F3\u30C9\u5B9F\u884C\u6642\u3001\u7372\u5F97\u30B9\u30AD\u30EB\u304C
-    +3 \u5897\u52A0\u3059\u308B\u3002"
+  _displayName: Focus Headband
+  _description: Gain +3 extra Skill on each command.
   _triggerKind: 1
   _staminaDeltaBonus: 0
   _skillDeltaBonus: 3

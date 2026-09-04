@@ -56,7 +56,6 @@ namespace Game.UI
         {
             if (_bossBattleDialog != null)
             {
-                _bossBattleDialog.gameObject.SetActive(true);
                 _bossBattleDialog.Show(boss, result, callback);
             }
             else

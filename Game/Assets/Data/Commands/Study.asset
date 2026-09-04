@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 314a21f5f4b9aa14fa1835a357ae4861, type: 3}
   m_Name: Study
   m_EditorClassIdentifier: Game.Features.Command::Game.Features.Command.CommandDataSO
-  _commandName: "\u5EA7\u5B66"
+  _commandName: STUDY
   _staminaDelta: -10
   _skillDelta: 5
   _mentalDelta: 5

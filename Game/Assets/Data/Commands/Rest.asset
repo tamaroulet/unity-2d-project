@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 314a21f5f4b9aa14fa1835a357ae4861, type: 3}
   m_Name: Rest
   m_EditorClassIdentifier: Game.Features.Command::Game.Features.Command.CommandDataSO
-  _commandName: "\u4F11\u990A"
+  _commandName: REST
   _staminaDelta: 40
   _skillDelta: 0
   _mentalDelta: 10

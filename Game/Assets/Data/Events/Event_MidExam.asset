@@ -13,8 +13,8 @@ MonoBehaviour:
   m_Name: Event_MidExam
   m_EditorClassIdentifier: Game.Features.Event::Game.Features.Event.GameEventSO
   _eventId: 1
-  _displayName: "\u4E2D\u9593\u8A66\u9A13"
-  _body: "\u65E5\u9803\u306E\u5B66\u7FD2\u6210\u679C\u304C\u8A66\u3055\u308C\u308B\u4E2D\u9593\u8A66\u9A13\u3060\uFF01"
+  _displayName: Midterm Exam
+  _body: The midterm exam is here. Everything you have studied is put to the test!
   _triggerKind: 0
   _triggerTurn: 12
   _targetParameter: 1

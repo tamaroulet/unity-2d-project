@@ -64,7 +64,20 @@ namespace Game.EditorScripts
                 rect.anchorMax = Vector2.one;
                 rect.sizeDelta = Vector2.zero;
 
-                BossBattleDialogView dialogView = dialogGo.GetComponent<BossBattleDialogView>() ?? dialogGo.AddComponent<BossBattleDialogView>();
+                // BossBattleDialogPanel に既存の View があれば破棄
+                BossBattleDialogView oldView = dialogGo.GetComponent<BossBattleDialogView>();
+                if (oldView != null)
+                {
+                    Object.DestroyImmediate(oldView);
+                }
+
+                // UIViews に BossBattleDialogView を配置
+                Transform viewsTr = canvas.transform.Find("UIViews");
+                GameObject viewsGo = viewsTr != null ? viewsTr.gameObject : new GameObject("UIViews", typeof(RectTransform));
+                viewsGo.transform.SetParent(canvas.transform, false);
+                viewsGo.SetActive(true);
+
+                BossBattleDialogView dialogView = viewsGo.GetComponent<BossBattleDialogView>() ?? viewsGo.AddComponent<BossBattleDialogView>();
 
                 // PanelRoot
                 Transform rootTr = dialogGo.transform.Find("PanelRoot");
@@ -80,7 +93,7 @@ namespace Game.EditorScripts
                 Button dismissButton = GetOrCreateButton(rootGo, "DismissButton");
 
                 SerializedObject viewSo = new SerializedObject(dialogView);
-                viewSo.FindProperty("_panelRoot").objectReferenceValue = rootGo;
+                viewSo.FindProperty("_panelRoot").objectReferenceValue = dialogGo;
                 viewSo.FindProperty("_bossNameText").objectReferenceValue = nameText;
                 viewSo.FindProperty("_bossHpText").objectReferenceValue = hpText;
                 viewSo.FindProperty("_bossHpSlider").objectReferenceValue = hpSlider;

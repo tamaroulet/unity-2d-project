@@ -96,7 +96,11 @@ namespace Game.UI
         public void Show(BossSO boss, FullBattleResult battleResult, Action onDismissed = null)
         {
             EnsureReferences();
-            gameObject.SetActive(true);
+            if (_panelRoot == null)
+            {
+                Debug.LogError("[BossBattleDialogView] _panelRoot is null, cannot display boss battle modal.");
+                return;
+            }
             _onDismissedCallback = onDismissed;
 
             if (_bossNameText != null)

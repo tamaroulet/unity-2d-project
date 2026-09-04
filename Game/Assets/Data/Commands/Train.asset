@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 314a21f5f4b9aa14fa1835a357ae4861, type: 3}
   m_Name: Train
   m_EditorClassIdentifier: Game.Features.Command::Game.Features.Command.CommandDataSO
-  _commandName: "\u7279\u8A13"
+  _commandName: TRAIN
   _staminaDelta: -20
   _skillDelta: 10
   _mentalDelta: -5
