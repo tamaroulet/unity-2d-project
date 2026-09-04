@@ -952,6 +952,45 @@ Antigravity (Gemini) による直接 C# 実装体制への移行後、指示書 
 
 ---
 
+### UI パネルへのスプライト割り当て（指示書 09 / 2.2）
+
+#### 1. 実施内容
+
+- `UILayoutBuilder.cs` に不足していたスプライト割り当てを追加した。
+  - `StatusPanel` / `CommandPanel` の背景を `Frame_Card`（9 スライス）に変更。
+  - ゲージ背景 `BarBg` とゲージ本体 `BarFill` に `Bar_Fill`（縦グラデーション）を適用。
+  - 既存のカード枠・アイコン・ボス紋章の割り当ては変更していない。
+- `Tools/Setup Complete UI Layout (Simple Shapes)` をバッチモードで実行し、
+  `MainGame.unity` を更新・保存した。
+
+#### 2. 実行中に検出した既存の不具合とその是正
+
+| 検出内容 | 原因 | 対処 |
+|---|---|---|
+| ツール実行のたびにシーン差分が 8,400 行に膨らむ | Canvas の子を毎回全破棄してから作り直しており、fileID が総入れ替えになっていた | 既知パネル名は破棄せず更新する `RemoveStaleChildren` に置き換えた。差分は 35 行になった |
+| `StatusView._gameStateChannel` と `GameFlowController._gameStateChannel` / `_eventFiredChannel` が null で上書きされる | 参照していたアセットパスが実在しない（`GameStateEventChannel.asset` / `GameEventFiredChannel.asset`。実体は `GameStateChannel.asset` / `EventFiredChannel.asset`）。`LoadAssetAtPath` の null をそのまま代入していた | パスを実体に合わせ、読み込み失敗時は代入せず `LogError` する `BindAsset<T>` を導入した |
+| シーンの日本語 UI ラベル 18 件が英語に戻る | ビルダー側の文字列リテラルが英語のままで、実行のたびにシーンを上書きしていた | ビルダーの文字列をシーン側の日本語表記に合わせた。ツールを何度実行しても表示が変わらない |
+| `StatusView._gameFlowController` / `_bossBattleDialog` が未結線 | 後から追加されたフィールドで、ビルダーが結線していなかった | 全パネル構築後に結線する `RebindStatusViewSceneReferences` を追加した |
+
+#### 3. 検証（実測）
+
+| 手段 | 結果 |
+|---|---|
+| Unity バッチモード `-executeMethod UILayoutBuilder.SetupCompleteLayout` | exit 0 / エラー 0 |
+| `MainGame.unity` の差分 | 35 行（スプライト 12 件、`Image.Type` 2 件、`StatusView` 参照 2 件、YAML 折り返し 1 件） |
+| EditMode テスト（バッチモード） | 113 件収集 / 94 passed / 0 failed / 19 skipped（`[Explicit]`） |
+| PlayMode テスト（バッチモード） | 1 / 1 passed（`SmokeTest`、`MainGame` 実ロード、Exception 0） |
+
+#### 4. 保留した判断
+
+`EventDialogView` は全参照が未設定のままである。ビルダーが生成する子は
+`OptionAButton` / `OptionBButton` の 2 択だが、ビューが要求するのは単一の `_okButton` で、
+どちらを対応させるかは指示書に記載がない。`.agents/rules/00_rules.md` の停止条件
+「指示書に書かれていない設計判断が必要になった」に該当するため結線せず、
+`docs/STATUS.md` の「次にやること」へ人間の判断待ちとして記載した。
+
+---
+
 ## 評価指標の定義
 
 本プロジェクトで記録している指標のうち、既存の評価系との対応は以下の通り。

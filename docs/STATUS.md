@@ -34,6 +34,7 @@
 | **第7週 Step 21** | 単純図形UIワイヤーフレーム配置（UILayoutBuilder）＆シーン完全バインド | 完了 | `814cc19` |
 | **第7週 Step 22** | WebGL ローカルビルド確定（WASM 8.4MB / Data 4.5MB）＆ AutoRunner 常駐 | 完了 | `54704c5` |
 | **第8週 Step 23** | 幾何学ピクトグラム生成器の是正（Study 独立化 / Act 別 N 角形紋章 / 角丸カード枠） | 完了 | `HEAD` |
+| **第8週 Step 24** | UI パネルへのスプライト割り当て（`Tools/Setup Complete UI Layout` 実行・`MainGame.unity` 更新） | 完了 | `HEAD` |
 
 ---
 
@@ -43,6 +44,10 @@
 ---
 
 ## 2. 次にやること
+
+0. **`EventDialogView` の未結線（要・人間の設計判断）**:
+   - `MainGame.unity` の `EventDialogPanel` に載る `EventDialogView` は `_eventFiredChannel` / `_eventCatalog` / `_panelRoot` / `_titleText` / `_bodyText` / `_okButton` / `_gameFlowController` の全参照が未設定のまま。
+   - `UILayoutBuilder` が作る子は `OptionAButton` / `OptionBButton` の 2 択で、ビューが要求する単一の `_okButton` と対応しない。どちらを閉じるボタンに割り当てるかは指示書に記載がない設計判断のため、エージェント側では結線せず保留した。
 
 1. **モック通しプレイの開通（基本図形のまま完走）**:
    - `GameFlowController` で一時停止する `ShowingRelicDraft`（レリック3択）の配線を完了させ、24ターン〜ボス戦〜エンディングまで一気通貫で動く動的モックを完成させる。

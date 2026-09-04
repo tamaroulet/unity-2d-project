@@ -86,13 +86,10 @@ namespace Game.EditorScripts
                 }
             }
 
-            // 古い壊れた子オブジェクトを一括クリア（クリーンビルド）
-            int childCount = canvas.transform.childCount;
-            for (int i = childCount - 1; i >= 0; i--)
-            {
-                Transform child = canvas.transform.GetChild(i);
-                Object.DestroyImmediate(child.gameObject);
-            }
+            // 既知のパネル以外（旧レイアウトの残骸）だけを除去する。
+            // 既知のパネルは各 Setup メソッドが上書き更新するため破棄しない。
+            // 破棄すると fileID が毎回振り直され、シーンの差分がレビュー不能な規模になる。
+            RemoveStaleChildren(canvas.transform);
 
             // 4. 全画面背景
             CreateOrUpdateBackground(canvas.transform);
@@ -106,12 +103,63 @@ namespace Game.EditorScripts
             SetupMetaShopDialogPanel(canvas.transform);
             SetupEndingPanel(canvas.transform);
 
-            // 6. GameFlowController へのバインド
+            // 6. シーン内コンポーネント同士の結線
+            RebindStatusViewSceneReferences(canvas.transform);
             RebindGameFlowControllerReferences(canvas.transform);
 
             EditorSceneManager.MarkSceneDirty(scene);
             EditorSceneManager.SaveScene(scene);
             Debug.Log("[UILayoutBuilder] Full UI Layout successfully built and saved without errors.");
+        }
+
+        private static readonly string[] ManagedPanelNames =
+        {
+            "Background",
+            "StatusPanel",
+            "CommandPanel",
+            "CommandButtonsPanel",
+            "EventDialogPanel",
+            "RelicDraftDialogPanel",
+            "BossBattleDialogPanel",
+            "MetaShopDialogPanel",
+            "EndingPanel",
+        };
+
+        private static void RemoveStaleChildren(Transform canvasTr)
+        {
+            for (int i = canvasTr.childCount - 1; i >= 0; i--)
+            {
+                Transform child = canvasTr.GetChild(i);
+                if (System.Array.IndexOf(ManagedPanelNames, child.name) < 0)
+                {
+                    Debug.Log($"[UILayoutBuilder] Removing stale canvas child: {child.name}");
+                    Object.DestroyImmediate(child.gameObject);
+                }
+            }
+        }
+
+        /// <summary>
+        /// アセットを読み込んでプロパティへ差す。パスが誤っていた場合に
+        /// 既存の参照を null で上書きしてシーンを壊さないよう、失敗時は代入しない。
+        /// </summary>
+        private static void BindAsset<T>(SerializedObject so, string propertyName, string assetPath)
+            where T : Object
+        {
+            SerializedProperty prop = so.FindProperty(propertyName);
+            if (prop == null)
+            {
+                Debug.LogError($"[UILayoutBuilder] Serialized property not found: {propertyName}");
+                return;
+            }
+
+            T asset = AssetDatabase.LoadAssetAtPath<T>(assetPath);
+            if (asset == null)
+            {
+                Debug.LogError($"[UILayoutBuilder] Asset not found, keeping existing reference for {propertyName}: {assetPath}");
+                return;
+            }
+
+            prop.objectReferenceValue = asset;
         }
 
         private static Sprite LoadSprite(string name)
@@ -149,6 +197,8 @@ namespace Game.EditorScripts
             rect.offsetMax = new Vector2(-20f, -10f);
 
             Image img = go.GetComponent<Image>() ?? go.AddComponent<Image>();
+            img.sprite = LoadSprite("Frame_Card");
+            img.type = Image.Type.Sliced;
             img.color = ColorBgHeader;
 
             StatusView view = go.GetComponent<StatusView>() ?? go.AddComponent<StatusView>();
@@ -162,9 +212,8 @@ namespace Game.EditorScripts
             CreateLabel(rect, "PointsText", "POINTS: 0", new Vector2(750, 0), new Vector2(200, 50), 28, TextAlignmentOptions.Right);
 
             // StatusView の SerializedObject バインド
-            GameStateEventChannelSO channel = AssetDatabase.LoadAssetAtPath<GameStateEventChannelSO>("Assets/Data/Channels/GameStateEventChannel.asset");
             SerializedObject so = new SerializedObject(view);
-            so.FindProperty("_gameStateChannel").objectReferenceValue = channel;
+            BindAsset<GameStateEventChannelSO>(so, "_gameStateChannel", "Assets/Data/Channels/GameStateChannel.asset");
             so.FindProperty("_turnText").objectReferenceValue = turnGo.GetComponent<TextMeshProUGUI>();
             so.FindProperty("_staminaText").objectReferenceValue = staminaGo.transform.Find("Label").GetComponent<TextMeshProUGUI>();
             so.FindProperty("_skillText").objectReferenceValue = skillGo.transform.Find("Label").GetComponent<TextMeshProUGUI>();
@@ -186,6 +235,8 @@ namespace Game.EditorScripts
             rect.offsetMax = new Vector2(-20f, 15f);
 
             Image img = go.GetComponent<Image>() ?? go.AddComponent<Image>();
+            img.sprite = LoadSprite("Frame_Card");
+            img.type = Image.Type.Sliced;
             img.color = ColorBgFooter;
 
             GameFlowController flowController = Object.FindFirstObjectByType<GameFlowController>();
@@ -236,10 +287,10 @@ namespace Game.EditorScripts
             Transform rootTr = go.transform.Find("PanelRoot");
             if (rootTr != null)
             {
-                CreateLabel(rootTr.GetComponent<RectTransform>(), "EventTitleText", "EVENT OCCURRED", new Vector2(0, 180), new Vector2(700, 50), 32, TextAlignmentOptions.Center);
-                CreateLabel(rootTr.GetComponent<RectTransform>(), "EventDescriptionText", "A training event has occurred.\nChoose your option carefully.", new Vector2(0, 50), new Vector2(700, 120), 22, TextAlignmentOptions.Center);
-                CreateModalButton(rootTr.GetComponent<RectTransform>(), "OptionAButton", "Option A (Stamina Cost / Skill Boost)", new Vector2(0, -90), new Vector2(600, 60));
-                CreateModalButton(rootTr.GetComponent<RectTransform>(), "OptionBButton", "Option B (Safe Action / Mental Guard)", new Vector2(0, -170), new Vector2(600, 60));
+                CreateLabel(rootTr.GetComponent<RectTransform>(), "EventTitleText", "イベント発生", new Vector2(0, 180), new Vector2(700, 50), 32, TextAlignmentOptions.Center);
+                CreateLabel(rootTr.GetComponent<RectTransform>(), "EventDescriptionText", "ランダムな育成イベントが発生しました。\n選択肢を選んで能力を伸ばしましょう。", new Vector2(0, 50), new Vector2(700, 120), 22, TextAlignmentOptions.Center);
+                CreateModalButton(rootTr.GetComponent<RectTransform>(), "OptionAButton", "選択肢 A (Stamina消費 / Skill上昇)", new Vector2(0, -90), new Vector2(600, 60));
+                CreateModalButton(rootTr.GetComponent<RectTransform>(), "OptionBButton", "選択肢 B (安全策 / Mental保護)", new Vector2(0, -170), new Vector2(600, 60));
             }
             go.SetActive(false); // 初期状態は非表示
         }
@@ -254,10 +305,10 @@ namespace Game.EditorScripts
             Transform rootTr = go.transform.Find("PanelRoot");
             if (rootTr != null)
             {
-                CreateLabel(rootTr.GetComponent<RectTransform>(), "DraftTitleText", "RELIC DRAFT (SELECT PASSIVE)", new Vector2(0, 240), new Vector2(800, 50), 32, TextAlignmentOptions.Center);
-                CreateRelicCard(rootTr.GetComponent<RectTransform>(), "Card1", "Iron Dumbbell\n+5 Stamina/Turn", new Vector2(-340, -20));
-                CreateRelicCard(rootTr.GetComponent<RectTransform>(), "Card2", "Book of Wisdom\n+20% Skill Gain", new Vector2(0, -20));
-                CreateRelicCard(rootTr.GetComponent<RectTransform>(), "Card3", "Healing Amulet\n+30% Mental Guard", new Vector2(340, -20));
+                CreateLabel(rootTr.GetComponent<RectTransform>(), "DraftTitleText", "レリックドラフト（パッシブ選択）", new Vector2(0, 240), new Vector2(800, 50), 32, TextAlignmentOptions.Center);
+                CreateRelicCard(rootTr.GetComponent<RectTransform>(), "Card1", "鉄のダンベル\n毎ターンStamina+5", new Vector2(-340, -20));
+                CreateRelicCard(rootTr.GetComponent<RectTransform>(), "Card2", "知恵の書\nSkill獲得量+20%", new Vector2(0, -20));
+                CreateRelicCard(rootTr.GetComponent<RectTransform>(), "Card3", "癒やしの護符\nMental保護+30%", new Vector2(340, -20));
             }
             go.SetActive(false);
         }
@@ -272,13 +323,13 @@ namespace Game.EditorScripts
             Transform rootTr = go.transform.Find("PanelRoot");
             if (rootTr != null)
             {
-                CreateLabel(rootTr.GetComponent<RectTransform>(), "BossTitleText", "BOSS BATTLE", new Vector2(0, 290), new Vector2(800, 50), 34, TextAlignmentOptions.Center);
+                CreateLabel(rootTr.GetComponent<RectTransform>(), "BossTitleText", "⚠️ ボスバトル発生 ⚠️", new Vector2(0, 290), new Vector2(800, 50), 34, TextAlignmentOptions.Center);
                 AttachIcon(rootTr, "BossEmblem", LoadSprite("Boss_Emblem_Act1"), new Vector2(0, 110), new Vector2(200, 200));
 
                 CreateGaugeGroup(rootTr.GetComponent<RectTransform>(), "BossHpGroup", "Icon_Attack", ColorBossHp, new Vector2(0, -60), "Boss HP: 80 / 80");
                 CreateGaugeGroup(rootTr.GetComponent<RectTransform>(), "BossShieldGroup", "Icon_Shield", ColorShield, new Vector2(0, -130), "Shield: 10");
 
-                CreateModalButton(rootTr.GetComponent<RectTransform>(), "AutoBattleNextButton", "AUTO BATTLE / NEXT", new Vector2(0, -260), new Vector2(400, 70));
+                CreateModalButton(rootTr.GetComponent<RectTransform>(), "AutoBattleNextButton", "オート戦闘 進行", new Vector2(0, -260), new Vector2(400, 70));
             }
             go.SetActive(false);
         }
@@ -293,11 +344,11 @@ namespace Game.EditorScripts
             Transform rootTr = go.transform.Find("PanelRoot");
             if (rootTr != null)
             {
-                CreateLabel(rootTr.GetComponent<RectTransform>(), "ShopTitleText", "META PROGRESSION SHOP", new Vector2(0, 270), new Vector2(800, 50), 32, TextAlignmentOptions.Center);
-                CreateShopItemCard(rootTr.GetComponent<RectTransform>(), "Item1", "Initial Stamina +10\nCost: 50 Pts", new Vector2(-340, 30));
-                CreateShopItemCard(rootTr.GetComponent<RectTransform>(), "Item2", "Initial Skill +5\nCost: 100 Pts", new Vector2(0, 30));
-                CreateShopItemCard(rootTr.GetComponent<RectTransform>(), "Item3", "Initial Mental +15\nCost: 150 Pts", new Vector2(340, 30));
-                CreateModalButton(rootTr.GetComponent<RectTransform>(), "CloseShopButton", "CLOSE / NEXT RUN", new Vector2(0, -250), new Vector2(450, 60));
+                CreateLabel(rootTr.GetComponent<RectTransform>(), "ShopTitleText", "周回メタアンロックショップ", new Vector2(0, 270), new Vector2(800, 50), 32, TextAlignmentOptions.Center);
+                CreateShopItemCard(rootTr.GetComponent<RectTransform>(), "Item1", "初期Stamina +10\nコスト: 50 Pts", new Vector2(-340, 30));
+                CreateShopItemCard(rootTr.GetComponent<RectTransform>(), "Item2", "初期Skill +5\nコスト: 100 Pts", new Vector2(0, 30));
+                CreateShopItemCard(rootTr.GetComponent<RectTransform>(), "Item3", "初期Mental +15\nコスト: 150 Pts", new Vector2(340, 30));
+                CreateModalButton(rootTr.GetComponent<RectTransform>(), "CloseShopButton", "ショップを閉じる / 次のランへ", new Vector2(0, -250), new Vector2(450, 60));
             }
             go.SetActive(false);
         }
@@ -312,9 +363,9 @@ namespace Game.EditorScripts
             Transform rootTr = go.transform.Find("PanelRoot");
             if (rootTr != null)
             {
-                CreateLabel(rootTr.GetComponent<RectTransform>(), "EndingTitleText", "GAME CLEAR!", new Vector2(0, 220), new Vector2(700, 60), 38, TextAlignmentOptions.Center);
-                CreateLabel(rootTr.GetComponent<RectTransform>(), "EndingDescriptionText", "You survived all 24 turns and defeated all 4 Act Bosses!\nEarned MetaPoints: +150 Pts", new Vector2(0, 60), new Vector2(700, 150), 24, TextAlignmentOptions.Center);
-                CreateModalButton(rootTr.GetComponent<RectTransform>(), "RestartButton", "RESTART / SHOP", new Vector2(0, -180), new Vector2(450, 70));
+                CreateLabel(rootTr.GetComponent<RectTransform>(), "EndingTitleText", "🏆 ゲームクリア！", new Vector2(0, 220), new Vector2(700, 60), 38, TextAlignmentOptions.Center);
+                CreateLabel(rootTr.GetComponent<RectTransform>(), "EndingDescriptionText", "24ターンを生き抜き、全4幕のボスを撃破しました！\n獲得MetaPoints: +150 Pts", new Vector2(0, 60), new Vector2(700, 150), 24, TextAlignmentOptions.Center);
+                CreateModalButton(rootTr.GetComponent<RectTransform>(), "RestartButton", "再挑戦 / メタショップへ", new Vector2(0, -180), new Vector2(450, 70));
             }
             go.SetActive(false);
         }
@@ -380,7 +431,10 @@ namespace Game.EditorScripts
             RectTransform barBgRect = EnsureRectTransform(barBgGo);
             barBgRect.anchoredPosition = new Vector2(20, -5);
             barBgRect.sizeDelta = new Vector2(220, 24);
-            barBgGo.GetComponent<Image>().color = ColorBarBg;
+            Image barBgImg = barBgGo.GetComponent<Image>();
+            barBgImg.sprite = LoadSprite("Bar_Fill");
+            barBgImg.type = Image.Type.Simple;
+            barBgImg.color = ColorBarBg;
 
             // ゲージバー
             Transform barFillTr = barBgRect.Find("BarFill");
@@ -390,7 +444,10 @@ namespace Game.EditorScripts
             barFillRect.anchorMin = Vector2.zero;
             barFillRect.anchorMax = new Vector2(0.7f, 1f); // 70% 仮置き
             barFillRect.sizeDelta = Vector2.zero;
-            barFillGo.GetComponent<Image>().color = barColor;
+            Image barFillImg = barFillGo.GetComponent<Image>();
+            barFillImg.sprite = LoadSprite("Bar_Fill");
+            barFillImg.type = Image.Type.Simple;
+            barFillImg.color = barColor;
 
             // ラベル
             CreateLabel(rect, "Label", label, new Vector2(20, 15), new Vector2(220, 24), 18, TextAlignmentOptions.Center);
@@ -495,27 +552,52 @@ namespace Game.EditorScripts
             return labelGo;
         }
 
+        /// <summary>
+        /// StatusView はボス戦の発生を GameFlowController から受け取り
+        /// BossBattleDialogView へ委譲する。両者とも他パネルの構築後にしか
+        /// 存在しないため、全パネル構築が終わってから結線する。
+        /// </summary>
+        private static void RebindStatusViewSceneReferences(Transform canvasTr)
+        {
+            Transform statusTr = canvasTr.Find("StatusPanel");
+            if (statusTr == null) return;
+
+            StatusView view = statusTr.GetComponent<StatusView>();
+            if (view == null) return;
+
+            SerializedObject so = new SerializedObject(view);
+            so.FindProperty("_gameFlowController").objectReferenceValue = Object.FindFirstObjectByType<GameFlowController>();
+
+            Transform bossTr = canvasTr.Find("BossBattleDialogPanel");
+            if (bossTr != null)
+            {
+                so.FindProperty("_bossBattleDialog").objectReferenceValue = bossTr.GetComponent<BossBattleDialogView>();
+            }
+
+            so.ApplyModifiedProperties();
+        }
+
         private static void RebindGameFlowControllerReferences(Transform canvasTr)
         {
             GameFlowController controller = Object.FindFirstObjectByType<GameFlowController>();
             if (controller == null) return;
 
             SerializedObject so = new SerializedObject(controller);
-            so.FindProperty("_gameRules").objectReferenceValue = AssetDatabase.LoadAssetAtPath<GameRulesSO>("Assets/Data/Rules/GameRules.asset");
-            so.FindProperty("_commandResolver").objectReferenceValue = AssetDatabase.LoadAssetAtPath<CommandResolverSO>("Assets/Data/Commands/CommandResolver.asset");
-            so.FindProperty("_eventCatalog").objectReferenceValue = AssetDatabase.LoadAssetAtPath<GameEventCatalogSO>("Assets/Data/Events/GameEventCatalog.asset");
-            so.FindProperty("_eventResolver").objectReferenceValue = AssetDatabase.LoadAssetAtPath<EventResolverSO>("Assets/Data/Events/EventResolver.asset");
-            so.FindProperty("_endingRules").objectReferenceValue = AssetDatabase.LoadAssetAtPath<EndingRulesSO>("Assets/Data/Endings/EndingRules.asset");
-            so.FindProperty("_endingResolver").objectReferenceValue = AssetDatabase.LoadAssetAtPath<EndingResolverSO>("Assets/Data/Endings/EndingResolver.asset");
-            so.FindProperty("_gameStateChannel").objectReferenceValue = AssetDatabase.LoadAssetAtPath<GameStateEventChannelSO>("Assets/Data/Channels/GameStateEventChannel.asset");
-            so.FindProperty("_eventFiredChannel").objectReferenceValue = AssetDatabase.LoadAssetAtPath<GameEventFiredChannelSO>("Assets/Data/Channels/GameEventFiredChannel.asset");
-            so.FindProperty("_endingDecidedChannel").objectReferenceValue = AssetDatabase.LoadAssetAtPath<EndingDecidedChannelSO>("Assets/Data/Channels/EndingDecidedChannel.asset");
-            so.FindProperty("_relicCatalog").objectReferenceValue = AssetDatabase.LoadAssetAtPath<RelicCatalogSO>("Assets/Features/Relic/Instances/RelicCatalog.asset");
-            so.FindProperty("_relicResolver").objectReferenceValue = AssetDatabase.LoadAssetAtPath<RelicResolverSO>("Assets/Features/Relic/Instances/RelicResolver.asset");
-            so.FindProperty("_bossCatalog").objectReferenceValue = AssetDatabase.LoadAssetAtPath<BossCatalogSO>("Assets/Features/Boss/Instances/BossCatalog.asset");
-            so.FindProperty("_autoBattleResolver").objectReferenceValue = AssetDatabase.LoadAssetAtPath<AutoBattleResolverSO>("Assets/Features/Boss/Instances/AutoBattleResolver.asset");
-            so.FindProperty("_metaPointResolver").objectReferenceValue = AssetDatabase.LoadAssetAtPath<MetaPointResolverSO>("Assets/Features/MetaProgression/Instances/MetaPointResolver.asset");
-            so.FindProperty("_metaUnlockCatalog").objectReferenceValue = AssetDatabase.LoadAssetAtPath<MetaUnlockCatalogSO>("Assets/Features/MetaProgression/Instances/MetaUnlockCatalog.asset");
+            BindAsset<GameRulesSO>(so, "_gameRules", "Assets/Data/Rules/GameRules.asset");
+            BindAsset<CommandResolverSO>(so, "_commandResolver", "Assets/Data/Commands/CommandResolver.asset");
+            BindAsset<GameEventCatalogSO>(so, "_eventCatalog", "Assets/Data/Events/GameEventCatalog.asset");
+            BindAsset<EventResolverSO>(so, "_eventResolver", "Assets/Data/Events/EventResolver.asset");
+            BindAsset<EndingRulesSO>(so, "_endingRules", "Assets/Data/Endings/EndingRules.asset");
+            BindAsset<EndingResolverSO>(so, "_endingResolver", "Assets/Data/Endings/EndingResolver.asset");
+            BindAsset<GameStateEventChannelSO>(so, "_gameStateChannel", "Assets/Data/Channels/GameStateChannel.asset");
+            BindAsset<GameEventFiredChannelSO>(so, "_eventFiredChannel", "Assets/Data/Channels/EventFiredChannel.asset");
+            BindAsset<EndingDecidedChannelSO>(so, "_endingDecidedChannel", "Assets/Data/Channels/EndingDecidedChannel.asset");
+            BindAsset<RelicCatalogSO>(so, "_relicCatalog", "Assets/Features/Relic/Instances/RelicCatalog.asset");
+            BindAsset<RelicResolverSO>(so, "_relicResolver", "Assets/Features/Relic/Instances/RelicResolver.asset");
+            BindAsset<BossCatalogSO>(so, "_bossCatalog", "Assets/Features/Boss/Instances/BossCatalog.asset");
+            BindAsset<AutoBattleResolverSO>(so, "_autoBattleResolver", "Assets/Features/Boss/Instances/AutoBattleResolver.asset");
+            BindAsset<MetaPointResolverSO>(so, "_metaPointResolver", "Assets/Features/MetaProgression/Instances/MetaPointResolver.asset");
+            BindAsset<MetaUnlockCatalogSO>(so, "_metaUnlockCatalog", "Assets/Features/MetaProgression/Instances/MetaUnlockCatalog.asset");
 
             int[] bossBattleTurns = { 6, 12, 18, 24 };
             SerializedProperty turnsProp = so.FindProperty("_bossBattleTurns");
