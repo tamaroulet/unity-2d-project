@@ -28,6 +28,15 @@ namespace Game.EditorScripts
         [MenuItem("Tools/Bind EventDialog UI Toolkit")]
         public static void BindEventDialogUI()
         {
+            // EditorSceneManager.OpenScene は Play 中に呼べない。
+            // メニューから実行された場合に備えて明示的に弾く。
+            if (EditorApplication.isPlayingOrWillChangePlaymode)
+            {
+                Debug.LogError("[EventDialogUIBinder] Play モード中は実行できません。"
+                    + "再生を停止してから Tools/Bind EventDialog UI Toolkit を実行してください。");
+                return;
+            }
+
             VisualTreeAsset uxml = AssetDatabase.LoadAssetAtPath<VisualTreeAsset>(UxmlPath);
             if (uxml == null)
             {
@@ -58,26 +67,44 @@ namespace Game.EditorScripts
                 document = Undo.AddComponent<UIDocument>(panel);
             }
 
-            SerializedObject docSo = new SerializedObject(document);
-            docSo.FindProperty("sourceAsset").objectReferenceValue = uxml;
             // PanelSettings が未設定だと UIDocument は何も描画しない。
-            // プロジェクトに 1 つでもあれば流用し、無ければ人間に作成を促す。
-            SerializedProperty panelSettingsProp = docSo.FindProperty("m_PanelSettings");
-            if (panelSettingsProp != null && panelSettingsProp.objectReferenceValue == null)
+            // 資産の生成は SerializedObject を作る前に済ませる。生成の中で
+            // AssetDatabase.Refresh() が走ると、未適用の SerializedProperty の
+            // 変更が破棄されるためである（sourceAsset が null のまま保存される事故が起きた）。
+            Object panelSettings = FindFirstAssetOfType("PanelSettings")
+                                   ?? CreateDefaultPanelSettings();
+            if (panelSettings == null)
             {
-                Object settings = FindFirstAssetOfType("PanelSettings")
-                                  ?? CreateDefaultPanelSettings();
-                if (settings != null)
-                {
-                    panelSettingsProp.objectReferenceValue = settings;
-                }
-                else
-                {
-                    Debug.LogWarning("[EventDialogUIBinder] PanelSettings could not be created. "
-                        + "The UI will not render until one is assigned to the UIDocument.");
-                }
+                Debug.LogWarning("[EventDialogUIBinder] PanelSettings could not be created. "
+                    + "The UI will not render until one is assigned to the UIDocument.");
+            }
+
+            SerializedObject docSo = new SerializedObject(document);
+            SerializedProperty sourceProp = docSo.FindProperty("sourceAsset");
+            if (sourceProp == null)
+            {
+                Debug.LogError("[EventDialogUIBinder] UIDocument has no 'sourceAsset' property. "
+                    + "The Unity version may have renamed it.");
+                return;
+            }
+            sourceProp.objectReferenceValue = uxml;
+
+            SerializedProperty panelSettingsProp = docSo.FindProperty("m_PanelSettings");
+            if (panelSettingsProp != null && panelSettingsProp.objectReferenceValue == null
+                && panelSettings != null)
+            {
+                panelSettingsProp.objectReferenceValue = panelSettings;
             }
             docSo.ApplyModifiedPropertiesWithoutUndo();
+
+            // 書き込めたことを確認する。SerializedObject は黙って落ちることがある
+            docSo.Update();
+            if (docSo.FindProperty("sourceAsset").objectReferenceValue == null)
+            {
+                Debug.LogError("[EventDialogUIBinder] sourceAsset remained null after apply. "
+                    + "The UXML was not bound.");
+                return;
+            }
 
             EventDialogViewUI view = panel.GetComponent<EventDialogViewUI>();
             if (view == null)
