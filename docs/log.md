@@ -1099,10 +1099,11 @@ Windows PowerShell 5.1 は BOM が無い場合 cp932 として読むため、日
   想定外の push 経路がある。
 
 ---
-### 実行者の調査結果 ─ headless Gemini は不可能（結論・再調査不要）
+### 実行者の調査結果 ─ 当初の結論は誤り。訂正済み（下部の訂正を必ず読むこと）
 
-自律実行の実行者を確定させるための調査。**結論から先に書く。無料で Gemini を
-headless 実行する方法は存在しない。** 以下は再調査を防ぐための記録である。
+自律実行の実行者を確定させるための調査。**この節の当初の結論「headless 実行は不可能」は誤りであった。**
+正しい結論は末尾の「訂正」に書く。以下の調査過程は記録として残すが、
+結論部分は信用しないこと。
 
 #### 1. 夜間実行は 3 日間、一度も成立していなかった
 
@@ -1130,7 +1131,8 @@ headless 実行する方法は存在しない。** 以下は再調査を防ぐ�
 | `agy` CLI | **存在しない**。`Antigravity IDE/bin` にあるのは `antigravity-ide` のみ |
 | `antigravity-ide` CLI | **不可**。VS Code フォークの CLI で diff/merge/goto のみ。エージェントモード無し |
 | Language Server の HTTP RPC | 口はある（ポート 53530 等が CSRF で 403）。ただしトークンは IDE のメモリ内生成。**追わない**（脆く、ToS に触れうる） |
-| **Gemini CLI 0.58.0** (`@google/gemini-cli`) | **不可**。`-p` による headless 実行機能はあるが、認証で拒否される |
+| **Gemini CLI 0.58.0** (`@google/gemini-cli`) | **不可**。`-p` による headless 実行機能はあるが、認証で拒否される。理由は後述（Google が Gemini CLI を廃止し `agy` に置き換えたため） |
+| **Antigravity CLI (`agy`)** | **可能。これが正解だった**（下記「訂正」参照） |
 
 Gemini CLI の拒否メッセージ（Google アカウントの OAuth は成功した上で）:
 
@@ -1173,6 +1175,51 @@ Antigravity のサブスク枠は **IDE の UI からしか届かない**。し�
   「セッション冒頭の状態把握」だったため（本日 1 セッションで 20 回以上の
   ツール呼び出し）、git / cycles / 指示書 / ベースライン / 実行者状態を
   1 コマンドにまとめた。
+
+---
+### 【訂正】Antigravity CLI (`agy`) により headless 実行は可能である
+
+上の節で「無料で headless 実行する方法は存在しない」と結論づけたが、**誤りだった。**
+人間ディレクターの再三の指摘（「まだ調べる」「自動化できなきゃ意味がない」）により
+再調査し、以下が判明した。
+
+#### 1. 何を見落としていたか
+
+| 見落とし | 実際 |
+|---|---|
+| 「`agy` は存在しない」 | PATH と `Antigravity IDE/bin` しか見ていなかった。`AppData\Roaming\Antigravityingy-node.cmd` が存在した（これ自体は Electron を Node として動かすシムで agy 本体ではないが、探索範囲が不足していた証拠） |
+| `Programs\Antigravity IDE` のみ確認 | 小文字の `Programsntigravity`（Antigravity 2.0 本体・222MB、`resources/bin/language_server.exe` 153MB）を見落としていた |
+| 「Gemini が Google に見放された」と解釈 | 実際は **Google が Gemini CLI を廃止し、後継として Antigravity CLI (`agy`) を出した**。Gemini CLI の「migrate to the Antigravity suite」はその案内だった |
+
+#### 2. `agy` の実像（一次情報）
+
+- Google 公式のターミナル用コーディングエージェント。Gemini CLI の後継であり、
+  Google は Gemini CLI を無料/Pro/Ultra ユーザー向けに 2026-06-18 に停止した
+- **認証は Google アカウントログインが既定**。OS のキーリングに保存され、以後は無音で再認証。
+  つまり **Antigravity のサブスク枠（潤沢な方）をそのまま使える**
+- **headless モードが公式機能**: `agy -p "prompt"`
+- 出力: `--output-format text | json | stream-json`、`--json-schema` で構造化も可能
+- 終了コード: `0` = SUCCESS、非ゼロ = ERROR / CANCELED / INTERRUPTED
+- `--print-timeout 10m`（既定 5m）、`--model`、`--effort low|medium|high`、`--agent`
+- 権限: `--dangerously-skip-permissions` で全自動承認。ただし
+  **`~/.gemini/antigravity-cli/settings.json` の `permissions.allow` に
+  `action(target)` 形式で事前許可を宣言できる**
+
+#### 3. これが解決する未解決課題
+
+**H-3（Gemini 側に事前ガードが無い）が解決する。** これまで `guard.js` は Claude Code の
+PreToolUse フックにしか効かず、実装を全量担う Gemini は「やってから事後に隔離される」
+だけだった。`permissions.allow` による宣言的な事前許可は、実行前に効く本物のガードであり、
+`--dangerously-skip-permissions` より厳密に運用できる。
+
+#### 4. 教訓
+
+「不可能」と結論づけて記録に残したことが最も危険だった。再調査を止める効果を持つ
+記録を、確認しきる前に書いた。**5 経路を調べて全部塞がっていても、それは
+「調べた 5 経路が塞がっている」以上のことを意味しない。**
+
+人間ディレクターが 2 度差し戻したことで発見に至った。エージェント側が
+「結論が出た」と宣言した後こそ、探索範囲の不足を疑う必要がある。
 
 ---
 ## 評価指標の定義
