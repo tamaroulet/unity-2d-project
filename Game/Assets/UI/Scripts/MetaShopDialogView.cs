@@ -1,5 +1,7 @@
 // SPDX-AI-Disclosure: ai-generated
 using System;
+using System.Linq;
+using Game.Features.GameFlow;
 using Game.Features.MetaProgression;
 using TMPro;
 using UnityEngine;
@@ -17,6 +19,12 @@ namespace Game.UI
         [SerializeField] private TextMeshProUGUI _totalRunsText;
         [SerializeField] private Button _closeButton;
 
+        [SerializeField] private GameFlowController _gameFlowController;
+        [SerializeField] private MetaUnlockCatalogSO _unlockCatalog;
+        [SerializeField] private Button[] _itemButtons = new Button[3];
+        [SerializeField] private TextMeshProUGUI[] _itemNameTexts = new TextMeshProUGUI[3];
+        [SerializeField] private TextMeshProUGUI[] _itemDescTexts = new TextMeshProUGUI[3];
+
         private Action _onCloseCallback;
 
         public bool IsPanelActive => _panelRoot != null && _panelRoot.activeSelf;
@@ -27,6 +35,7 @@ namespace Game.UI
             {
                 _closeButton.onClick.AddListener(OnCloseButtonClicked);
             }
+            HookController();
         }
 
         private void OnDisable()
@@ -35,6 +44,35 @@ namespace Game.UI
             {
                 _closeButton.onClick.RemoveListener(OnCloseButtonClicked);
             }
+            UnhookController();
+        }
+
+        private void HookController()
+        {
+            if (_gameFlowController != null)
+            {
+                _gameFlowController.OnMetaShopRequested -= Show;
+                _gameFlowController.OnMetaShopRequested += Show;
+            }
+        }
+
+        private void UnhookController()
+        {
+            if (_gameFlowController != null)
+            {
+                _gameFlowController.OnMetaShopRequested -= Show;
+            }
+        }
+
+        public void Bind(GameFlowController controller, MetaUnlockCatalogSO catalog = null)
+        {
+            UnhookController();
+            _gameFlowController = controller;
+            if (catalog != null)
+            {
+                _unlockCatalog = catalog;
+            }
+            HookController();
         }
 
         public void Show(MetaProfileState profile, Action onClose = null)
@@ -57,12 +95,65 @@ namespace Game.UI
 
             if (_availablePointsText != null)
             {
-                _availablePointsText.text = $"MetaPoints: {profile.AvailableMetaPoints}";
+                _availablePointsText.text = $"POINTS: {profile.AvailableMetaPoints}";
             }
 
             if (_totalRunsText != null)
             {
-                _totalRunsText.text = $"Runs Completed: {profile.TotalRunsCompleted}";
+                _totalRunsText.text = $"RUNS: {profile.TotalRunsCompleted}";
+            }
+
+            RenderCards(profile);
+        }
+
+        private void RenderCards(MetaProfileState profile)
+        {
+            if (_unlockCatalog == null || _unlockCatalog.Unlocks == null)
+            {
+                return;
+            }
+
+            var unlocks = _unlockCatalog.Unlocks;
+            int cardCount = _itemButtons != null ? _itemButtons.Length : 0;
+
+            for (int i = 0; i < cardCount; i++)
+            {
+                Button btn = _itemButtons[i];
+                if (btn == null) continue;
+
+                Transform cardTr = btn.transform.parent != null ? btn.transform.parent : btn.transform;
+
+                if (i < unlocks.Count && unlocks[i] != null)
+                {
+                    cardTr.gameObject.SetActive(true);
+                    MetaUnlockSO unlock = unlocks[i];
+
+                    if (_itemNameTexts != null && i < _itemNameTexts.Length && _itemNameTexts[i] != null)
+                    {
+                        _itemNameTexts[i].text = unlock.UnlockName;
+                    }
+
+                    if (_itemDescTexts != null && i < _itemDescTexts.Length && _itemDescTexts[i] != null)
+                    {
+                        _itemDescTexts[i].text = $"+{unlock.BonusValue}\nCost: {unlock.Cost} Pts";
+                    }
+
+                    bool isPurchased = profile.UnlockedIds != null && profile.UnlockedIds.Contains(unlock.UnlockId);
+                    btn.interactable = !isPurchased && profile.AvailableMetaPoints >= unlock.Cost;
+
+                    btn.onClick.RemoveAllListeners();
+                    btn.onClick.AddListener(() =>
+                    {
+                        if (_gameFlowController != null && _gameFlowController.TryPurchaseMetaUnlock(unlock))
+                        {
+                            UpdateProfile(_gameFlowController.MetaProfile);
+                        }
+                    });
+                }
+                else
+                {
+                    cardTr.gameObject.SetActive(false);
+                }
             }
         }
 

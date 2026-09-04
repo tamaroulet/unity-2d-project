@@ -2,6 +2,7 @@
 using Game.Core;
 using Game.Features.Boss;
 using Game.Features.GameFlow;
+using Game.Features.MetaProgression;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -25,6 +26,7 @@ namespace Game.UI
         [SerializeField] private RectTransform _staminaBarFill;
         [SerializeField] private RectTransform _skillBarFill;
         [SerializeField] private RectTransform _mentalBarFill;
+        [SerializeField] private TextMeshProUGUI _metaPointsText;
         [SerializeField] private GameFlowController _gameFlowController;
         [SerializeField] private BossBattleDialogView _bossBattleDialog;
 
@@ -33,6 +35,12 @@ namespace Game.UI
         /// TextMeshProUGUI.text が空文字を返すため、テスト等の確認用に公開する。
         /// </summary>
         public GameState LastDisplayedState { get; private set; }
+
+        /// <summary>
+        /// 直近に受信した MetaProfileState。TMP Essential Resources 未インポート環境では
+        /// TextMeshProUGUI.text が空文字を返すため、テスト等の確認用に公開する。
+        /// </summary>
+        public MetaProfileState LastDisplayedProfile { get; private set; }
 
         private void Awake()
         {
@@ -49,6 +57,9 @@ namespace Game.UI
             {
                 _gameFlowController.OnBossBattleOccurred -= HandleBossBattle;
                 _gameFlowController.OnBossBattleOccurred += HandleBossBattle;
+
+                _gameFlowController.OnMetaProfileChanged -= HandleMetaProfileChanged;
+                _gameFlowController.OnMetaProfileChanged += HandleMetaProfileChanged;
             }
         }
 
@@ -61,6 +72,21 @@ namespace Game.UI
             else
             {
                 callback?.Invoke();
+            }
+        }
+
+        private void HandleMetaProfileChanged(MetaProfileState profile)
+        {
+            if (profile == null)
+            {
+                return;
+            }
+
+            LastDisplayedProfile = profile;
+
+            if (_metaPointsText != null)
+            {
+                _metaPointsText.text = $"POINTS: {profile.AvailableMetaPoints}";
             }
         }
 
@@ -78,6 +104,7 @@ namespace Game.UI
             if (_gameFlowController != null)
             {
                 _gameFlowController.OnBossBattleOccurred -= HandleBossBattle;
+                _gameFlowController.OnMetaProfileChanged -= HandleMetaProfileChanged;
             }
 
             if (_gameStateChannel != null)

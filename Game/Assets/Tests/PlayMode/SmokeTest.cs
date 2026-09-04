@@ -310,6 +310,12 @@ namespace Game.Tests.PlayMode
             EndingView endingView = UnityEngine.Object.FindFirstObjectByType<EndingView>(FindObjectsInactive.Include);
             Assert.IsTrue(endingView != null, "EndingView が MainGame シーンに存在しない。");
 
+            MetaShopDialogView metaShopDialog = UnityEngine.Object.FindFirstObjectByType<MetaShopDialogView>(FindObjectsInactive.Include);
+            Assert.IsTrue(metaShopDialog != null, "MetaShopDialogView が MainGame シーンに存在しない。");
+
+            StatusView statusView = UnityEngine.Object.FindFirstObjectByType<StatusView>(FindObjectsInactive.Include);
+            Assert.IsTrue(statusView != null, "StatusView が MainGame シーンに存在しない。");
+
             Button studyButton = FindCommandButtonByName(StudyButtonName).GetComponent<Button>();
             Button trainButton = FindCommandButtonByName("TrainButton").GetComponent<Button>();
             Button restButton = FindCommandButtonByName("RestButton").GetComponent<Button>();
@@ -317,9 +323,10 @@ namespace Game.Tests.PlayMode
             Button bossDismissButton = GetSerializedField<Button>(bossDialog, "_dismissButton");
             List<RelicCardView> relicCards = GetField<List<RelicCardView>>(relicDraftDialog, "_cardViews");
 
-            // 初期状態では EndingPanel と RelicDraftDialogPanel は非アクティブ
+            // 初期状態では EndingPanel と RelicDraftDialogPanel, MetaShopDialogPanel は非アクティブ
             Assert.IsFalse(endingView.IsPanelActive, "初期状態で EndingView がアクティブになっている。");
             Assert.IsFalse(relicDraftDialog.IsVisible, "初期状態で RelicDraftDialogView がアクティブになっている。");
+            Assert.IsFalse(metaShopDialog.IsPanelActive, "初期状態で MetaShopDialogView がアクティブになっている。");
 
             // ---------- Act: ターン 1 から 24 まで進行 ----------
             float maxTime = Time.realtimeSinceStartup + 30f;
@@ -399,7 +406,10 @@ namespace Game.Tests.PlayMode
             Assert.IsTrue(endingView.IsPanelActive, "ゲームクリア後に EndingView.IsPanelActive が true になっていない。");
             Assert.IsFalse(string.IsNullOrEmpty(endingView.DisplayedResult), "EndingView.DisplayedResult が空文字列。");
 
-            // ---------- Act: エンディング画面の RestartButton をクリックして周回ループを検証 ----------
+            // ---------- Act: エンディング画面の RestartButton をクリックしてショップ提示と周回ループを検証 ----------
+            int pointsBeforeRestart = flow.MetaProfile.AvailableMetaPoints;
+            Assert.IsTrue(pointsBeforeRestart > 0, $"クリア時点の AvailableMetaPoints が 0 以下: {pointsBeforeRestart}");
+
             Button restartButton = GetSerializedField<Button>(endingView, "_restartButton");
             Assert.IsTrue(restartButton != null, "EndingView._restartButton が null。");
             AssertRaycastReachesButton(restartButton, "EndingView.RestartButton");
@@ -411,12 +421,33 @@ namespace Game.Tests.PlayMode
             Assert.IsTrue(restartClicked, "EndingView の RestartButton クリックが受理されなかった。");
 
             yield return WaitForCondition(
-                () => !endingView.IsPanelActive && flow.CurrentPhase == GamePhase.WaitingInput && flow.CurrentState.CurrentTurn == 1,
-                () => $"リスタート後にエンディング画面が閉じてターン1のWaitingInputへ復帰しなかった。IsPanelActive={endingView.IsPanelActive}, Phase={flow.CurrentPhase}, Turn={flow.CurrentState?.CurrentTurn}");
+                () => metaShopDialog.IsPanelActive,
+                () => $"RESTART クリック後に MetaShopDialogView.IsPanelActive が true にならなかった。");
+
+            Button shopCloseButton = GetSerializedField<Button>(metaShopDialog, "_closeButton");
+            Assert.IsTrue(shopCloseButton != null, "MetaShopDialogView._closeButton が null。");
+            AssertRaycastReachesButton(shopCloseButton, "MetaShopDialogView.CloseShopButton");
+
+            bool shopClosed = ExecuteEvents.Execute(
+                shopCloseButton.gameObject,
+                new PointerEventData(EventSystem.current),
+                ExecuteEvents.pointerClickHandler);
+            Assert.IsTrue(shopClosed, "MetaShopDialogView の CloseShopButton クリックが受理されなかった。");
+
+            yield return WaitForCondition(
+                () => !endingView.IsPanelActive && !metaShopDialog.IsPanelActive && flow.CurrentPhase == GamePhase.WaitingInput && flow.CurrentState.CurrentTurn == 1,
+                () => $"ショップ終了後にエンディング画面が閉じてターン1のWaitingInputへ復帰しなかった。EndingActive={endingView.IsPanelActive}, ShopActive={metaShopDialog.IsPanelActive}, Phase={flow.CurrentPhase}, Turn={flow.CurrentState?.CurrentTurn}");
 
             Assert.IsFalse(endingView.IsPanelActive, "リスタート後に EndingView.IsPanelActive が false になっていない。");
+            Assert.IsFalse(metaShopDialog.IsPanelActive, "リスタート後に MetaShopDialogView.IsPanelActive が false になっていない。");
             Assert.AreEqual(1, flow.CurrentState.CurrentTurn, "リスタート後に Turn が 1 に戻っていない。");
             Assert.AreEqual(GamePhase.WaitingInput, flow.CurrentPhase, "リスタート後に入力待ちへ戻っていない。");
+
+            Assert.AreEqual(pointsBeforeRestart, flow.MetaProfile.AvailableMetaPoints, "リスタート後に AvailableMetaPoints が持ち越されていない。");
+            Assert.AreEqual(1, flow.MetaProfile.TotalRunsCompleted, "リスタート後に TotalRunsCompleted が 1 になっていない。");
+
+            Assert.IsTrue(statusView.LastDisplayedProfile != null, "リスタート後に StatusView.LastDisplayedProfile が null。");
+            Assert.AreEqual(pointsBeforeRestart, statusView.LastDisplayedProfile.AvailableMetaPoints, "HUD の LastDisplayedProfile.AvailableMetaPoints が一致しない。");
 
             Assert.IsEmpty(
                 _capturedFailures,

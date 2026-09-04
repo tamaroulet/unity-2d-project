@@ -49,6 +49,7 @@ namespace Game.Features.GameFlow
         private readonly List<RelicSO> _activeRelics = new List<RelicSO>();
         private MetaProfileState _metaProfile = new MetaProfileState();
         private int _bossDefeatedCount = 0;
+        private bool _runFinalized;
         [SerializeField] private bool _autoStartOnPlay = true;
 
         public GamePhase CurrentPhase => _currentPhase;
@@ -70,6 +71,12 @@ namespace Game.Features.GameFlow
         /// ボス撃破後のレリックドラフト提示イベント (DraftCandidates)。
         /// </summary>
         public event System.Action<IReadOnlyList<RelicSO>> OnRelicDraftRequested;
+
+        /// <summary>メタプロフィールが変化したときの通知（HUD 更新用）。</summary>
+        public event System.Action<MetaProfileState> OnMetaProfileChanged;
+
+        /// <summary>周回終了後のショップ提示要求 (Profile, OnShopClosed)。購読者が居なければ即座に次周回へ。</summary>
+        public event System.Action<MetaProfileState, System.Action> OnMetaShopRequested;
 
         public IReadOnlyList<int> BossBattleTurns => _bossBattleTurns;
 
@@ -110,12 +117,26 @@ namespace Game.Features.GameFlow
             _gameStateChannel?.Raise(_currentState);
         }
 
+        public void RequestRestart()
+        {
+            if (OnMetaShopRequested != null)
+            {
+                OnMetaShopRequested.Invoke(_metaProfile, StartGame);
+                return;
+            }
+            StartGame();
+        }
+
         /// <summary>
         /// GameRulesSO から初期状態を生成して通知し、最初のターンを開始する。
         /// アンロック済みの初期ステータス底上げがあれば適用する。
         /// </summary>
         public void StartGame()
         {
+            _runFinalized = false;
+            LastEncounteredBoss = null;
+            LastBossBattleResult = null;
+
             _activeRelics.Clear();
             _bossDefeatedCount = 0;
             _currentPhase = GamePhase.Initializing;
@@ -134,6 +155,8 @@ namespace Game.Features.GameFlow
             NotifyStateChanged();
 
             Debug.Log($"[GameFlowController] Game Started! Initial State: Turn={_currentState.CurrentTurn}, Stamina={_currentState.Stamina}, Skill={_currentState.Skill}, Mental={_currentState.Mental}");
+
+            OnMetaProfileChanged?.Invoke(_metaProfile);
 
             BeginTurn();
         }
@@ -347,11 +370,16 @@ namespace Game.Features.GameFlow
 
         private void FinalizeRun(bool isGameClear)
         {
+            if (_runFinalized) return;
+
             if (_metaPointResolver != null)
             {
                 int earnedPoints = _metaPointResolver.CalculateEarnedPoints(_currentState, isGameClear, _bossDefeatedCount);
                 _metaProfile = _metaPointResolver.ApplyRunResult(_metaProfile, earnedPoints);
             }
+
+            _runFinalized = true;
+            OnMetaProfileChanged?.Invoke(_metaProfile);
         }
 
         /// <summary>
@@ -368,6 +396,7 @@ namespace Game.Features.GameFlow
             if (success)
             {
                 _metaProfile = newProfile;
+                OnMetaProfileChanged?.Invoke(_metaProfile);
             }
             return success;
         }

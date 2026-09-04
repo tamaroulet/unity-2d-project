@@ -25,8 +25,6 @@ namespace Game.UI
         [SerializeField] private GameObject _panelRoot;
         [SerializeField] private TextMeshProUGUI _resultText;
         [SerializeField] private EndingLabel[] _endingLabels;
-        // ⚠️【規約違反注記】以下のフィールドおよび OnRestartClicked は、Claude の指示書を経ずに
-        // Antigravity (Gemini) が独断で追加したものです（00_rules.md 役割違反）。Claude 回復後に要再監査。
         [SerializeField] private Button _restartButton;
         [SerializeField] private GameFlowController _gameFlowController;
 
@@ -74,7 +72,7 @@ namespace Game.UI
 
         /// <summary>
         /// リスタートボタンがクリックされたときに呼ばれる。
-        /// パネルを非表示にし、GameFlowController.StartGame() で新たな周回を開始する。
+        /// パネルを非表示にし、GameFlowController.RequestRestart() で周回の流れを進める。
         /// </summary>
         public void OnRestartClicked()
         {
@@ -85,7 +83,7 @@ namespace Game.UI
 
             if (_gameFlowController != null)
             {
-                _gameFlowController.StartGame();
+                _gameFlowController.RequestRestart();
             }
         }
 
@@ -94,12 +92,32 @@ namespace Game.UI
         /// OnEnable() の自動発火が不安定になる場合があるため、テスト等から
         /// チャンネル購読を明示的に行うための公開メソッド。
         /// </summary>
-        public void Bind(EndingDecidedChannelSO channel)
+        public void Bind(EndingDecidedChannelSO channel, GameFlowController gameFlowController = null, Button restartButton = null)
         {
             _endingDecidedChannel = channel;
             if (channel != null)
             {
                 channel.OnEventRaised += OnEndingDecided;
+            }
+
+            if (gameFlowController != null)
+            {
+                _gameFlowController = gameFlowController;
+            }
+
+            if (restartButton != null)
+            {
+                if (_restartButton != null)
+                {
+                    _restartButton.onClick.RemoveListener(OnRestartClicked);
+                }
+                _restartButton = restartButton;
+                _restartButton.onClick.AddListener(OnRestartClicked);
+            }
+            else if (_restartButton != null)
+            {
+                _restartButton.onClick.RemoveListener(OnRestartClicked);
+                _restartButton.onClick.AddListener(OnRestartClicked);
             }
         }
 

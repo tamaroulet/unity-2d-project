@@ -163,13 +163,14 @@ namespace Game.EditorScripts
             GameObject mentalGo = CreateGaugeGroup(rect, "MentalGroup", "Icon_Mental", ColorMental, new Vector2(400, 0), "Mental: 80 / 100");
 
             GameObject turnGo = CreateLabel(rect, "TurnText", "TURN 1 / 24", new Vector2(-750, 0), new Vector2(200, 50), 28, TextAlignmentOptions.Left);
-            CreateLabel(rect, "PointsText", "POINTS: 0", new Vector2(750, 0), new Vector2(200, 50), 28, TextAlignmentOptions.Right);
+            GameObject pointsGo = CreateLabel(rect, "PointsText", "POINTS: 0", new Vector2(750, 0), new Vector2(200, 50), 28, TextAlignmentOptions.Right);
 
             // StatusView の SerializedObject バインド
             GameStateEventChannelSO channel = AssetDatabase.LoadAssetAtPath<GameStateEventChannelSO>("Assets/Data/Channels/GameStateChannel.asset");
             SerializedObject so = new SerializedObject(view);
             so.FindProperty("_gameStateChannel").objectReferenceValue = channel;
             so.FindProperty("_turnText").objectReferenceValue = turnGo.GetComponent<TextMeshProUGUI>();
+            so.FindProperty("_metaPointsText").objectReferenceValue = pointsGo.GetComponent<TextMeshProUGUI>();
             so.FindProperty("_staminaText").objectReferenceValue = staminaGo.transform.Find("Label").GetComponent<TextMeshProUGUI>();
             so.FindProperty("_skillText").objectReferenceValue = skillGo.transform.Find("Label").GetComponent<TextMeshProUGUI>();
             so.FindProperty("_mentalText").objectReferenceValue = mentalGo.transform.Find("Label").GetComponent<TextMeshProUGUI>();
@@ -300,17 +301,25 @@ namespace Game.EditorScripts
         private static void SetupMetaShopDialogPanel(Transform canvasTr)
         {
             Transform tr = canvasTr.Find("MetaShopDialogPanel");
-            GameObject go = tr != null ? tr.gameObject : new GameObject("MetaShopDialogPanel", typeof(RectTransform), typeof(Image), typeof(MetaShopDialogView));
+            GameObject go = tr != null ? tr.gameObject : new GameObject("MetaShopDialogPanel", typeof(RectTransform), typeof(Image));
             go.transform.SetParent(canvasTr, false);
+
+            MetaShopDialogView oldView = go.GetComponent<MetaShopDialogView>();
+            if (oldView != null)
+            {
+                Object.DestroyImmediate(oldView);
+            }
 
             ConfigureModalPanel(go.transform, new Vector2(1150, 700), ColorBgDialog);
             Transform rootTr = go.transform.Find("PanelRoot");
             if (rootTr != null)
             {
                 CreateLabel(rootTr.GetComponent<RectTransform>(), "ShopTitleText", "META PROGRESSION SHOP", new Vector2(0, 270), new Vector2(800, 50), 32, TextAlignmentOptions.Center);
-                CreateShopItemCard(rootTr.GetComponent<RectTransform>(), "Item1", "Initial Stamina +10\nCost: 50 Pts", new Vector2(-340, 30));
-                CreateShopItemCard(rootTr.GetComponent<RectTransform>(), "Item2", "Initial Skill +5\nCost: 100 Pts", new Vector2(0, 30));
-                CreateShopItemCard(rootTr.GetComponent<RectTransform>(), "Item3", "Initial Mental +15\nCost: 150 Pts", new Vector2(340, 30));
+                CreateLabel(rootTr.GetComponent<RectTransform>(), "PointsText", "POINTS: 0", new Vector2(-250, 220), new Vector2(400, 40), 24, TextAlignmentOptions.Left);
+                CreateLabel(rootTr.GetComponent<RectTransform>(), "RunsText", "RUNS: 0", new Vector2(250, 220), new Vector2(400, 40), 24, TextAlignmentOptions.Right);
+                CreateShopItemCard(rootTr.GetComponent<RectTransform>(), "Item1", "Initial Stamina +10\nCost: 50 Pts", new Vector2(-340, 10));
+                CreateShopItemCard(rootTr.GetComponent<RectTransform>(), "Item2", "Initial Skill +5\nCost: 100 Pts", new Vector2(0, 10));
+                CreateShopItemCard(rootTr.GetComponent<RectTransform>(), "Item3", "Initial Mental +15\nCost: 150 Pts", new Vector2(340, 10));
                 CreateModalButton(rootTr.GetComponent<RectTransform>(), "CloseShopButton", "CLOSE / NEXT RUN", new Vector2(0, -250), new Vector2(450, 60));
             }
             go.SetActive(false);
@@ -342,7 +351,7 @@ namespace Game.EditorScripts
 
             EnsureRectTransform(go);
 
-            // EndingView, RelicDraftDialogView, BossBattleDialogView を常時アクティブなホストへ配置
+            // EndingView, RelicDraftDialogView, BossBattleDialogView, MetaShopDialogView を常時アクティブなホストへ配置
             if (go.GetComponent<EndingView>() == null)
             {
                 go.AddComponent<EndingView>();
@@ -354,6 +363,10 @@ namespace Game.EditorScripts
             if (go.GetComponent<BossBattleDialogView>() == null)
             {
                 go.AddComponent<BossBattleDialogView>();
+            }
+            if (go.GetComponent<MetaShopDialogView>() == null)
+            {
+                go.AddComponent<MetaShopDialogView>();
             }
         }
 
@@ -512,9 +525,31 @@ namespace Game.EditorScripts
             return cardView;
         }
 
-        private static void CreateShopItemCard(RectTransform parent, string name, string text, Vector2 pos)
+        private static void CreateShopItemCard(RectTransform parent, string cardName, string text, Vector2 pos)
         {
-            CreateRelicCard(parent, name, name, text, pos);
+            Transform existing = parent.Find(cardName);
+            GameObject cardGo = existing != null ? existing.gameObject : new GameObject(cardName, typeof(RectTransform), typeof(Image));
+            cardGo.transform.SetParent(parent, false);
+
+            RelicCardView oldCardView = cardGo.GetComponent<RelicCardView>();
+            if (oldCardView != null)
+            {
+                Object.DestroyImmediate(oldCardView);
+            }
+
+            RectTransform rect = EnsureRectTransform(cardGo);
+            rect.anchoredPosition = pos;
+            rect.sizeDelta = new Vector2(280, 420);
+
+            Image img = cardGo.GetComponent<Image>() ?? cardGo.AddComponent<Image>();
+            img.sprite = LoadSprite("Frame_Card");
+            img.type = Image.Type.Sliced;
+            img.color = ColorButtonBg;
+
+            AttachIcon(rect, "Icon", LoadSprite("Icon_Relic"), new Vector2(0, 80), new Vector2(80, 80));
+            CreateLabel(rect, "NameText", cardName, new Vector2(0, 0), new Vector2(240, 40), 22, TextAlignmentOptions.Center);
+            CreateLabel(rect, "DescText", text, new Vector2(0, -60), new Vector2(240, 80), 18, TextAlignmentOptions.Center);
+            CreateModalButton(rect, "SelectButton", "SELECT", new Vector2(0, -130), new Vector2(200, 45));
         }
 
         private static void AttachIcon(Transform parent, string iconName, Sprite sprite, Vector2 anchoredPos, Vector2 size)
@@ -590,6 +625,7 @@ namespace Game.EditorScripts
             BindRelicDraftDialogSceneReferences(canvasTr, controller);
             BindBossBattleDialogSceneReferences(canvasTr);
             BindEndingViewSceneReferences(canvasTr, controller);
+            BindMetaShopDialogSceneReferences(canvasTr, controller);
         }
 
         private static void BindBossBattleDialogSceneReferences(Transform canvasTr)
@@ -688,6 +724,87 @@ namespace Game.EditorScripts
             SerializedObject so = new SerializedObject(view);
             so.FindProperty("_gameFlowController").objectReferenceValue = controller;
             so.FindProperty("_bossBattleDialog").objectReferenceValue = bossDialog;
+
+            Transform pointsTr = statusTr.Find("PointsText");
+            if (pointsTr != null)
+            {
+                so.FindProperty("_metaPointsText").objectReferenceValue = pointsTr.GetComponent<TextMeshProUGUI>();
+            }
+
+            so.ApplyModifiedProperties();
+        }
+
+        private static void BindMetaShopDialogSceneReferences(Transform canvasTr, GameFlowController controller)
+        {
+            Transform shopPanelTr = canvasTr.Find("MetaShopDialogPanel");
+            if (shopPanelTr == null)
+            {
+                Debug.LogError("[UILayoutBuilder] MetaShopDialogPanel not found on Canvas.");
+                return;
+            }
+
+            Transform viewsTr = canvasTr.Find("UIViews");
+            if (viewsTr == null)
+            {
+                Debug.LogError("[UILayoutBuilder] UIViews not found on Canvas for MetaShopDialogView.");
+                return;
+            }
+
+            MetaShopDialogView view = viewsTr.GetComponent<MetaShopDialogView>();
+            if (view == null)
+            {
+                Debug.LogError("[UILayoutBuilder] MetaShopDialogView component not found on UIViews.");
+                return;
+            }
+
+            SerializedObject so = new SerializedObject(view);
+            so.FindProperty("_panelRoot").objectReferenceValue = shopPanelTr.gameObject;
+            so.FindProperty("_gameFlowController").objectReferenceValue = controller;
+            BindAsset<MetaUnlockCatalogSO>(so, "_unlockCatalog", "Assets/Features/MetaProgression/Instances/MetaUnlockCatalog.asset");
+
+            Transform rootTr = shopPanelTr.Find("PanelRoot");
+            if (rootTr != null)
+            {
+                BindComponentReference<TextMeshProUGUI>(so, "_availablePointsText", rootTr, "MetaShopDialogPanel", "PointsText");
+                BindComponentReference<TextMeshProUGUI>(so, "_totalRunsText", rootTr, "MetaShopDialogPanel", "RunsText");
+                BindComponentReference<Button>(so, "_closeButton", rootTr, "MetaShopDialogPanel", "CloseShopButton");
+
+                SerializedProperty itemButtonsProp = so.FindProperty("_itemButtons");
+                SerializedProperty itemNameTextsProp = so.FindProperty("_itemNameTexts");
+                SerializedProperty itemDescTextsProp = so.FindProperty("_itemDescTexts");
+
+                itemButtonsProp.ClearArray();
+                itemButtonsProp.arraySize = 3;
+                itemNameTextsProp.ClearArray();
+                itemNameTextsProp.arraySize = 3;
+                itemDescTextsProp.ClearArray();
+                itemDescTextsProp.arraySize = 3;
+
+                string[] itemNames = { "Item1", "Item2", "Item3" };
+                for (int i = 0; i < itemNames.Length; i++)
+                {
+                    Transform itemTr = rootTr.Find(itemNames[i]);
+                    if (itemTr != null)
+                    {
+                        Transform btnTr = itemTr.Find("SelectButton");
+                        if (btnTr != null)
+                        {
+                            itemButtonsProp.GetArrayElementAtIndex(i).objectReferenceValue = btnTr.GetComponent<Button>();
+                        }
+                        Transform nameTr = itemTr.Find("NameText");
+                        if (nameTr != null)
+                        {
+                            itemNameTextsProp.GetArrayElementAtIndex(i).objectReferenceValue = nameTr.GetComponent<TextMeshProUGUI>();
+                        }
+                        Transform descTr = itemTr.Find("DescText");
+                        if (descTr != null)
+                        {
+                            itemDescTextsProp.GetArrayElementAtIndex(i).objectReferenceValue = descTr.GetComponent<TextMeshProUGUI>();
+                        }
+                    }
+                }
+            }
+
             so.ApplyModifiedProperties();
         }
 
