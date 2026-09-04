@@ -46,30 +46,30 @@ scripts/auto_runner.py
 Part A のハーネス修正により、以下の記述が現在の挙動と食い違っている。
 初見の AI がこれを読むと誤った前提で動くため訂正する。
 
-- [ ] `docs/workflow/ONBOARDING.md` 56 行目「**EditMode テスト（127件）**」を実測値に訂正する。現在の実測は `total 116 / passed 97 / skipped 19`（skipped 19 は `[Explicit]` による恒久 skip で `scripts/nightly_baseline.json` の `EditMode_known_skipped` が許容している）。件数は将来また変わるため、数値の後ろに「（実測値。下限は `scripts/nightly_baseline.json` が持つ）」と補記すること。
-- [ ] `docs/workflow/ONBOARDING.md` 75 行目「毎日 01:00〜06:00 の夜間にのみ **30 分間隔で稼働**」を訂正する。正しくは「毎日 01:00 に 1 回だけ起動し、`auto_runner.py` が内部で `AUTO_RUN_END_HOUR`（既定 6）までループする」。Task Scheduler 側の反復と `RestartCount` は多重起動の原因だったため Part A で撤去済み。
-- [ ] `docs/workflow/ONBOARDING.md` 77 行目「全成果物を `nightly-reject/<timestamp>` ブランチへ保全した上で **`main` を自動ロールバック**する」を訂正する。実際の作業ブランチは `auto/wip` であり、巻き戻す対象も `auto/wip` である。`main` は汚さない。
-- [ ] `docs/workflow/ONBOARDING.md` 78 行目「開いていると Library 排他ロックにより `UNVERIFIED` で **全巻き戻し**になる」を訂正する。Part A で挙動を変更し、現在は**巻き戻さず作業ブランチ上に保留**して `auto_runner` が中断する。「エディタを閉じてから再開すればそのまま再検査できる」旨に書き換えること。
+- [x] `docs/workflow/ONBOARDING.md` 56 行目「**EditMode テスト（127件）**」を実測値に訂正する。現在の実測は `total 116 / passed 97 / skipped 19`（skipped 19 は `[Explicit]` による恒久 skip で `scripts/nightly_baseline.json` の `EditMode_known_skipped` が許容している）。件数は将来また変わるため、数値の後ろに「（実測値。下限は `scripts/nightly_baseline.json` が持つ）」と補記すること。
+- [x] `docs/workflow/ONBOARDING.md` 75 行目「毎日 01:00〜06:00 の夜間にのみ **30 分間隔で稼働**」を訂正する。正しくは「毎日 01:00 に 1 回だけ起動し、`auto_runner.py` が内部で `AUTO_RUN_END_HOUR`（既定 6）までループする」。Task Scheduler 側の反復と `RestartCount` は多重起動の原因だったため Part A で撤去済み。
+- [x] `docs/workflow/ONBOARDING.md` 77 行目「全成果物を `nightly-reject/<timestamp>` ブランチへ保全した上で **`main` を自動ロールバック**する」を訂正する。実際の作業ブランチは `auto/wip` であり、巻き戻す対象も `auto/wip` である。`main` は汚さない。
+- [x] `docs/workflow/ONBOARDING.md` 78 行目「開いていると Library 排他ロックにより `UNVERIFIED` で **全巻き戻し**になる」を訂正する。Part A で挙動を変更し、現在は**巻き戻さず作業ブランチ上に保留**して `auto_runner` が中断する。「エディタを閉じてから再開すればそのまま再検査できる」旨に書き換えること。
 
 ## 3. [FIX] docs/workflow/TRIAD_PROTOCOL.md §4 の前提を訂正
 
-- [ ] `docs/workflow/TRIAD_PROTOCOL.md` の §4「Fix Gate Protocol との関係」を「安全ハーネスとの関係」に改める。Fix Gate Protocol は commit `f71745a` で散文規約としては廃止され、`scripts/nightly_gate.py` の判定コード（ポリシー検査・テスト判定・連続 REJECT 停止）へ移された。本文は「規約 §2 の ①② が上流確認、③④ が実装、ハーネスの verdict が下流検証にあたる」という対応で書き直すこと。**散文の Gate 1〜4 を復活させてはならない**（`00_rules.md`「手続きは書かない／文章で守らせるのではない」に反する）。
+- [x] `docs/workflow/TRIAD_PROTOCOL.md` の §4「Fix Gate Protocol との関係」を「安全ハーネスとの関係」に改める。Fix Gate Protocol は commit `f71745a` で散文規約としては廃止され、`scripts/nightly_gate.py` の判定コード（ポリシー検査・テスト判定・連続 REJECT 停止）へ移された。本文は「規約 §2 の ①② が上流確認、③④ が実装、ハーネスの verdict が下流検証にあたる」という対応で書き直すこと。**散文の Gate 1〜4 を復活させてはならない**（`00_rules.md`「手続きは書かない／文章で守らせるのではない」に反する）。
 
 ## 4. [FIX] docs/research/workflow_research.md の破損修復
 
 このファイルは編集途中で壊れている。
 
-- [ ] `docs/research/workflow_research.md` §3.1 のテーブルの分断を修復する。`| 設計と実装の分離 |` の次に空行が入っており、`| 検証ゲート |` と `| 敵対的レビュー |` が別テーブルになっている。空行を除去して 1 つのテーブルに戻すこと。
-- [ ] `docs/research/workflow_research.md` §3.2 の「6 段階ワークフローは…」を「旧ルール（現 `docs/archive/rules_v1_34kb/`）は新規機能実装を前提としており」に書き換える。6 段階ワークフローは廃止済みで現存しない。
-- [ ] `docs/research/workflow_research.md` §4 に実際の対処を追記する。現在 1 行しかない。Audit-02（`docs/research/Audit-02_harness_audit.md`）でゲートの誤検知が却下の主因と判明し、散文規約ではなく判定コード側を修正した経緯を書き、同レポートへリンクすること。
-- [ ] `docs/research/workflow_research.md` の §5「情報源」を復活させる。現在この節ごと削除されている。復活させたうえで §2 の各主張の根拠となる URL を実際に列挙すること。**URL を提示できない主張は、その主張ごと §2 から削除する**（`00_rules.md`「外部一次情報の最重視」「推測や捏造でコードを書かない」）。
+- [x] `docs/research/workflow_research.md` §3.1 のテーブルの分断を修復する。`| 設計と実装の分離 |` の次に空行が入っており、`| 検証ゲート |` と `| 敵対的レビュー |` が別テーブルになっている。空行を除去して 1 つのテーブルに戻すこと。
+- [x] `docs/research/workflow_research.md` §3.2 の「6 段階ワークフローは…」を「旧ルール（現 `docs/archive/rules_v1_34kb/`）は新規機能実装を前提としており」に書き換える。6 段階ワークフローは廃止済みで現存しない。
+- [x] `docs/research/workflow_research.md` §4 に実際の対処を追記する。現在 1 行しかない。Audit-02（`docs/research/Audit-02_harness_audit.md`）でゲートの誤検知が却下の主因と判明し、散文規約ではなく判定コード側を修正した経緯を書き、同レポートへリンクすること。
+- [x] `docs/research/workflow_research.md` の §5「情報源」を復活させる。現在この節ごと削除されている。復活させたうえで §2 の各主張の根拠となる URL を実際に列挙すること。**URL を提示できない主張は、その主張ごと §2 から削除する**（`00_rules.md`「外部一次情報の最重視」「推測や捏造でコードを書かない」）。
 
 ## 5. [FIX] docs/STATUS.md のコミットハッシュ欠落
 
 進行状況テーブルの 6 箇所（24 / 29 / 30 / 31 / 32 / 36 行目）でコミット列が
 `HEAD` になっている。`HEAD` は時間とともに指す先が変わるため記録として機能しない。
 
-- [ ] `docs/STATUS.md` の進行状況テーブルにある 6 箇所の `` `HEAD` `` を、`git log --oneline --all` で特定した実コミットの 7 桁 SHA に置換する。特定できない Step は `HEAD` ではなく `-` を入れ、特定できなかったことを明示する。**推測で SHA を書かないこと。**
+- [x] `docs/STATUS.md` の進行状況テーブルにある 6 箇所の `` `HEAD` `` を、`git log --oneline --all` で特定した実コミットの 7 桁 SHA に置換する。特定できない Step は `HEAD` ではなく `-` を入れ、特定できなかったことを明示する。**推測で SHA を書かないこと。**
 
 ## 6. [FIX] scripts/*.ps1 に UTF-8 BOM を付与
 
@@ -88,7 +88,7 @@ BOM が無い場合に cp932 として読むため、日本語コメントが文
 > 全文を書き直すと diff 上その行が「新規追加」と見なされ、ハーネスの
 > `ABUSE_RULES` に当たって成果物ごと隔離される。
 
-- [ ] `scripts/*.ps1` の 7 本に UTF-8 BOM を付与する。**ファイルを開いて書き直さず、下記コマンドで先頭 3 バイトを付け足すだけにすること**（`invoke_claude_safe.ps1` を全文書き直すと `--dangerously-skip-permissions` が新規追加行と判定され隔離される）。
+- [x] `scripts/*.ps1` の 7 本に UTF-8 BOM を付与する。**ファイルを開いて書き直さず、下記コマンドで先頭 3 バイトを付け足すだけにすること**（`invoke_claude_safe.ps1` を全文書き直すと `--dangerously-skip-permissions` が新規追加行と判定され隔離される）。
 
 ```bash
 python -c "

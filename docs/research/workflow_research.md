@@ -67,7 +67,6 @@
 | SDD（仕様駆動） | `docs/spec/CodingSpec.md` の Living Spec 原則 |
 | ルールファイル | `.agents/rules/` に 1 ファイル（統合済み） |
 | 設計と実装の分離 | Claude（頭脳）と Gemini（手足）の 2 モデル体制 |
-
 | 検証ゲート | `run_tests` 100% Green をコミット条件化 |
 | 敵対的レビュー | Claude による監査・レビュー |
 
@@ -75,7 +74,7 @@
 
 | ギャップ | 詳細 |
 |:---|:---|
-| **修正時の上流確認が未強制** | 6 段階ワークフローは「新規機能実装」を前提としており、既存コードの修正・バグ修正時の手順が規定されていなかった。そのため「エラーを見たらすぐ修正」という場当たり的行動が繰り返された |
+| **修正時の上流確認が未強制** | 旧ルール（現 `docs/archive/rules_v1_34kb/`）は新規機能実装を前提としており、既存コードの修正・バグ修正時の手順が規定されていなかった。そのため「エラーを見たらすぐ修正」という場当たり的行動が繰り返された |
 | **修正後の下流検証の曖昧さ** | コミット前の 100% Green は規定されているが、「修正が元の問題を解決したか」「新たな問題が発生していないか」の確認手順が明文化されていなかった |
 | **修正計画の欠如** | 修正前に「何をどう直すか」を明文化するステップがなく、複数ファイルへの変更が散発的に行われた |
 
@@ -83,10 +82,15 @@
 
 ## 4. 改善策
 
-上記ギャップを埋めるため、4 段階ゲートは散文規約としては廃止し、`nightly_gate.py` の判定コードへ移した。
+上記ギャップを埋めるため、当初検討された散文規約による 4 段階ゲート（Fix Gate Protocol）は廃止し、`scripts/nightly_gate.py` の決定論的判定コード（ポリシー検査・テスト判定・連続 REJECT 停止）へ移行した。
+
+さらに、自律開発ハーネスの全体監査（[`docs/research/Audit-02_harness_audit.md`](Audit-02_harness_audit.md)）において、夜間サイクルの却下 5 件のうち 4 件がハーネス側の誤検知（`ABUSE_RULES` の正規表現誤爆、ベースライン自己ロック、Unity シーンファイル変更による行数上限爆発等）であったことが判明した。そのため、エージェントへの散文的な規約追加ではなく、判定コード側の誤検知解消および判定基準の適正化を実施した。
+
+---
 
 ## 5. 情報源
 
-- [Spec-Driven Development](https://www.anthropic.com/research/spec-driven-development)
-- [上流→下流検証パイプライン](https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-net)
-- [CLAUDE.md ルールファイル](https://docs.anthropic.com/en/docs/agents-and-tools/claude-code/overview)
+- [Spec-Driven Development with AI (GitHub Blog)](https://github.blog/ai-and-ml/generative-ai/spec-driven-development-with-ai-get-started-with-a-new-open-source-toolkit/)
+- [GitHub Spec Kit (GitHub)](https://github.com/github/spec-kit)
+- [上流→下流検証パイプライン (GitHub Actions: Building and testing .NET)](https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-net)
+- [CLAUDE.md ルールファイル (Claude Code Overview)](https://docs.anthropic.com/en/docs/agents-and-tools/claude-code/overview)
