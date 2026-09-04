@@ -10,6 +10,11 @@ param (
 )
 
 $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
+$projectRoot = Split-Path -Parent $scriptDir
+$logsDir = Join-Path $projectRoot "logs"
+if (-not (Test-Path $logsDir)) { New-Item -ItemType Directory -Path $logsDir -Force | Out-Null }
+$sessionIdFile = Join-Path $logsDir "claude_session_id.txt"
+
 $quotaJson = & powershell -File "$scriptDir\get_claude_quota.ps1" | Out-String
 $quota = $quotaJson | ConvertFrom-Json
 
@@ -19,7 +24,32 @@ if (-not $Force -and (-not $quota.IsAvailable -or $quota.SessionUsedPercent -ge 
 }
 
 Write-Host "[ALLOWED] Claude Code session usage is $($quota.SessionUsedPercent)%. Executing prompt with model: $Model..."
-$null | & claude --dangerously-skip-permissions --model $Model -p $Prompt
+
+$sessionResumed = $false
+if (Test-Path $sessionIdFile) {
+    $existingSessionId = (Get-Content $sessionIdFile -Raw).Trim()
+    if ($existingSessionId) {
+        Write-Host "[SESSION] Resuming existing session: $existingSessionId"
+        $null | & claude --resume $existingSessionId --dangerously-skip-permissions --model $Model -p $Prompt
+        if ($LASTEXITCODE -eq 0) {
+            $sessionResumed = $true
+        } else {
+            Write-Warning "[SESSION] Failed to resume session $existingSessionId. Falling back to new session."
+        }
+    }
+}
+
+if (-not $sessionResumed) {
+    $newSessionId = [guid]::NewGuid().ToString()
+    Write-Host "[SESSION] Starting new session: $newSessionId"
+    $null | & claude --session-id $newSessionId --dangerously-skip-permissions --model $Model -p $Prompt
+    if ($LASTEXITCODE -eq 0) {
+        Set-Content -Path $sessionIdFile -Value $newSessionId -Encoding utf8
+    } else {
+        Write-Warning "[SESSION] Failed with --session-id. Falling back to simple -p."
+        $null | & claude --dangerously-skip-permissions --model $Model -p $Prompt
+    }
+}
 
 # 実行後の最新残量を再取得
 Write-Host "`n[POST-EXECUTION] Checking updated Claude Code quota..."

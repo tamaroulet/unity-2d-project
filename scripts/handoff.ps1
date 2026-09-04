@@ -141,7 +141,7 @@ if ($Action -eq 'ask') {
         Write-Error "[handoff] 02-context.md に TODO が残っている。埋めてから ask すること。"
     }
 
-    Invoke-Claude "$dirRel/02-context.md を読み、$protocol に従って $dirRel/03-instruction.md と、次の確定指示書 docs/instructions/ を発行してください。判断の裏取りを 1 回だけ行ってから決めてください。"
+    Invoke-Claude "$dirRel/02-context.md を読み、$protocol に従って次の確定指示書 docs/instructions/NN_*.md を発行してください（03-instruction.md は作成不要。判断と却下理由は指示書の冒頭に含めること）。指示書は 150 行以内。主張は「結論 → 根拠 1 行（path:line）」の形で書き、同じ根拠を散文で言い直さないこと。表が成立する内容は表にすること。"
     exit 0
 }
 
@@ -149,6 +149,6 @@ if ($Action -eq 'review') {
     $resPath = Join-Path $root (Join-Path $dirRel '04-result.md')
     if (-not (Test-Path $resPath)) { Write-Error "[handoff] 見つからない: $dirRel/04-result.md" }
 
-    Invoke-Claude "$dirRel/04-result.md を読み、$protocol に従って $dirRel/05-review.md を書いてください。合否（即時承認 / 修正後承認 / 差し戻し）と再試行回数を先頭に明記してください。差し戻しが 2 往復に達している場合は人間へ上げてください。"
+    Invoke-Claude "$dirRel/04-result.md を読み、$protocol に従って $dirRel/05-review.md を書いてください。レビューは 80 行以内。## 機械判定 が PASS の項目は再実行も再記述もせず「機械判定どおり」の 1 行で済ませること。レビューが扱うのは 1. FAIL の項目 2. 未実施と書かれた項目 3. 報告された値とそれが由来するアセット/計算式との突き合わせ の 3 つだけ。合否（即時承認 / 修正後承認 / 差し戻し）と再試行回数を先頭に明記してください。差し戻しが 2 往復に達している場合は人間へ上げてください。"
     exit 0
 }
