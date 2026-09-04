@@ -1,6 +1,6 @@
 name: WebGL Build (manual)
 
-# I-3: 1 回 25〜40 分かかる。private リポジトリの 2,000 分/月 を守るため push では走らせない。
+# 1 回 25〜40 分かかる。private リポジトリの 2,000 分/月 を守るため push では走らせない。
 on:
   workflow_dispatch:
     inputs:

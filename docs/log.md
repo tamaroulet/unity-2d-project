@@ -1023,6 +1023,76 @@ Antigravity (Gemini) による直接 C# 実装体制への移行後、指示書 
   `I-2` / `I-6` が参照先のない ID として残っていた問題を解消し、実際の条文名に置き換えた。
 
 ---
+### Audit-02: 自律開発ハーネス全体監査と Part A 修正
+
+監査レポート全文は [`docs/research/Audit-02_harness_audit.md`](file:///c:/dev/unity-2d-project/docs/research/Audit-02_harness_audit.md)。
+
+#### 1. 実測（本日 11 サイクル）
+
+| verdict | 件数 |
+|---|---|
+| ACCEPT | 1 |
+| REJECT_POLICY | 4 |
+| REJECT_TESTS | 1 |
+| ABORTED_DIRTY | 2 |
+| AGENT_UNAVAILABLE | 2 |
+
+成功率 9%。同一タスク（`UILayoutBuilder.cs` 更新）で 4 連続却下。
+**却下 5 件のうち 4 件はハーネス側の誤検知**だった。
+
+#### 2. 責任の所在
+
+「エージェントの規律不足」ではなく、**ゲートの判定条件が正規の作業手順を罰していた**こと。
+散文ルールを増やす方向の改善案は、この診断に基づき却下した。
+
+#### 3. Part A で修正した内容
+
+| # | 欠陥 | 内容 | 対処 |
+|---|---|---|---|
+| C-1 | ベースライン自己ロック | `save_baseline` が `total` を書き、判定側は `passed` と比較していた。`[Explicit]` の恒久 skip 19 件の分だけ下限が passed を追い越し、次に ACCEPT が出た瞬間に永久 REJECT になる状態だった（`a121694` で一度手動修理済み） | `passed` 基準に統一。`known_skipped` のマジックナンバーを `nightly_baseline.json` へ移動 |
+| C-2 | 規約検知の誤爆 | `git push origin main` の正規表現が、**そのコマンドを禁止する文章**にマッチしていた。リポジトリ全体で 10 箇所ヒットし、`docs/instructions/09` が本日の却下 2 件の原因になっていた | `SECRET_RULES`（全ファイル）と `ABUSE_RULES`（実行可能ファイルのみ）に分割。散文は対象外 |
+| C-3 | 変更行数上限の爆発 | `MAX_CHANGED_LINES = 3000` が `MainGame.unity` の YAML 行を数え、正規の UI レイアウト更新を暴走と判定していた（8,318 行 / 7,894 行で却下 2 件） | シリアライズ資産を行数集計から除外。代わりにファイル数（上限 20）で監視 |
+| C-4 | ダーティ保護の無効化 | `begin_cycle` の「汚れていたら起動しない」を `auto_runner` が無条件 auto-commit で打ち消していた。保護ファイルの未コミット変更が審査を素通りしていた | 保護対象が汚れているときは auto-commit せず中断する |
+| C-5 | 停止条件の不発 | 中断シグナルの受け取りが `== -1` の厳密比較で脆く、`run_with_cli_fallback` の呼び出しが巻き添えで消えて agy CLI フォールバックが死にコード化していた | `< 0` に緩和。CLI フォールバックを復活 |
+| H-1 | 稼働時間の三重管理 | スケジューラ 01:00–06:00 / `auto_runner` の `hour >= 13` / docstring の 08:00–13:00 が併存。`ExecutionTimeLimit 45 分` に対しテストが最大 60 分かかり、ゲート判定の途中で必ず強制終了されていた | `AUTO_RUN_END_HOUR`（既定 6）に一本化。実行上限を 5 時間に。反復と `RestartCount` を撤去し多重起動を停止 |
+| H-2 | UNVERIFIED の巻き戻し | 人間が Unity エディタを開くことは `00_rules.md` が定める役割なのに、開いていると全成果物が巻き戻されていた | 巻き戻さず作業ブランチ上に保留。`auto_runner` 側で中断シグナルとして扱う |
+| M-1 | dangling な規約 ID | `I-3` / `I-4` / `I-5` が現行ルールに存在しないまま残っていた | 実際の条文名に置換。`scripts/` と `.github/` から 0 件 |
+| M-2 | 判定履歴が未追跡 | verdict の唯一の記録である `logs/nightly/cycles-*.jsonl` が `.gitignore` 対象で、clone や CI から見えなかった | `logs/*` パターンに変更して `cycles-*.jsonl` のみ再包含 |
+
+#### 4. 検証
+
+| 手段 | 結果 |
+|---|---|
+| `python scripts/nightly_gate.py selftest` | 正常終了 |
+| `load_baseline()` のキー | 4 キーすべて返る（`EditMode` / `PlayMode` / 各 `_known_skipped`） |
+| ABUSE_RULES の誤爆スキャン | `.md` からのヒットが消滅。残り 9 件はすべて保護対象ファイルまたは gitignore 配下 |
+| 却下ブランチでの再判定（C-3） | `20260904T084642`: 8,373 行 → **コード 107 行**、`20260904T091219`: 7,949 行 → **コード 149 行**。いずれも上限内 |
+| 却下ブランチでの再判定（C-2） | `20260904T090118` の push 誤検知が消滅 |
+| `grep -rn "（I-[0-9]"` | 0 件 |
+| PowerShell 構文チェック | 全 `.ps1` が parseErrors=0 |
+
+#### 5. 副産物として発見した既存の不具合
+
+`scripts/*.ps1` は全ファイルが **BOM 無し UTF-8** で保存されている。
+Windows PowerShell 5.1 は BOM が無い場合 cp932 として読むため、日本語コメントが
+文字化けする。`register_scheduled_task.ps1` に日本語コメントを `param()` の前へ
+追加したところ、化けたバイト列が構文を壊して parse error になった。
+同ファイルには BOM を付与して解消したが、**他の 7 本は BOM 無しのまま**である
+（現時点では構文は壊れていないが、日本語コメントを先頭付近へ追加すると同じ事故が起きる）。
+
+#### 6. 未対処（判断待ち）
+
+- **H-3 Gemini 側の事前ガード欠如**: `guard.js` は Claude Code の PreToolUse フックであり
+  Gemini / agy には効かない。実装を全量担う側が事後検査のみという非対称は残っている。
+  `agy` を PowerShell ラッパーで包み、コミット前に `check_policy()` を掛ける案がある。
+- **Unity-MCP の要否**: `Game/.mcp.json` には `rider` しか登録がない。導入しないのであれば、
+  上流診断の客観データ源は batchmode テストの結果 XML のみである、と明示的に決める必要がある。
+- **隔離ブランチ 5 本の処分**: C-2 / C-3 の修正により誤検知が原因だった 3 本
+  （`084642` / `090118` / `091219`）は再評価できる状態になった。回収するかは人間の判断。
+- **`origin/auto/wip` の存在**: 設計上 push されるのは `nightly/<日付>` のみのはずで、
+  想定外の push 経路がある。
+
+---
 ## 評価指標の定義
 
 本プロジェクトで記録している指標のうち、既存の評価系との対応は以下の通り。

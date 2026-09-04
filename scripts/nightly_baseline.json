@@ -1,5 +1,7 @@
 {
-  "_comment": "テスト件数の下限。エージェントがテストを削って緑にする経路を塞ぐ。実測で上振れしたら nightly_gate が自動で引き上げる。",
+  "_comment": "EditMode / PlayMode は合格件数(passed)の下限。*_known_skipped は [Explicit] 等の恒久 skip の許容数で、人間だけが変更する。自動引き上げの対象は passed のみ。total を入れてはならない（恒久 skip の分だけ total > passed になり、次サイクルで永久 REJECT になる）。",
   "EditMode": 94,
-  "PlayMode": 1
+  "PlayMode": 1,
+  "EditMode_known_skipped": 19,
+  "PlayMode_known_skipped": 0
 }

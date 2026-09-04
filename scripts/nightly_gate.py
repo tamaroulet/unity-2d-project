@@ -121,11 +121,20 @@ RUNTIME_HACK_RULES = [
      "ランタイムコードにシーン検索（Find 系）が再導入された"),
 ]
 
-# 秘密情報・ガード迂回
-ABUSE_RULES = [
+# 秘密情報。拡張子を問わず全ファイルを検査する（漏洩は .md でも事故のため）。
+SECRET_RULES = [
     (re.compile(r"\bghp_[A-Za-z0-9]{20,}|\bgithub_pat_[A-Za-z0-9_]{20,}"
                 r"|\bsk-ant-[A-Za-z0-9_\-]{20,}|\bAKIA[0-9A-Z]{16}\b"),
      "資格情報らしき文字列がコミットに含まれている"),
+]
+
+# ガード迂回。ABUSE_RULES は「実際に実行されるファイル」にのみ適用する。
+# 散文（.md）はルールを引用・禁止する文章そのものが正規表現に当たるため対象外にする。
+# 例:「`git push origin main` を実行してはならない」という禁止文が違反判定され、
+# 指示書や朝刊レポートを書いただけで次のサイクルが隔離されていた。
+EXECUTABLE_EXT = re.compile(r"\.(py|ps1|psm1|sh|bash|yml|yaml|cmd|bat)$", re.IGNORECASE)
+
+ABUSE_RULES = [
     (re.compile(r"git\s+push[^\n]*(--force|\s-f\b)"), "git push --force がスクリプトに埋め込まれた"),
     (re.compile(r"--no-verify"), "--no-verify によるフック迂回が埋め込まれた"),
     (re.compile(r"git\s+push[^\n]*\borigin\s+(main\b|HEAD:main\b|HEAD:refs/heads/main\b)"),
@@ -133,7 +142,10 @@ ABUSE_RULES = [
     (re.compile(r"--dangerously-skip-permissions"), "権限スキップフラグが新たに埋め込まれた"),
 ]
 
+# コード行の上限。シーン等のシリアライズ資産は _diff_numstat_code_only が除外する。
 MAX_CHANGED_LINES = 3000
+# シリアライズ資産は行数ではなくファイル数で暴走を見る。
+MAX_SERIALIZED_FILES = 20
 
 
 def _diff_name_status(base: str, head: str) -> list:
@@ -160,6 +172,30 @@ def _diff_numstat(base: str, head: str) -> dict:
     return {"files": files, "insertions": ins, "deletions": dele}
 
 
+def _diff_numstat_code_only(base: str, head: str) -> dict:
+    """行数上限の判定用。Unity シリアライズ資産とバイナリを除外する。
+
+    シーンやプレハブの YAML は人間が Unity エディタで生成する正規の成果物であり、
+    UI レイアウトを 1 回組み直すだけで容易に数千行になる。これを暴走と同じ
+    尺度で数えると、唯一の正規ルートがゲートに弾かれる。
+    """
+    out = git("diff", "--numstat", f"{base}..{head}", check=False)
+    files = ins = dele = 0
+    for line in out.splitlines():
+        parts = line.split("\t")
+        if len(parts) < 3:
+            continue
+        added, deleted, path = parts[0], parts[1], parts[2]
+        if not added.isdigit() or not deleted.isdigit():
+            continue  # バイナリ
+        if SERIALIZED.search(path):
+            continue
+        files += 1
+        ins += int(added)
+        dele += int(deleted)
+    return {"files": files, "insertions": ins, "deletions": dele}
+
+
 def _iter_diff_lines(base: str, head: str):
     """(path, sign, text) を返す。sign は '+' または '-'。"""
     out = git("diff", "--unified=0", "--no-color", f"{base}..{head}", check=False)
@@ -180,12 +216,21 @@ def check_policy(base: str, head: str) -> dict:
     violations = []
     warnings = []
 
+    # 記録用は全ファイル集計。上限判定はコード行のみ（シリアライズ資産は別枠で見る）
     stat = _diff_numstat(base, head)
-    if stat["insertions"] + stat["deletions"] > MAX_CHANGED_LINES:
+    code_stat = _diff_numstat_code_only(base, head)
+    if code_stat["insertions"] + code_stat["deletions"] > MAX_CHANGED_LINES:
         violations.append(
-            f"1 サイクルの変更量が上限を超過"
-            f"（{stat['insertions'] + stat['deletions']} 行 > {MAX_CHANGED_LINES} 行）。"
+            f"1 サイクルのコード変更量が上限を超過"
+            f"（{code_stat['insertions'] + code_stat['deletions']} 行 > {MAX_CHANGED_LINES} 行"
+            f"／シーン等のシリアライズ資産を除く）。"
             "暴走の疑いがあるため人間の確認が必要")
+
+    serialized_changed = [p for _, p in _diff_name_status(base, head) if SERIALIZED.search(p)]
+    if len(serialized_changed) > MAX_SERIALIZED_FILES:
+        violations.append(
+            f"シリアライズ資産の一括変更が {len(serialized_changed)} 件"
+            f"（上限 {MAX_SERIALIZED_FILES} 件）。人間の確認が必要")
 
     for status, path in _diff_name_status(base, head):
         if any(path.startswith(prefix) for prefix in PROTECTED_PREFIXES):
@@ -202,9 +247,16 @@ def check_policy(base: str, head: str) -> dict:
             continue
 
         if sign == "+":
-            for pattern, message in ABUSE_RULES:
+            # 秘密情報は拡張子を問わず全ファイルで弾く
+            for pattern, message in SECRET_RULES:
                 if pattern.search(text):
                     violations.append(f"{message} [{path}] -> {text.strip()[:120]}")
+
+            # ガード迂回は実行されるファイルのみ。散文中の引用・禁止文は違反にしない
+            if EXECUTABLE_EXT.search(path):
+                for pattern, message in ABUSE_RULES:
+                    if pattern.search(text):
+                        violations.append(f"{message} [{path}] -> {text.strip()[:120]}")
 
             if path.startswith(TEST_PREFIX):
                 for pattern, message in TEST_WEAKENING_RULES:
@@ -308,20 +360,33 @@ def run_unity_tests(platform: str, stamp: str) -> dict:
     return record
 
 
+BASELINE_DEFAULTS = {
+    "EditMode": 0,
+    "PlayMode": 0,
+    "EditMode_known_skipped": 0,
+    "PlayMode_known_skipped": 0,
+}
+
+
 def load_baseline() -> dict:
     try:
         data = json.loads(BASELINE_PATH.read_text(encoding="utf-8"))
-        return {"EditMode": int(data.get("EditMode", 0)), "PlayMode": int(data.get("PlayMode", 0))}
+        return {key: int(data.get(key, default))
+                for key, default in BASELINE_DEFAULTS.items()}
     except Exception:
-        return {"EditMode": 0, "PlayMode": 0}
+        return dict(BASELINE_DEFAULTS)
 
 
 def save_baseline(values: dict) -> None:
     payload = {
-        "_comment": "テスト件数の下限。エージェントがテストを削って緑にする経路を塞ぐ。"
-                    "実測で上振れしたら nightly_gate が自動で引き上げる。",
+        "_comment": "EditMode / PlayMode は合格件数(passed)の下限。"
+                    "*_known_skipped は [Explicit] 等の恒久 skip の許容数で、人間だけが変更する。"
+                    "自動引き上げの対象は passed のみ。total を入れてはならない"
+                    "（恒久 skip の分だけ total > passed になり、次サイクルで永久 REJECT になる）。",
         "EditMode": values["EditMode"],
         "PlayMode": values["PlayMode"],
+        "EditMode_known_skipped": values["EditMode_known_skipped"],
+        "PlayMode_known_skipped": values["PlayMode_known_skipped"],
     }
     BASELINE_PATH.write_text(
         json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
@@ -348,8 +413,9 @@ def evaluate_tests(stamp: str) -> dict:
                 f"{platform}: {record['failed']} 件失敗 -> "
                 + ", ".join(record.get("failed_names", [])))
             break
-        # 既知の Explicit（PlayMode移管予定の19件）以外の不正な skip のみを弾く
-        known_skipped = 19 if platform == "EditMode" else 0
+        # 既知の Explicit（PlayMode 移管予定）以外の不正な skip のみを弾く。
+        # 許容数はマジックナンバーではなく nightly_baseline.json が持つ。
+        known_skipped = baseline.get(f"{platform}_known_skipped", 0)
         if record.get("skipped", 0) > known_skipped:
             ok = False
             reasons.append(f"{platform}: {record['skipped']} 件が skip/inconclusive（無効化の疑い、既知={known_skipped}）")
@@ -362,9 +428,15 @@ def evaluate_tests(stamp: str) -> dict:
             break
 
     if ok:
+        # baseline は「合格件数の下限」。判定側が passed と比較するため total を入れない。
+        # total を入れると恒久 skip（[Explicit]）の分だけ下限が passed を追い越し、
+        # 以後すべてのサイクルが REJECT_TESTS になって復帰できなくなる。
         updated = {
-            "EditMode": max(baseline["EditMode"], results["EditMode"].get("total", 0)),
-            "PlayMode": max(baseline["PlayMode"], results["PlayMode"].get("total", 0)),
+            "EditMode": max(baseline["EditMode"], results["EditMode"].get("passed", 0)),
+            "PlayMode": max(baseline["PlayMode"], results["PlayMode"].get("passed", 0)),
+            # 恒久 skip の許容数は実測で自動更新しない（人間が明示的に決める）
+            "EditMode_known_skipped": baseline["EditMode_known_skipped"],
+            "PlayMode_known_skipped": baseline["PlayMode_known_skipped"],
         }
         if updated != baseline:
             save_baseline(updated)
@@ -451,7 +523,7 @@ def begin_cycle(target_task: str = "", quotas: dict = None):
 
 
 def _quarantine_and_rollback(cycle: Cycle, work_head: str) -> str:
-    """成果物を隔離ブランチに保全してからスナップショットへ巻き戻す。作業は失われない（I-4）。"""
+    """成果物を隔離ブランチに保全してからスナップショットへ巻き戻す。作業は失われない。"""
     branch = f"nightly-reject/{cycle.cycle_id}"
     git("branch", "-f", branch, work_head)
     git("reset", "--hard", cycle.snapshot)
@@ -475,7 +547,7 @@ def finalize_cycle(cycle: Cycle, agent_ok: bool = True) -> dict:
         "diff_stat": {"files": 0, "insertions": 0, "deletions": 0},
     }
 
-    # 1. 未コミットの成果物も含めて一旦コミットし、保全対象にする（I-4 の前提）
+    # 1. 未コミットの成果物も含めて一旦コミットし、隔離ブランチでの保全対象にする
     if is_dirty():
         git("add", "-A")
         git("commit", "-m", f"nightly: uncommitted agent output [cycle {cycle.cycle_id}]",
@@ -510,13 +582,15 @@ def finalize_cycle(cycle: Cycle, agent_ok: bool = True) -> dict:
         record["consecutive_rejects"] = consecutive_reject_count(cycle.target_task)
         return record
 
-    # 3. ローカル Unity で検証できるか（I-5）
+    # 3. ローカル Unity で検証できるか（エディタ起動中は batchmode が使えない）
     if unity_editor_running():
+        # 00_rules.md は人間の役割として Unity エディタ操作を定めている。
+        # エディタが開いている＝人間が作業中であり、成果物を捨てる理由にはならない。
+        # 検証できないものは「破棄」ではなく「保留」にし、作業ブランチ上に温存する。
         record["verdict"] = VERDICT_UNVERIFIED
         record["reasons"].append(
             "Unity エディタが起動中のため batchmode テストを実行できなかった。"
-            "未検証のコードは受理しない方針（I-5）により巻き戻した。")
-        record["quarantine_branch"] = _quarantine_and_rollback(cycle, work_head)
+            "成果物は作業ブランチ上に保留する。エディタを閉じて再検査すること。")
         _write_record(record)
         record["consecutive_rejects"] = consecutive_reject_count(cycle.target_task)
         return record

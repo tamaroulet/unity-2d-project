@@ -1,6 +1,15 @@
 # Logs
-logs/
+# git はディレクトリ自体を除外すると中を走査しないため、logs/ ではなく logs/* と書く。
+# そうしないと下の再包含（!）が一切効かない。
+logs/*
 *.log
+
+# サイクル判定履歴は verdict の唯一の記録であり、consecutive_reject_count() の
+# 入力でもあるため追跡する（clone や CI から見えないと停止条件が機能しない）。
+!logs/nightly/
+logs/nightly/*
+!logs/nightly/cycles-*.jsonl
+
 # 朝刊レポート（docs/nightly/）は logs/ と違い追跡対象。除外しないこと。
 
 # Python

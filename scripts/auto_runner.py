@@ -15,7 +15,12 @@ import subprocess
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
-from nightly_gate import begin_cycle, finalize_cycle, VERDICT_ACCEPT
+from nightly_gate import (
+    begin_cycle, finalize_cycle, VERDICT_ACCEPT, VERDICT_UNVERIFIED,
+    PROTECTED_PREFIXES)
+
+# 自律ループの終了時刻（時）。Task Scheduler の稼働窓（01:00-06:00）と一致させる。
+AUTO_RUN_END_HOUR = int(os.environ.get("AUTO_RUN_END_HOUR", "6"))
 
 # プロジェクトルート
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
@@ -322,7 +327,21 @@ async def run_single_cycle():
 
     cycle = begin_cycle(target_task=target_task, quotas=quotas)
     if cycle is None:
-        log("[GATE] ワーキングツリーが未コミット状態のため一旦 commit して継続します。")
+        # begin_cycle は「汚れていたら起動しない」ことで人間の作業を守る。
+        # ここで無条件に commit すると保護対象の未コミット変更がスナップショット側に
+        # 入り、policy 検査を素通りしてしまう。保護対象が汚れているときは中断する。
+        dirty_out = subprocess.run(
+            ["git", "status", "--porcelain"], capture_output=True, text=True,
+            encoding="utf-8", errors="replace", cwd=str(PROJECT_ROOT)).stdout
+        dirty_paths = [line[3:].strip() for line in dirty_out.splitlines() if line.strip()]
+        protected_dirty = [p for p in dirty_paths
+                           if any(p.startswith(prefix) for prefix in PROTECTED_PREFIXES)]
+        if protected_dirty:
+            log("[HALT] 保護対象ファイルが未コミットのまま残っている。審査なしで取り込むことは"
+                "できないため中断する。人間がコミットまたは破棄すること: "
+                + ", ".join(protected_dirty))
+            return -1
+        log("[GATE] 未コミットの作業を wip コミットに退避して継続する。")
         subprocess.run(["git", "add", "-A"], cwd=str(PROJECT_ROOT))
         subprocess.run(["git", "commit", "-m", "wip: save in-progress work"], cwd=str(PROJECT_ROOT))
         cycle = begin_cycle(target_task=target_task, quotas=quotas)
@@ -330,10 +349,12 @@ async def run_single_cycle():
     if cycle:
         log(f"[GATE] cycle={cycle.cycle_id} snapshot={cycle.snapshot[:8]}")
 
-    # 4. エージェント起動（SDK 優先、CLI フォールバック、Claude フォールバック）
+    # 4. エージェント起動（SDK 優先、agy CLI フォールバック）。実装の Claude 委譲は行わない
     result = await run_with_sdk(prompt)
     if result is None:
-        log("[HALT] SDK / agy CLI がいずれも起動不能。コーディングは Gemini 専任のため、"
+        result = run_with_cli_fallback(prompt)
+    if result is None:
+        log("[HALT] SDK / agy CLI がいずれも起動不能。実装は Gemini 専任のため "
             "Claude への委譲は行わない。空コミットを避けるため本サイクルを中断する。")
         return -1
 
@@ -346,6 +367,11 @@ async def run_single_cycle():
     if cycle:
         record = finalize_cycle(cycle, agent_ok=result is not None)
         log(f"[GATE] 現状テスト判定: verdict={record['verdict']} diff={record['diff_stat']}")
+        if record["verdict"] == VERDICT_UNVERIFIED:
+            # テストが物理的に走らない状態。回し続けても未検証の成果物が積むだけ
+            log("[HALT] Unity エディタ起動中のため検証できない。成果物は保留のまま中断する。"
+                "エディタを閉じてから再開すること。")
+            return -1
         if record.get("consecutive_rejects", 0) >= 2:
             log("[HALT] 同一タスクで 2 回連続 REJECT。00_rules.md 停止条件により中断する。")
             log(f"理由: {', '.join(record.get('reasons', []))}")
@@ -362,20 +388,20 @@ async def main():
     cycle_count = 0
     while True:
         now = datetime.now()
-        # 13:00 (PM 1:00) を過ぎたら一括レビューのためループを抜ける
-        if now.hour >= 13:
-            log("[TIME] 13:00 (PM 1:00) 到達。自律作業ループを終了し、Opus 一括評価へ移行します。")
+        # 稼働窓の終端に達したらループを抜ける。Task Scheduler の登録と同じ時刻を使う
+        if now.hour >= AUTO_RUN_END_HOUR:
+            log(f"[TIME] {AUTO_RUN_END_HOUR}:00 到達。自律作業ループを終了する。")
             break
 
         cycle_count += 1
         log(f"\n--- [CYCLE {cycle_count}] 通し自律実行ステップ ---")
         try:
             remaining = await run_single_cycle()
-            if remaining == 0:
-                log("[COMPLETE] 全指示書タスクが完了しました！13:00 の Opus 最終評価を待ちます。")
+            if remaining < 0:
+                log("[HALT] 中断シグナルを受信した。ループを終了し人間の判断を待つ。")
                 break
-            elif remaining == -1:
-                log("[HALT] 停止シグナルを受信しました。ループを中断します。")
+            if remaining == 0:
+                log("[COMPLETE] 全指示書タスクが完了。Opus の一括評価を待つ。")
                 break
         except Exception as e:
             log(f"[ERROR] サイクル実行中エラー: {e}。隔離環境のため停止せず次へ進みます。")
