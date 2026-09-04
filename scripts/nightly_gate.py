@@ -83,7 +83,7 @@ def is_dirty() -> bool:
 #   Gemini / agy にはフックが効かないため、成果物をコミット後に静的検査する。
 # ==============================================================================
 
-# 自己改変の禁止領域。ここが 1 行でも変わったら無条件で隔離する（I-6）。
+# 自己改変の禁止領域。ここが 1 行でも変わったら無条件で隔離する（00_rules.md「停止条件」/ 自己ガードレール保護）。
 PROTECTED_PREFIXES = (
     ".github/workflows/",
     ".claude/hooks/",
@@ -129,7 +129,7 @@ ABUSE_RULES = [
     (re.compile(r"git\s+push[^\n]*(--force|\s-f\b)"), "git push --force がスクリプトに埋め込まれた"),
     (re.compile(r"--no-verify"), "--no-verify によるフック迂回が埋め込まれた"),
     (re.compile(r"git\s+push[^\n]*\borigin\s+(main\b|HEAD:main\b|HEAD:refs/heads/main\b)"),
-     "origin/main への直接 push が埋め込まれた（I-2 違反）"),
+     "origin/main への直接 push が埋め込まれた（origin/main 直接 push の禁止）"),
     (re.compile(r"--dangerously-skip-permissions"), "権限スキップフラグが新たに埋め込まれた"),
 ]
 
@@ -189,7 +189,7 @@ def check_policy(base: str, head: str) -> dict:
 
     for status, path in _diff_name_status(base, head):
         if any(path.startswith(prefix) for prefix in PROTECTED_PREFIXES):
-            violations.append(f"保護対象の自己ガードレールが変更された: {path}（I-6 違反）")
+            violations.append(f"保護対象の自己ガードレールが変更された: {path}（自己ガードレールの改変）")
         if status == "D" and path.startswith(TEST_PREFIX):
             violations.append(f"テストファイルが削除された: {path}")
         if status == "D" and SERIALIZED.search(path):
@@ -398,6 +398,34 @@ def _write_record(record: dict) -> None:
         handle.write(json.dumps(record, ensure_ascii=False) + "\n")
 
 
+def consecutive_reject_count(target_task: str) -> int:
+    """同一タスクに対する REJECT_TESTS / REJECT_POLICY の連続回数を返す。"""
+    if not target_task:
+        return 0
+    path = jsonl_path()
+    if not path.exists():
+        return 0
+    
+    count = 0
+    prefix = target_task[:40]
+    lines = path.read_text(encoding="utf-8").splitlines()
+    for line in reversed(lines):
+        if not line.strip():
+            continue
+        try:
+            rec = json.loads(line)
+            rec_task = rec.get("target_task", "")
+            if rec_task.startswith(prefix):
+                verdict = rec.get("verdict")
+                if verdict in (VERDICT_REJECT_TESTS, VERDICT_REJECT_POLICY):
+                    count += 1
+                elif verdict == VERDICT_ACCEPT:
+                    break
+        except Exception:
+            pass
+    return count
+
+
 def begin_cycle(target_task: str = "", quotas: dict = None):
     """クリーンな状態からのみサイクルを開始する。汚れていたら None を返す（人間の作業を守る）。"""
     if is_dirty():
@@ -464,6 +492,7 @@ def finalize_cycle(cycle: Cycle, agent_ok: bool = True) -> dict:
             record["verdict"] = VERDICT_NO_CHANGE
             record["reasons"].append("差分なし。エージェントは正常起動したが変更を行わなかった。")
         _write_record(record)
+        record["consecutive_rejects"] = consecutive_reject_count(cycle.target_task)
         return record
 
     record["commits"] = git(
@@ -478,6 +507,7 @@ def finalize_cycle(cycle: Cycle, agent_ok: bool = True) -> dict:
         record["reasons"] = policy["violations"]
         record["quarantine_branch"] = _quarantine_and_rollback(cycle, work_head)
         _write_record(record)
+        record["consecutive_rejects"] = consecutive_reject_count(cycle.target_task)
         return record
 
     # 3. ローカル Unity で検証できるか（I-5）
@@ -488,6 +518,7 @@ def finalize_cycle(cycle: Cycle, agent_ok: bool = True) -> dict:
             "未検証のコードは受理しない方針（I-5）により巻き戻した。")
         record["quarantine_branch"] = _quarantine_and_rollback(cycle, work_head)
         _write_record(record)
+        record["consecutive_rejects"] = consecutive_reject_count(cycle.target_task)
         return record
 
     # 4. テスト実行（一次ゲート）
@@ -498,9 +529,10 @@ def finalize_cycle(cycle: Cycle, agent_ok: bool = True) -> dict:
         record["reasons"] = verdict_tests["reasons"]
         record["quarantine_branch"] = _quarantine_and_rollback(cycle, work_head)
         _write_record(record)
+        record["consecutive_rejects"] = consecutive_reject_count(cycle.target_task)
         return record
 
-    # 5. 受理。I-2 により origin/main ではなく nightly/<date> へ push する
+    # 5. 受理。origin/main ではなく nightly/<date> へ push する
     record["verdict"] = VERDICT_ACCEPT
     nightly_branch = f"nightly/{datetime.now().strftime('%Y-%m-%d')}"
     push = subprocess.run(
@@ -514,6 +546,7 @@ def finalize_cycle(cycle: Cycle, agent_ok: bool = True) -> dict:
             f"nightly ブランチへの push に失敗（ローカルには受理済み）: {push.stderr.strip()[:300]}")
 
     _write_record(record)
+    record["consecutive_rejects"] = consecutive_reject_count(cycle.target_task)
     return record
 
 

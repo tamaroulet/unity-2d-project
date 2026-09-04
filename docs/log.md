@@ -952,6 +952,77 @@ Antigravity (Gemini) による直接 C# 実装体制への移行後、指示書 
 
 ---
 
+### 第8週 Step 24: UI スプライトのシーン割り当てとビルダーの是正（指示書 09 / 2.2・2.3）
+
+`Tools/Setup Complete UI Layout (Simple Shapes)` を Unity バッチモード
+（`-executeMethod Game.EditorScripts.UILayoutBuilder.SetupCompleteLayout`）で実行し、
+`MainGame.unity` を更新・保存した。実行の過程で、ビルダー側に 2 件の欠陥を検出して是正した。
+
+#### 1. 実施内容
+
+| 対象 | 内容 |
+|---|---|
+| `UILayoutBuilder.cs` | ゲージ背景・ゲージバーの `Image` に `Bar_Fill` スプライトを割り当て（計 10 箇所） |
+| `UILayoutBuilder.cs` | Canvas 直下の全消し再構築をやめ、既知パネルは再利用する冪等ビルドへ変更 |
+| `UILayoutBuilder.cs` | 参照アセットのパス誤記を修正し、見つからない場合は既存結線を保持してエラーを出す `BindAsset<T>()` を導入 |
+| `UILayoutBuilder.cs` | `StatusView` の `_gameFlowController` / `_bossBattleDialog` をシーン内オブジェクトへ結線 |
+| `MainGame.unity` | 上記を反映して更新・保存 |
+
+#### 2. 検出した欠陥と根本原因
+
+| 欠陥 | 根本原因 | 対処 |
+|---|---|---|
+| **シーン差分が 8,238 行に膨張** | `SetupCompleteLayout()` が Canvas の子を `DestroyImmediate` で全消ししてから再生成しており、再構築のたびに全 `fileID` が総入れ替わりになっていた。既存オブジェクトを再利用する `Find()` 経路が実質デッドコードだった。 | 管理対象パネル名の許可リスト `ManagedRootNames` を導入し、迷子オブジェクトのみ除去する方式へ変更。差分は 77 行に縮小した。 |
+| **Inspector 結線の無言消失** | 参照先パスが `GameStateEventChannel.asset` / `GameEventFiredChannel.asset` と誤記されていた（実体は `GameStateChannel.asset` / `EventFiredChannel.asset`）。`LoadAssetAtPath` は失敗時に `null` を返すだけなので、実行のたびに既存の結線が静かに `null` で上書きされていた。 | `BindAsset<T>()` を導入。アセットが見つからない場合は書き込みを行わず `Debug.LogError` で顕在化させる。パス定数も導入して誤記を局所化した。 |
+
+全消し方式のままだと差分が夜間ハーネスの上限（3,000 行）を超えて自動隔離される。
+また結線消失は「シーンを再構築するほどゲームが壊れる」性質の欠陥であり、
+`00_rules.md` の「コード単体での進捗錯覚禁止」がそのまま該当する事例だった。
+
+#### 3. 検証
+
+| 手段 | 結果 |
+|---|---|
+| Unity バッチモード `-executeMethod ...SetupCompleteLayout` | 成功（exit 0、コンパイルエラー 0、`error CS` 0） |
+| シーン差分の内訳確認 | `m_Sprite` 10 箇所が `Bar_Fill` を指すよう変化。`_gameStateChannel` / `_eventFiredChannel` の `null` 化は消滅 |
+| EditMode テスト（バッチモード） | 113 件収集 / 94 passed / 0 failed / 19 skipped（`[Explicit]`）＝ベースライン維持 |
+| PlayMode テスト（バッチモード） | 1 / 1 passed（`SmokeTest` が実 `MainGame.unity` をロードし実 uGUI クリックを通過） |
+| 変更行数 | 2 ファイル・167 行（上限 3,000 行内） |
+
+#### 4. 未対応として残した事項
+
+- `EventDialogView` の直列化フィールド（`_titleText` / `_bodyText` / `_okButton` / `_gameFlowController`）が
+  シーン上ですべて未結線のままである。これは本作業以前からの状態で、指示書 09 の 2.2 の範囲外のため手を付けていない。
+  「モック通しプレイの開通」に着手する際の既知のブロッカーとして記録しておく。
+
+#### 5. 指示書 09 チェックリストの後始末
+
+指示書 09 の 2.2（`Tools/Setup Complete UI Layout (Simple Shapes)` 実行と `MainGame.unity` 更新）は
+上記のとおり commit `d433269` で実施済みで、2.4 が求める `docs/STATUS.md` / `docs/log.md` の更新も
+同コミットに含まれていた。しかし指示書 09 の 2.4 のチェックボックス自体が `[ ]` のまま取り残されていたため、
+本エントリで `[x]` に更新した。Unity エディタ・Unity-MCP への接続がこのセッションには存在しないため、
+`Tools/Setup Complete UI Layout` の再実行は行っていない（実施済みのため不要と判断）。
+`origin/main` への push は `.agents/rules/00_rules.md` および夜間安全ハーネスの方針上、
+### 第8週 Step 25：モック通しプレイ開通（RelicDraft配線 ＆ 24ターン完走）
+
+- **実施内容**:
+  - `GameFlowController.cs`: ボス戦勝利後の状態遷移を洗練。Act 1〜3 ボス撃破時は `OnRelicDraftRequested` イベントを発火し、所持済みを除外した最大3枚の未所持レリックを提示。Act 4 ラスボス撃破時はドラフトを挟まず直ちに `GamePhase.GameClear` へ遷移しエンディングを確定。
+  - `RelicDraftDialogView.cs`: `GameFlowController` へのイベント購読・解除、およびテスト用 `Bind` メソッドを整備。
+  - `UILayoutBuilder.cs`: `RelicDraftDialogPanel` に `RelicDraftDialogView` コンポーネントおよび子カード3枚に `RelicCardView`（TextMeshProUGUI, Button）をアタッチ・完全結線。
+  - `RelicDraftDialogViewTests.cs`: 新規ユニットテスト3件追加（カードバインド、選択時チャンネル発火、未所持レリック候補抽出）。
+  - **検証結果**: EditMode 97/97 passed (100% Green), PlayMode 1/1 passed (100% Green)。
+
+---
+### 指示書 10: 自律開発ハーネスの規律強化（散文廃止・コード強制）
+
+- **Fix Gate Protocol のコード強制への移行**:
+  Fix Gate Protocol は commit `5bc7a7b` で一度導入され、`f71745a` のルール統合時に意図的に廃棄された。再導入提案が出た経緯と、散文ではなくコードで強制する方針に決着した。
+- **責任の所在**:
+  「エージェントの規律不足」ではなく、**連続 REJECT で停止する機構がコードに無かったこと**が根本原因であった。`nightly_gate.py` に連続 REJECT で自動停止する機構（`consecutive_reject_count`）を追加して解消した。
+- **規約 ID の実体化**:
+  `I-2` / `I-6` が参照先のない ID として残っていた問題を解消し、実際の条文名に置き換えた。
+
+---
 ## 評価指標の定義
 
 本プロジェクトで記録している指標のうち、既存の評価系との対応は以下の通り。

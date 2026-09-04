@@ -104,11 +104,7 @@ def get_quotas() -> dict:
     return {}
 
 
-def should_use_claude(quotas: dict) -> bool:
-    """Gemini 5h 残量が 25% 未満なら True を返す。"""
-    gemini = quotas.get("Gemini", {})
-    remaining = gemini.get("FiveHourRemainingPercent", 100)
-    return remaining < 25
+
 
 
 def parse_instruction_uncompleted_tasks() -> list:
@@ -184,18 +180,9 @@ def get_next_prompt(quotas: dict) -> tuple:
     else:
         target_task_description = "【最優先実行目標】\n全指示書タスクの検証・ドキュメント同期・ビルド健全性の確認\n"
 
-    # クォータによる戦略分岐
-    use_claude = should_use_claude(quotas)
-    strategy_note = ""
-    if use_claude:
-        strategy_note = (
-            "【重要・クォータ制限】Gemini 5時間枠が25%未満のため、"
-            "重いC#実装やテスト作成が必要な場合は scripts/invoke_claude_safe.ps1 経由で Claude Code へ委譲してください。"
-        )
-    else:
-        strategy_note = (
-            "【クォータ状態】Gemini 枠は十分です。Gemini + Unity-MCP を主軸に自律実装・検証・コミットを進めてください。"
-        )
+    strategy_note = (
+        "【役割】コーディング・エラー修正等すべての実装は Gemini が担います。Claude に実装を委譲せず自己完結してください。"
+    )
 
     prompt = f"""あなたは unity-2d-project の自律開発エージェントです。
 以下の具体的計画と行動規範に従って、直ちに作業を前倒し自律実行してください。
@@ -253,9 +240,10 @@ async def run_with_sdk(prompt: str):
 
     config = LocalAgentConfig(
         system_instructions=(
-            "あなたは unity-2d-project の自律開発エージェントです。"
-            ".agents/rules/00_rules.md の全行動規範に従って作業してください。"
-            "淡々とした工学的・事務的な平素の日本語で応答し、指示された計画タスクを確実に前倒し完遂してください。"
+            "ROLE: Executor (implementation only)\n"
+            "RULES: .agents/rules/00_rules.md — read and comply\n"
+            "CONSTRAINT: no architecture change, no asmdef change, no rule file edit\n"
+            "TONE: flat, engineering, Japanese, no exclamation"
         ),
         capabilities=CapabilitiesConfig(),
     )
@@ -298,90 +286,12 @@ def run_with_cli_fallback(prompt: str):
     return None
 
 
-def run_with_claude_fallback(prompt: str):
-    """invoke_claude_safe.ps1 経由で Claude Code による自律実行を行う。本命: opus、代打: sonnet。"""
-    script_path = PROJECT_ROOT / "scripts" / "invoke_claude_safe.ps1"
-
-    # 1. 本命: Opus
-    log("[Claude] 本命 Claude Code (Opus) による自律実行を開始中...")
-    try:
-        result = subprocess.run(
-            ["powershell", "-ExecutionPolicy", "Bypass", "-NoProfile",
-             "-File", str(script_path), "-Prompt", prompt, "-Model", "opus"],
-            capture_output=True, text=True, timeout=1800,
-            cwd=str(PROJECT_ROOT)
-        )
-        if result.returncode == 0 and "API Error: 529" not in result.stdout:
-            log(f"[Claude] Opus 実行完了。出力長: {len(result.stdout)} 文字")
-            return result.stdout
-        else:
-            log("[Claude] Opus が過負荷(529)または失敗。代打の Sonnet へフォールバックします。")
-    except Exception as e:
-        log(f"[Claude] Opus 実行エラー: {e}。代打の Sonnet へフォールバックします。")
-
-    # 2. 代打: Sonnet
-    log("[Claude] 代打 Claude Code (Sonnet) による自律実行を開始中...")
-    try:
-        result = subprocess.run(
-            ["powershell", "-ExecutionPolicy", "Bypass", "-NoProfile",
-             "-File", str(script_path), "-Prompt", prompt, "-Model", "sonnet"],
-            capture_output=True, text=True, timeout=1800,
-            cwd=str(PROJECT_ROOT)
-        )
-        if result.returncode == 0:
-            log(f"[Claude] Sonnet 実行完了。出力長: {len(result.stdout)} 文字")
-            return result.stdout
-        else:
-            log(f"[Claude] Sonnet 実行失敗: {result.stderr[:500]}")
-    except Exception as e:
-        log(f"[Claude] Sonnet 実行エラー: {e}")
-
-async def heal_with_opus(cycle, record: dict, target_task: str) -> dict:
-    """REJECT された瞬間、隔離ブランチの中身と失敗理由を Opus に渡し、その場で修復・再判定させる。"""
-    quarantine = record.get("quarantine_branch")
-    if not quarantine:
-        return record
-
-    reasons = "\n".join(record.get("reasons", []))
-    warnings = "\n".join(record.get("warnings", []))
-    log(f"[HEAL] 棒立ち防止: 直ちに Claude Opus に判断を仰ぎ、隔離ブランチ {quarantine} の修復を要請中...")
-
-    diff_stat = subprocess.run(["git", "diff", "--stat", f"main..{quarantine}"], capture_output=True, text=True, cwd=str(PROJECT_ROOT)).stdout.strip()
-
-    heal_prompt = f"""あなたは unity-2d-project のアーキテクト（Claude Opus）です。
-自律実行タスク「{target_task}」の成果物が安全ハーネスによって REJECT（却下・隔離）されました。
-棒立ちせず直ちに修復を行い、main に安全に取り込める状態に是正してください。
-
-【却下理由】
-{reasons}
-{warnings}
-
-【隔離ブランチ: {quarantine} の変更概要】
-{diff_stat}
-
-【修復の手順】
-1. `git cherry-pick {quarantine}` で隔離された成果物を手元に展開してください。
-2. 却下理由を直ちに解消してください:
-   - ルール改変違反（I-6）の場合: `git checkout main -- .agents/rules/00_rules.md` 等で保護ファイルを直ちに元の状態に戻す。
-   - テスト失敗の場合: 失敗している原因のコードやアサインを修正する。
-3. 修正が完了したらコミットしてください（git commit -m "fix(heal): ..."）。
-"""
-    heal_result = run_with_claude_fallback(heal_prompt)
-    if heal_result:
-        log("[HEAL] Opus による修復実行が完了。再検査（ゲート判定）を実施中...")
-        new_record = finalize_cycle(cycle, agent_ok=True)
-        return new_record
-
-    return record
 
 
 # ==============================================================================
 # 4. メインルーチン
 # ==============================================================================
-async def main():
-    log("=" * 60)
-    log("[START] AutoRunner 計画駆動型自律実行サイクル開始")
-
+async def run_single_cycle():
     # 1. クォータ取得
     quotas = get_quotas()
     if quotas:
@@ -396,9 +306,13 @@ async def main():
 
     # 2. 計画ロードマップと指示書から具体的プロンプトを構築
     prompt, remaining_tasks = get_next_prompt(quotas)
-    target_task = remaining_tasks[0]["task"] if remaining_tasks else "(検証・同期タスク)"
-    log(f"[PLAN] 残り未完了タスク数: {len(remaining_tasks)} 件")
-    log(f"[PLAN] 今回のターゲット: {target_task}")
+    if not remaining_tasks:
+        log("[PLAN] 全タスク完了。追加検証・ドキュメント同期を実行します。")
+        target_task = "(全タスク完了後の検証・同期)"
+    else:
+        target_task = remaining_tasks[0]["task"]
+        log(f"[PLAN] 残り未完了タスク数: {len(remaining_tasks)} 件")
+        log(f"[PLAN] 今回のターゲット: {target_task}")
 
     # 3. 隔離環境の確保: main ではなく auto/wip ブランチで作業する
     current_branch = subprocess.run(["git", "branch", "--show-current"], capture_output=True, text=True, cwd=str(PROJECT_ROOT)).stdout.strip()
@@ -408,19 +322,20 @@ async def main():
 
     cycle = begin_cycle(target_task=target_task, quotas=quotas)
     if cycle is None:
-        log("[GATE] ワーキングツリーが未コミット状態のため一旦 stash/commit して継続します。")
+        log("[GATE] ワーキングツリーが未コミット状態のため一旦 commit して継続します。")
         subprocess.run(["git", "add", "-A"], cwd=str(PROJECT_ROOT))
         subprocess.run(["git", "commit", "-m", "wip: save in-progress work"], cwd=str(PROJECT_ROOT))
         cycle = begin_cycle(target_task=target_task, quotas=quotas)
 
-    log(f"[GATE] cycle={cycle.cycle_id} snapshot={cycle.snapshot[:8]}")
+    if cycle:
+        log(f"[GATE] cycle={cycle.cycle_id} snapshot={cycle.snapshot[:8]}")
 
     # 4. エージェント起動（SDK 優先、CLI フォールバック、Claude フォールバック）
     result = await run_with_sdk(prompt)
     if result is None:
-        result = run_with_cli_fallback(prompt)
-    if result is None:
-        result = run_with_claude_fallback(prompt)
+        log("[HALT] SDK / agy CLI がいずれも起動不能。コーディングは Gemini 専任のため、"
+            "Claude への委譲は行わない。空コミットを避けるため本サイクルを中断する。")
+        return -1
 
     # 5. 成果物のコミット（通し作業の優先: 途中で巻き戻さず auto/wip に積み上げる）
     subprocess.run(["git", "add", "-A"], cwd=str(PROJECT_ROOT))
@@ -428,8 +343,46 @@ async def main():
     log(f"[PIPELINE] タスク「{target_task[:40]}」の実装を auto/wip にコミットしました。止まらず次へ進みます。")
 
     # 6. テスト実測（現状把握・評価用）
-    record = finalize_cycle(cycle, agent_ok=result is not None)
-    log(f"[GATE] 現状テスト判定: verdict={record['verdict']} diff={record['diff_stat']}")
+    if cycle:
+        record = finalize_cycle(cycle, agent_ok=result is not None)
+        log(f"[GATE] 現状テスト判定: verdict={record['verdict']} diff={record['diff_stat']}")
+        if record.get("consecutive_rejects", 0) >= 2:
+            log("[HALT] 同一タスクで 2 回連続 REJECT。00_rules.md 停止条件により中断する。")
+            log(f"理由: {', '.join(record.get('reasons', []))}")
+            return -1
+
+    return len(remaining_tasks)
+
+
+async def main():
+    log("=" * 60)
+    log("[START] AutoRunner ノンストップ通し自律実行ループ開始")
+    log("[POLICY] 隔離環境(auto/wip)上で止まらず前進。本流(main)は一切汚しません。")
+
+    cycle_count = 0
+    while True:
+        now = datetime.now()
+        # 13:00 (PM 1:00) を過ぎたら一括レビューのためループを抜ける
+        if now.hour >= 13:
+            log("[TIME] 13:00 (PM 1:00) 到達。自律作業ループを終了し、Opus 一括評価へ移行します。")
+            break
+
+        cycle_count += 1
+        log(f"\n--- [CYCLE {cycle_count}] 通し自律実行ステップ ---")
+        try:
+            remaining = await run_single_cycle()
+            if remaining == 0:
+                log("[COMPLETE] 全指示書タスクが完了しました！13:00 の Opus 最終評価を待ちます。")
+                break
+            elif remaining == -1:
+                log("[HALT] 停止シグナルを受信しました。ループを中断します。")
+                break
+        except Exception as e:
+            log(f"[ERROR] サイクル実行中エラー: {e}。隔離環境のため停止せず次へ進みます。")
+
+        # インターバルを置かずに次タスクへ通しで即座に進む（10秒のクールダウンのみ）
+        log("[CONTINUE] 止まらずに直ちに次のタスクへ通し実行を継続します...")
+        await asyncio.sleep(10)
 
     log("=" * 60)
 
