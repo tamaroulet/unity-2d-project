@@ -98,6 +98,10 @@ PROTECTED_PREFIXES = (
     # 禁止しており、その制約はここで初めて実効化される。
     "Game/Packages/manifest.json",
     "Game/Packages/packages-lock.json",
+    # MCP サーバの追加はエージェントが自分に新しいツールを生やす行為であり、
+    # 依存パッケージの追加と同じ性質を持つ。人間の承認なしに増やさせない。
+    ".mcp.json",
+    "Game/.mcp.json",
 )
 
 TEST_PREFIX = "Game/Assets/Tests/"
