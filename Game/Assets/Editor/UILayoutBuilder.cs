@@ -35,6 +35,24 @@ namespace Game.EditorScripts
         private static readonly Color ColorBossHp = new Color(0.92f, 0.25f, 0.25f, 1.0f);
         private static readonly Color ColorShield = new Color(0.30f, 0.75f, 0.95f, 1.0f);
 
+        private const string GameStateChannelPath = "Assets/Data/Channels/GameStateChannel.asset";
+        private const string EventFiredChannelPath = "Assets/Data/Channels/EventFiredChannel.asset";
+
+        // Canvas 直下で本ビルダーが管理する root。ここに無い子は迷子として除去する。
+        // CommandButtonsPanel は旧名で、SetupCommandPanel が CommandPanel へ改名して引き継ぐ。
+        private static readonly string[] ManagedRootNames =
+        {
+            "Background",
+            "StatusPanel",
+            "CommandPanel",
+            "CommandButtonsPanel",
+            "EventDialogPanel",
+            "RelicDraftDialogPanel",
+            "BossBattleDialogPanel",
+            "MetaShopDialogPanel",
+            "EndingPanel",
+        };
+
         [MenuItem("Tools/Setup Complete UI Layout (Simple Shapes)")]
         public static void SetupCompleteLayout()
         {
@@ -86,12 +104,16 @@ namespace Game.EditorScripts
                 }
             }
 
-            // 古い壊れた子オブジェクトを一括クリア（クリーンビルド）
-            int childCount = canvas.transform.childCount;
-            for (int i = childCount - 1; i >= 0; i--)
+            // 既知のパネル以外の迷子オブジェクトだけを除去する。
+            // 全消しにすると再構築のたびに fileID が総入れ替わりになり、シーンの差分が
+            // 数千行に膨らんで人間がレビューできなくなるため、既知の名前は温存して再利用する。
+            for (int i = canvas.transform.childCount - 1; i >= 0; i--)
             {
                 Transform child = canvas.transform.GetChild(i);
-                Object.DestroyImmediate(child.gameObject);
+                if (System.Array.IndexOf(ManagedRootNames, child.name) < 0)
+                {
+                    Object.DestroyImmediate(child.gameObject);
+                }
             }
 
             // 4. 全画面背景
@@ -162,9 +184,8 @@ namespace Game.EditorScripts
             CreateLabel(rect, "PointsText", "POINTS: 0", new Vector2(750, 0), new Vector2(200, 50), 28, TextAlignmentOptions.Right);
 
             // StatusView の SerializedObject バインド
-            GameStateEventChannelSO channel = AssetDatabase.LoadAssetAtPath<GameStateEventChannelSO>("Assets/Data/Channels/GameStateEventChannel.asset");
             SerializedObject so = new SerializedObject(view);
-            so.FindProperty("_gameStateChannel").objectReferenceValue = channel;
+            BindAsset<GameStateEventChannelSO>(so, "_gameStateChannel", GameStateChannelPath);
             so.FindProperty("_turnText").objectReferenceValue = turnGo.GetComponent<TextMeshProUGUI>();
             so.FindProperty("_staminaText").objectReferenceValue = staminaGo.transform.Find("Label").GetComponent<TextMeshProUGUI>();
             so.FindProperty("_skillText").objectReferenceValue = skillGo.transform.Find("Label").GetComponent<TextMeshProUGUI>();
@@ -380,7 +401,9 @@ namespace Game.EditorScripts
             RectTransform barBgRect = EnsureRectTransform(barBgGo);
             barBgRect.anchoredPosition = new Vector2(20, -5);
             barBgRect.sizeDelta = new Vector2(220, 24);
-            barBgGo.GetComponent<Image>().color = ColorBarBg;
+            Image barBgImg = barBgGo.GetComponent<Image>();
+            barBgImg.sprite = LoadSprite("Bar_Fill");
+            barBgImg.color = ColorBarBg;
 
             // ゲージバー
             Transform barFillTr = barBgRect.Find("BarFill");
@@ -390,7 +413,9 @@ namespace Game.EditorScripts
             barFillRect.anchorMin = Vector2.zero;
             barFillRect.anchorMax = new Vector2(0.7f, 1f); // 70% 仮置き
             barFillRect.sizeDelta = Vector2.zero;
-            barFillGo.GetComponent<Image>().color = barColor;
+            Image barFillImg = barFillGo.GetComponent<Image>();
+            barFillImg.sprite = LoadSprite("Bar_Fill");
+            barFillImg.color = barColor;
 
             // ラベル
             CreateLabel(rect, "Label", label, new Vector2(20, 15), new Vector2(220, 24), 18, TextAlignmentOptions.Center);
@@ -501,21 +526,21 @@ namespace Game.EditorScripts
             if (controller == null) return;
 
             SerializedObject so = new SerializedObject(controller);
-            so.FindProperty("_gameRules").objectReferenceValue = AssetDatabase.LoadAssetAtPath<GameRulesSO>("Assets/Data/Rules/GameRules.asset");
-            so.FindProperty("_commandResolver").objectReferenceValue = AssetDatabase.LoadAssetAtPath<CommandResolverSO>("Assets/Data/Commands/CommandResolver.asset");
-            so.FindProperty("_eventCatalog").objectReferenceValue = AssetDatabase.LoadAssetAtPath<GameEventCatalogSO>("Assets/Data/Events/GameEventCatalog.asset");
-            so.FindProperty("_eventResolver").objectReferenceValue = AssetDatabase.LoadAssetAtPath<EventResolverSO>("Assets/Data/Events/EventResolver.asset");
-            so.FindProperty("_endingRules").objectReferenceValue = AssetDatabase.LoadAssetAtPath<EndingRulesSO>("Assets/Data/Endings/EndingRules.asset");
-            so.FindProperty("_endingResolver").objectReferenceValue = AssetDatabase.LoadAssetAtPath<EndingResolverSO>("Assets/Data/Endings/EndingResolver.asset");
-            so.FindProperty("_gameStateChannel").objectReferenceValue = AssetDatabase.LoadAssetAtPath<GameStateEventChannelSO>("Assets/Data/Channels/GameStateEventChannel.asset");
-            so.FindProperty("_eventFiredChannel").objectReferenceValue = AssetDatabase.LoadAssetAtPath<GameEventFiredChannelSO>("Assets/Data/Channels/GameEventFiredChannel.asset");
-            so.FindProperty("_endingDecidedChannel").objectReferenceValue = AssetDatabase.LoadAssetAtPath<EndingDecidedChannelSO>("Assets/Data/Channels/EndingDecidedChannel.asset");
-            so.FindProperty("_relicCatalog").objectReferenceValue = AssetDatabase.LoadAssetAtPath<RelicCatalogSO>("Assets/Features/Relic/Instances/RelicCatalog.asset");
-            so.FindProperty("_relicResolver").objectReferenceValue = AssetDatabase.LoadAssetAtPath<RelicResolverSO>("Assets/Features/Relic/Instances/RelicResolver.asset");
-            so.FindProperty("_bossCatalog").objectReferenceValue = AssetDatabase.LoadAssetAtPath<BossCatalogSO>("Assets/Features/Boss/Instances/BossCatalog.asset");
-            so.FindProperty("_autoBattleResolver").objectReferenceValue = AssetDatabase.LoadAssetAtPath<AutoBattleResolverSO>("Assets/Features/Boss/Instances/AutoBattleResolver.asset");
-            so.FindProperty("_metaPointResolver").objectReferenceValue = AssetDatabase.LoadAssetAtPath<MetaPointResolverSO>("Assets/Features/MetaProgression/Instances/MetaPointResolver.asset");
-            so.FindProperty("_metaUnlockCatalog").objectReferenceValue = AssetDatabase.LoadAssetAtPath<MetaUnlockCatalogSO>("Assets/Features/MetaProgression/Instances/MetaUnlockCatalog.asset");
+            BindAsset<GameRulesSO>(so, "_gameRules", "Assets/Data/Rules/GameRules.asset");
+            BindAsset<CommandResolverSO>(so, "_commandResolver", "Assets/Data/Commands/CommandResolver.asset");
+            BindAsset<GameEventCatalogSO>(so, "_eventCatalog", "Assets/Data/Events/GameEventCatalog.asset");
+            BindAsset<EventResolverSO>(so, "_eventResolver", "Assets/Data/Events/EventResolver.asset");
+            BindAsset<EndingRulesSO>(so, "_endingRules", "Assets/Data/Endings/EndingRules.asset");
+            BindAsset<EndingResolverSO>(so, "_endingResolver", "Assets/Data/Endings/EndingResolver.asset");
+            BindAsset<GameStateEventChannelSO>(so, "_gameStateChannel", GameStateChannelPath);
+            BindAsset<GameEventFiredChannelSO>(so, "_eventFiredChannel", EventFiredChannelPath);
+            BindAsset<EndingDecidedChannelSO>(so, "_endingDecidedChannel", "Assets/Data/Channels/EndingDecidedChannel.asset");
+            BindAsset<RelicCatalogSO>(so, "_relicCatalog", "Assets/Features/Relic/Instances/RelicCatalog.asset");
+            BindAsset<RelicResolverSO>(so, "_relicResolver", "Assets/Features/Relic/Instances/RelicResolver.asset");
+            BindAsset<BossCatalogSO>(so, "_bossCatalog", "Assets/Features/Boss/Instances/BossCatalog.asset");
+            BindAsset<AutoBattleResolverSO>(so, "_autoBattleResolver", "Assets/Features/Boss/Instances/AutoBattleResolver.asset");
+            BindAsset<MetaPointResolverSO>(so, "_metaPointResolver", "Assets/Features/MetaProgression/Instances/MetaPointResolver.asset");
+            BindAsset<MetaUnlockCatalogSO>(so, "_metaUnlockCatalog", "Assets/Features/MetaProgression/Instances/MetaUnlockCatalog.asset");
 
             int[] bossBattleTurns = { 6, 12, 18, 24 };
             SerializedProperty turnsProp = so.FindProperty("_bossBattleTurns");
@@ -527,6 +552,48 @@ namespace Game.EditorScripts
             }
 
             so.ApplyModifiedProperties();
+
+            BindStatusViewSceneReferences(canvasTr, controller);
+        }
+
+        // StatusView はボス戦の発生を GameFlowController から受け取り、BossBattleDialogView へ橋渡しする。
+        // どちらもシーン内オブジェクトなので、全パネル生成後にまとめて結線する。
+        private static void BindStatusViewSceneReferences(Transform canvasTr, GameFlowController controller)
+        {
+            Transform statusTr = canvasTr.Find("StatusPanel");
+            if (statusTr == null) return;
+
+            StatusView view = statusTr.GetComponent<StatusView>();
+            if (view == null) return;
+
+            Transform bossPanelTr = canvasTr.Find("BossBattleDialogPanel");
+            BossBattleDialogView bossDialog = bossPanelTr != null ? bossPanelTr.GetComponent<BossBattleDialogView>() : null;
+
+            SerializedObject so = new SerializedObject(view);
+            so.FindProperty("_gameFlowController").objectReferenceValue = controller;
+            so.FindProperty("_bossBattleDialog").objectReferenceValue = bossDialog;
+            so.ApplyModifiedProperties();
+        }
+
+        // 参照先が見つからないときは既存の結線を残したままエラーで知らせる。
+        // 黙って null を書き込むと、シーン再構築のたびに Inspector のアサインが消えて原因を追えなくなる。
+        private static void BindAsset<T>(SerializedObject so, string propName, string assetPath) where T : Object
+        {
+            SerializedProperty prop = so.FindProperty(propName);
+            if (prop == null)
+            {
+                Debug.LogError($"[UILayoutBuilder] Serialized property not found: {propName}");
+                return;
+            }
+
+            T asset = AssetDatabase.LoadAssetAtPath<T>(assetPath);
+            if (asset == null)
+            {
+                Debug.LogError($"[UILayoutBuilder] Asset not found: {assetPath} ({typeof(T).Name}). Existing reference on {propName} is kept.");
+                return;
+            }
+
+            prop.objectReferenceValue = asset;
         }
 
         private static void SetViewProperty(SerializedObject so, string propName, Transform tr)

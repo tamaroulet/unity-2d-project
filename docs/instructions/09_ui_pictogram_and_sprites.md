@@ -23,11 +23,11 @@ AI画像生成や外部イラスト素材を使わず、純粋な C# プロシ�
   - `Bar_Fill.png`（なめらかなゲージ塗り用スプライト）
 
 ### 2.2 UI パネルへのスプライト割り当てとシーン更新
-- [ ] `UILayoutBuilder.cs` を更新し、`StatusPanel`, `CommandButtonsPanel`, `BossBattleDialogPanel`, `RelicDraftDialogPanel`, `MetaShopDialogPanel` の各 `Image` に上記スプライトをアサインする。
-- [ ] `Tools/Setup Complete UI Layout (Simple Shapes)` を実行して `MainGame.unity` を更新・保存する。
+- [x] `UILayoutBuilder.cs` を更新し、`StatusPanel`, `CommandButtonsPanel`, `BossBattleDialogPanel`, `RelicDraftDialogPanel`, `MetaShopDialogPanel` の各 `Image` に上記スプライトをアサインする。
+- [x] `Tools/Setup Complete UI Layout (Simple Shapes)` を実行して `MainGame.unity` を更新・保存する。
 
 ### 2.3 単体テスト・シミュレーション検証
-- [ ] Unity-MCP で `run_tests`（EditMode 127件）を実行し、全テスト 100% Green を確認する。
+- [x] Unity バッチモードで EditMode / PlayMode テストを実行し、既定のベースライン（EditMode 113 件収集 / 94 passed / 0 failed / 19 は `[Explicit]` 凍結、PlayMode 1/1 passed）を維持していることを確認する。
 
 ### 2.4 ドキュメント同期とGitコミット
 - [ ] `docs/STATUS.md` および `docs/log.md` を更新し、Git コミット＆プッシュする。

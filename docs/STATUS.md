@@ -34,6 +34,7 @@
 | **第7週 Step 21** | 単純図形UIワイヤーフレーム配置（UILayoutBuilder）＆シーン完全バインド | 完了 | `814cc19` |
 | **第7週 Step 22** | WebGL ローカルビルド確定（WASM 8.4MB / Data 4.5MB）＆ AutoRunner 常駐 | 完了 | `54704c5` |
 | **第8週 Step 23** | 幾何学ピクトグラム生成器の是正（Study 独立化 / Act 別 N 角形紋章 / 角丸カード枠） | 完了 | `HEAD` |
+| **第8週 Step 24** | UI スプライトのシーン割り当て（`MainGame.unity` 更新）＆ビルダーの冪等化・結線修復 | 完了 | `HEAD` |
 
 ---
 

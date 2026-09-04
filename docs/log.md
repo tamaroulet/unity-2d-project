@@ -952,6 +952,51 @@ Antigravity (Gemini) による直接 C# 実装体制への移行後、指示書 
 
 ---
 
+### 第8週 Step 24: UI スプライトのシーン割り当てとビルダーの是正（指示書 09 / 2.2・2.3）
+
+`Tools/Setup Complete UI Layout (Simple Shapes)` を Unity バッチモード
+（`-executeMethod Game.EditorScripts.UILayoutBuilder.SetupCompleteLayout`）で実行し、
+`MainGame.unity` を更新・保存した。実行の過程で、ビルダー側に 2 件の欠陥を検出して是正した。
+
+#### 1. 実施内容
+
+| 対象 | 内容 |
+|---|---|
+| `UILayoutBuilder.cs` | ゲージ背景・ゲージバーの `Image` に `Bar_Fill` スプライトを割り当て（計 10 箇所） |
+| `UILayoutBuilder.cs` | Canvas 直下の全消し再構築をやめ、既知パネルは再利用する冪等ビルドへ変更 |
+| `UILayoutBuilder.cs` | 参照アセットのパス誤記を修正し、見つからない場合は既存結線を保持してエラーを出す `BindAsset<T>()` を導入 |
+| `UILayoutBuilder.cs` | `StatusView` の `_gameFlowController` / `_bossBattleDialog` をシーン内オブジェクトへ結線 |
+| `MainGame.unity` | 上記を反映して更新・保存 |
+
+#### 2. 検出した欠陥と根本原因
+
+| 欠陥 | 根本原因 | 対処 |
+|---|---|---|
+| **シーン差分が 8,238 行に膨張** | `SetupCompleteLayout()` が Canvas の子を `DestroyImmediate` で全消ししてから再生成しており、再構築のたびに全 `fileID` が総入れ替わりになっていた。既存オブジェクトを再利用する `Find()` 経路が実質デッドコードだった。 | 管理対象パネル名の許可リスト `ManagedRootNames` を導入し、迷子オブジェクトのみ除去する方式へ変更。差分は 77 行に縮小した。 |
+| **Inspector 結線の無言消失** | 参照先パスが `GameStateEventChannel.asset` / `GameEventFiredChannel.asset` と誤記されていた（実体は `GameStateChannel.asset` / `EventFiredChannel.asset`）。`LoadAssetAtPath` は失敗時に `null` を返すだけなので、実行のたびに既存の結線が静かに `null` で上書きされていた。 | `BindAsset<T>()` を導入。アセットが見つからない場合は書き込みを行わず `Debug.LogError` で顕在化させる。パス定数も導入して誤記を局所化した。 |
+
+全消し方式のままだと差分が夜間ハーネスの上限（3,000 行）を超えて自動隔離される。
+また結線消失は「シーンを再構築するほどゲームが壊れる」性質の欠陥であり、
+`00_rules.md` の「コード単体での進捗錯覚禁止」がそのまま該当する事例だった。
+
+#### 3. 検証
+
+| 手段 | 結果 |
+|---|---|
+| Unity バッチモード `-executeMethod ...SetupCompleteLayout` | 成功（exit 0、コンパイルエラー 0、`error CS` 0） |
+| シーン差分の内訳確認 | `m_Sprite` 10 箇所が `Bar_Fill` を指すよう変化。`_gameStateChannel` / `_eventFiredChannel` の `null` 化は消滅 |
+| EditMode テスト（バッチモード） | 113 件収集 / 94 passed / 0 failed / 19 skipped（`[Explicit]`）＝ベースライン維持 |
+| PlayMode テスト（バッチモード） | 1 / 1 passed（`SmokeTest` が実 `MainGame.unity` をロードし実 uGUI クリックを通過） |
+| 変更行数 | 2 ファイル・167 行（上限 3,000 行内） |
+
+#### 4. 未対応として残した事項
+
+- `EventDialogView` の直列化フィールド（`_titleText` / `_bodyText` / `_okButton` / `_gameFlowController`）が
+  シーン上ですべて未結線のままである。これは本作業以前からの状態で、指示書 09 の 2.2 の範囲外のため手を付けていない。
+  「モック通しプレイの開通」に着手する際の既知のブロッカーとして記録しておく。
+
+---
+
 ## 評価指標の定義
 
 本プロジェクトで記録している指標のうち、既存の評価系との対応は以下の通り。
