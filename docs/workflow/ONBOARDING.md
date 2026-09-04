@@ -53,7 +53,7 @@ AIは言われたコードを高速に生成できるが、暗黙の了解や実
 
 ## 3. テストと品質検証
 
-- **EditMode テスト（127件）**: 純粋計算ロジックのみ。MonoBehaviour やシーンのモックテストは禁止。
+- **EditMode テスト（total 116 / passed 97 / skipped 19）**（実測値。`scripts/nightly_baseline.json` が下限を持つ）: 純粋計算ロジックのみ。MonoBehaviour やシーンのモックテストは禁止。
 - **PlayMode テスト（1件）**: `Game/Assets/Tests/PlayMode/SmokeTest.cs`。実機シーン（`MainGame`）をロードして uGUI ボタンをクリックし、ターン進行と例外 0 件を検証する。**結合の正しさは PlayMode テストでのみ証明する**。
 
 ---
@@ -72,10 +72,10 @@ AIは言われたコードを高速に生成できるが、暗黙の了解や実
 ## 5. 安全ハーネスと自動化インフラ（Gate 5）
 
 1. **夜間自律ランナー（`scripts/auto_runner.py`）**:
-   - 毎日 01:00〜06:00 の夜間にのみ 30 分間隔で稼働。
+   - 毎日 01:00 に 1 回だけ起動し、`auto_runner.py` が内部で `AUTO_RUN_END_HOUR`（既定 6）までループする。
    - `scripts/nightly_gate.py` がサイクル前後の HEAD を監視。
-   - テスト失敗、ハックコード（`[Ignore]` や `Find` 系の混入）、保護領域の改変を検知した場合、**全成果物を `nightly-reject/<timestamp>` ブランチへ保全した上で `main` を自動ロールバック**する。
-   - **注意**: 夜間ランナーを動かす際は、**必ず Unity エディタを閉じておく**こと（開いていると Library 排他ロックにより `UNVERIFIED` で全巻き戻しになる）。
+   - テスト失敗、ハックコード（`[Ignore]` や `Find` 系の混入）、保護領域の改変を検知した場合、**全成果物を `nightly-reject/<timestamp>` ブランチへ保全した上で `auto/wip` を自動ロールバック**する。`main` は汚さない。
+   - **注意**: 夜間ランナーを動かす際は、**必ず Unity エディタを閉じておく**こと（開いていると Library 排他ロックにより `UNVERIFIED` で中断し、巻き戻さず作業ブランチ上に保留される。エディタを閉じてから再開すれば、そのまま再検査できる）。
    - **ガードの非対称性**: `.claude/hooks/guard.js` によるリアルタイム遮断は Claude Code にのみ作用する。Gemini や夜間ランナーの不正コードは、`scripts/nightly_gate.py` による事後の diff 検査でのみ捕捉・隔離される。
    - **起動成否の監視**: エージェント起動に失敗した場合、単なる「変化なし（NO_CHANGE）」ではなく「起動失敗（AGENT_UNAVAILABLE）」として朝刊に出力される。
 2. **朝刊レポート（`scripts/morning_report.py`）**:

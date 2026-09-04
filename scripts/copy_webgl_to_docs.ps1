@@ -1,4 +1,4 @@
-# SPDX-AI-Disclosure: ai-generated
+﻿# SPDX-AI-Disclosure: ai-generated
 # copy_webgl_to_docs.ps1
 # WebGL ビルド成果物を docs/webgl/ にコピーし、GitHub Pages で公開可能な状態にする
 

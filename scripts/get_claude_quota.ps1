@@ -1,4 +1,4 @@
-# SPDX-AI-Disclosure: ai-generated
+﻿# SPDX-AI-Disclosure: ai-generated
 # Claude Code の公式 /usage 出力から、5時間セッション枠および週間枠の正確な使用率(%)・リセット日時・残り秒数を確定抽出するスクリプト
 
 $rawLines = claude -p "/usage" 2>$null

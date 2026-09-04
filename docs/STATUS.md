@@ -21,19 +21,19 @@
 | **第3週 Step 9** | シーン結合 & アセット構成（MainGame.unity） | 完了 | `be571a0` |
 | **監査事前補強** | イベント上限ulong拡張・フェーズガード修正 | 完了 | `154fa2e` |
 | **第4週 Step 10** | レリック（パッシブ能力）基盤（57/57テスト通過） | 完了 | `6681d5d` |
-| **第4週 Step 11** | レリック3択ドラフトUI & GameFlowController結合（64/64テスト通過） | 完了 | `HEAD` |
+| **第4週 Step 11** | レリック3択ドラフトUI & GameFlowController結合（64/64テスト通過） | 完了 | `f6b8f16` |
 | **第5週 Step 12** | ボスデータ基盤（BossState, BossSO, BossCatalogSO） | 完了 | `59b86d5` |
 | **第5週 Step 13** | オートバトルResolver（AutoBattleResolverSO, 84/84テスト通過） | 完了 | `59b86d5` |
 | **第5週 Step 14** | GameFlowController ボスバトル統合 & ステート遷移（88/88テスト通過） | 完了 | `90aae0c` |
 | **第5週 Step 15** | BossBattleDialogView & MainGameシーン配置 & 1,000回シミュレーション（93/93テスト通過） | 完了 | `648565c` |
-| **第6週 Step 16** | 周回メタ基盤（MetaProfileState, MetaUnlockSO, MetaPointResolverSO） | 完了 | `HEAD` |
-| **第6週 Step 17** | 単体テスト（MetaPointResolverTests, 41件一括通過） | 完了 | `HEAD` |
-| **第6週 Step 18** | GameFlowController 周回メタ統合 & 初期ステータス底上げ | 完了 | `HEAD` |
-| **第6週 Step 19** | MetaShopDialogView & MainGameシーン結合 & 1,000回周回シミュレーション（125/125テスト通過） | 完了 | `HEAD` |
+| **第6週 Step 16** | 周回メタ基盤（MetaProfileState, MetaUnlockSO, MetaPointResolverSO） | 完了 | `75207ae` |
+| **第6週 Step 17** | 単体テスト（MetaPointResolverTests, 41件一括通過） | 完了 | `75207ae` |
+| **第6週 Step 18** | GameFlowController 周回メタ統合 & 初期ステータス底上げ | 完了 | `75207ae` |
+| **第6週 Step 19** | MetaShopDialogView & MainGameシーン結合 & 1,000回周回シミュレーション（125/125テスト通過） | 完了 | `75207ae` |
 | **第7週 Step 20** | ボス4段階化（Act 1〜4）・マルチAct対応・127件テスト（100% Green） | 完了 | `814cc19` |
 | **第7週 Step 21** | 単純図形UIワイヤーフレーム配置（UILayoutBuilder）＆シーン完全バインド | 完了 | `814cc19` |
 | **第7週 Step 22** | WebGL ローカルビルド確定（WASM 8.4MB / Data 4.5MB）＆ AutoRunner 常駐 | 完了 | `54704c5` |
-| **第8週 Step 23** | 幾何学ピクトグラム生成器の是正（Study 独立化 / Act 別 N 角形紋章 / 角丸カード枠） | 完了 | `HEAD` |
+| **第8週 Step 23** | 幾何学ピクトグラム生成器の是正（Study 独立化 / Act 別 N 角形紋章 / 角丸カード枠） | 完了 | `235ad44` |
 
 ---
 

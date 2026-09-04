@@ -1,4 +1,4 @@
-# SPDX-AI-Disclosure: ai-generated
+﻿# SPDX-AI-Disclosure: ai-generated
 # Claude Code および Gemini の両方の残量・リセット時刻を完全自動で一括取得・表示する総合チェッカースクリプト
 
 $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path

@@ -1,4 +1,4 @@
-# SPDX-AI-Disclosure: ai-generated
+﻿# SPDX-AI-Disclosure: ai-generated
 # Antigravity IDE のローカル Language Server から、Gemini の週間枠および5時間枠の正確な残量(%)・リセット日時・残り秒数を完全自動抽出するスクリプト
 
 $lsAddress = $env:ANTIGRAVITY_LS_ADDRESS

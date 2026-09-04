@@ -85,6 +85,8 @@
 
 上記ギャップを埋めるため、4 段階ゲートは散文規約としては廃止し、`nightly_gate.py` の判定コードへ移した。
 
----
+## 5. 情報源
 
-
+- [Spec-Driven Development](https://www.anthropic.com/research/spec-driven-development)
+- [上流→下流検証パイプライン](https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-net)
+- [CLAUDE.md ルールファイル](https://docs.anthropic.com/en/docs/agents-and-tools/claude-code/overview)
