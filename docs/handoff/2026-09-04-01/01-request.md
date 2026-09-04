@@ -1,0 +1,2 @@
+6nobossbattlenoatonisusumenainodaga
+claudeniittannkikanakyaikenaikarakokodeikkaityuusidayone
