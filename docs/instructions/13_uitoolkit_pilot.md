@@ -76,11 +76,11 @@ Game/Packages/manifest.json   Game/Packages/packages-lock.json
 
 ## 4. タスク
 
-- [ ] `Game/Assets/UI/UXML/EventDialog.uxml` を新規作成する。`EventDialogView.cs` が持つ表示要素（タイトル・本文・OK ボタン）に対応する `ui:Label` × 2 と `ui:Button` × 1 を、ルートの `ui:VisualElement` の下に配置すること。C# から参照する要素には必ず PascalCase の `name` 属性を付ける（`TitleLabel` / `BodyLabel` / `OkButton`）。§3 のヘッダから始めること。
-- [ ] `Game/Assets/UI/USS/EventDialog.uss` を新規作成し、最低限のレイアウト（中央寄せ・パネル背景・余白）を書く。**Flexbox のみを使うこと**（`display: block` や `float` は USS に存在しない）。既存 uGUI の見た目に厳密に合わせる必要はない。モックである。
-- [ ] `Game/Assets/UI/Scripts/EventDialogViewUI.cs` を新規作成する。**既存の `EventDialogView.cs` は削除も改変もしないこと**（比較対象として残す）。新クラスは `UIDocument` から `rootVisualElement.Q<Label>("TitleLabel")` の形で要素を解決し、`EventDialogView.cs` と同じイベント購読・表示ロジックを実装すること。`[SerializeField]` は `UIDocument` への参照 1 個と、イベントチャンネル SO 参照のみに留める。
-- [ ] 要素の解決に失敗した場合（`Q<T>()` が null）、`Debug.LogError` で**どの name が解決できなかったかを明示して**早期に落とすこと。黙って null のまま進むと、現在の未結線問題と同じ状態を再生産する。
-- [ ] ランタイムコードに `#if UNITY_EDITOR` / `AssetDatabase` / `UnityEditor` / `Find` 系を入れないこと（`00_rules.md`・ゲートで自動検出される）。
+- [x] `Game/Assets/UI/UXML/EventDialog.uxml` を新規作成する。`EventDialogView.cs` が持つ表示要素（タイトル・本文・OK ボタン）に対応する `ui:Label` × 2 と `ui:Button` × 1 を、ルートの `ui:VisualElement` の下に配置すること。C# から参照する要素には必ず PascalCase の `name` 属性を付ける（`TitleLabel` / `BodyLabel` / `OkButton`）。§3 のヘッダから始めること。
+- [x] `Game/Assets/UI/USS/EventDialog.uss` を新規作成し、最低限のレイアウト（中央寄せ・パネル背景・余白）を書く。**Flexbox のみを使うこと**（`display: block` や `float` は USS に存在しない）。既存 uGUI の見た目に厳密に合わせる必要はない。モックである。
+- [x] `Game/Assets/UI/Scripts/EventDialogViewUI.cs` を新規作成する。**既存の `EventDialogView.cs` は削除も改変もしないこと**（比較対象として残す）。新クラスは `UIDocument` から `rootVisualElement.Q<Label>("TitleLabel")` の形で要素を解決し、`EventDialogView.cs` と同じイベント購読・表示ロジックを実装すること。`[SerializeField]` は `UIDocument` への参照 1 個と、イベントチャンネル SO 参照のみに留める。
+- [x] 要素の解決に失敗した場合（`Q<T>()` が null）、`Debug.LogError` で**どの name が解決できなかったかを明示して**早期に落とすこと。黙って null のまま進むと、現在の未結線問題と同じ状態を再生産する。
+- [x] ランタイムコードに `#if UNITY_EDITOR` / `AssetDatabase` / `UnityEditor` / `Find` 系を入れないこと（`00_rules.md`・ゲートで自動検出される）。
 
 ## 5. 人間に依頼する作業（あなたはやらない）
 
