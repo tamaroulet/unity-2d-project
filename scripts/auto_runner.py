@@ -11,6 +11,7 @@ import asyncio
 import json
 import os
 import re
+import shutil
 import subprocess
 import sys
 from datetime import datetime, timezone
@@ -248,58 +249,86 @@ def log(message: str):
 # ==============================================================================
 # 3. エージェント実行エンジン (SDK / CLI Fallback)
 # ==============================================================================
-async def run_with_sdk(prompt: str):
-    """Antigravity Python SDK を使用してエージェントを起動する。"""
-    from google.antigravity import Agent, LocalAgentConfig, CapabilitiesConfig
+AGY_TIMEOUT_SEC = 1800
 
-    log("[SDK] Antigravity SDK Agent を起動中...")
 
-    config = LocalAgentConfig(
-        system_instructions=(
-            "ROLE: Executor (implementation only)\n"
-            "RULES: .agents/rules/00_rules.md — read and comply\n"
-            "CONSTRAINT: no architecture change, no asmdef change, no rule file edit\n"
-            "TONE: flat, engineering, Japanese, no exclamation"
-        ),
-        capabilities=CapabilitiesConfig(),
-    )
+def resolve_agy() -> str | None:
+    """agy の実体を返す。見つからなければ None。
 
-    try:
-        async with Agent(config) as agent:
-            response = await agent.chat(prompt)
-            full_text = ""
-            async for token in response:
-                full_text += token
-                sys.stdout.write(token)
-                sys.stdout.flush()
+    インストーラは %LOCALAPPDATA%\\agy\\bin を User PATH レジストリに追加するが、
+    その変更は既存のセッションには反映されない。タスクスケジューラ経由の実行では
+    PATH に乗っている保証がないため、既定の設置場所も直接見に行く。
+    """
+    found = shutil.which("agy")
+    if found:
+        return found
+    local = os.environ.get("LOCALAPPDATA")
+    if local:
+        candidate = Path(local) / "agy" / "bin" / "agy.exe"
+        if candidate.exists():
+            return str(candidate)
+    return None
 
-            log(f"[SDK] エージェント実行完了。出力長: {len(full_text)} 文字")
-            return full_text
-    except Exception as e:
-        log(f"[SDK] エージェント実行エラー: {e}")
+
+def run_with_agy(prompt: str):
+    """Antigravity CLI (agy) を headless モードで実行する。
+
+    agy は Gemini CLI の後継であり、Google アカウントのサブスク枠で動く
+    （API キー不要）。--output-format json は status / response / usage を持つ
+    エンベロープを返すので、成否をテキストの中身から推測しなくて済む。
+
+    --dangerously-skip-permissions を付けているのは無人実行のためである。
+    これを外すと承認待ちのツール呼び出しが soft-deny され、一晩何も進まない。
+    暴走の抑止は nightly_gate.py の事後検査が担う。
+    """
+    agy = resolve_agy()
+    if agy is None:
+        log("[AGY] agy が見つからない。"
+            "curl -fsSL https://antigravity.google/cli/install.cmd -o install.cmd で導入すること。")
         return None
 
-
-def run_with_cli_fallback(prompt: str):
-    """agy CLI が利用可能な場合のフォールバック実行。"""
-    log("[CLI] agy CLI でのフォールバック実行を試行中...")
+    log(f"[AGY] Antigravity CLI を headless 実行中... ({agy})")
     try:
         result = subprocess.run(
-            ["agy", "-p", prompt, "--dangerously-skip-permissions",
-             "--output-format", "text"],
-            capture_output=True, text=True, timeout=1800,
-            cwd=str(PROJECT_ROOT)
+            [agy, "-p", prompt,
+             "--dangerously-skip-permissions",
+             "--output-format", "json",
+             "--print-timeout", f"{AGY_TIMEOUT_SEC}s"],
+            capture_output=True, text=True, encoding="utf-8", errors="replace",
+            timeout=AGY_TIMEOUT_SEC + 120, cwd=str(PROJECT_ROOT),
         )
-        if result.returncode == 0:
-            log(f"[CLI] agy 完了。出力長: {len(result.stdout)} 文字")
-            return result.stdout
-        else:
-            log(f"[CLI] agy 失敗: {result.stderr[:500]}")
-    except FileNotFoundError:
-        log("[CLI] agy コマンドが見つからないためスキップ。")
-    except Exception as e:
-        log(f"[CLI] agy 実行エラー: {e}")
-    return None
+    except subprocess.TimeoutExpired:
+        log(f"[AGY] {AGY_TIMEOUT_SEC} 秒でタイムアウト。")
+        return None
+    except Exception as exc:
+        log(f"[AGY] 実行エラー: {exc}")
+        return None
+
+    if result.returncode != 0:
+        log(f"[AGY] 異常終了 (exit={result.returncode}): {result.stderr.strip()[:400]}")
+        return None
+
+    try:
+        envelope = json.loads(result.stdout.strip())
+    except Exception:
+        # JSON で返らなかった場合も、出力があるなら成果物とみなして先へ進める
+        text = result.stdout.strip()
+        if text:
+            log(f"[AGY] JSON として解釈できなかったが出力あり。長さ: {len(text)} 文字")
+            return text
+        log("[AGY] 出力が空。")
+        return None
+
+    status = envelope.get("status")
+    usage = envelope.get("usage", {})
+    log(f"[AGY] status={status} turns={envelope.get('num_turns')} "
+        f"duration={envelope.get('duration_seconds')}s "
+        f"tokens={usage.get('total_tokens')} conv={envelope.get('conversation_id')}")
+
+    if status != "SUCCESS":
+        log(f"[AGY] 失敗: {str(envelope.get('error'))[:400]}")
+        return None
+    return envelope.get("response") or ""
 
 
 
@@ -360,12 +389,10 @@ async def run_single_cycle():
     if cycle:
         log(f"[GATE] cycle={cycle.cycle_id} snapshot={cycle.snapshot[:8]}")
 
-    # 4. エージェント起動（SDK 優先、agy CLI フォールバック）。実装の Claude 委譲は行わない
-    result = await run_with_sdk(prompt)
+    # 4. エージェント起動（Antigravity CLI）。実装の Claude 委譲は行わない
+    result = run_with_agy(prompt)
     if result is None:
-        result = run_with_cli_fallback(prompt)
-    if result is None:
-        log("[HALT] SDK / agy CLI がいずれも起動不能。実装は Gemini 専任のため "
+        log("[HALT] agy が起動不能または失敗。実装は Gemini 専任のため "
             "Claude への委譲は行わない。空コミットを避けるため本サイクルを中断する。")
         return -1
 
