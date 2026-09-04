@@ -33,7 +33,12 @@ trigger: always_on
 
 ## Unity 固有の禁止事項
 
-- `.unity` / `.prefab` / `.asset` / `.meta` / `.asmdef` をテキスト編集しない。人間がエディタで行う。
+- `.unity` / `.prefab` / `.asset` / `.meta` / `.asmdef` をテキスト編集しない。
+  これらの変更は必ず Unity のシリアライズ機構を通す。経路は次の 2 つだけ。
+  - 人間が Unity エディタで操作する
+  - `Game/Assets/Editor/` 配下の Editor スクリプトが Editor API で行い、
+    それを Unity から走らせる（メニュー実行、または `-executeMethod` のバッチモード）
+  どちらの経路を通っても、シーンが変わったら人間が画面を見るまで完了ではない。
 - ランタイムコードでのエディタ専用 API（`UnityEditor` 名前空間、`AssetDatabase`、
   およびそれらを囲む条件付きコンパイル）は禁止。
   WebGL ビルドでコードごと消滅し、参照が null になる。

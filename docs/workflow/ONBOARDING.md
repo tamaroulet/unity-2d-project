@@ -40,7 +40,12 @@ AIは言われたコードを高速に生成できるが、暗黙の了解や実
    - ランタイムは **`Game.asmdef` 1枚のみ**。機能ごとの細分化は厳禁。
    - 他は `Game.Editor.asmdef`, `Game.Tests.EditMode.asmdef`, `Game.Tests.PlayMode.asmdef` の3枚のみ。
 2. **Unity シリアライズの不可侵**:
-   - `.unity` / `.prefab` / `.asset` / `.meta` / `.asmdef` をテキスト編集しない。人間が Unity エディタで行う。
+   - `.unity` / `.prefab` / `.asset` / `.meta` / `.asmdef` を**テキスト編集しない**。
+   - 変更は必ず Unity のシリアライズ機構を通す。経路は 2 つだけ:
+     (a) 人間が Unity エディタで操作する、
+     (b) `Game/Assets/Editor/` 配下の Editor スクリプトが Editor API で行い、
+     それを Unity から走らせる（メニュー実行または `-executeMethod` のバッチモード）。
+   - どちらの経路でも、シーンが変わったら**人間が画面を見るまで完了ではない**。
 3. **ランタイムコードの禁止事項**:
    - `#if UNITY_EDITOR`、`AssetDatabase`、`UnityEditor` の混入禁止（WebGL ビルドで消滅する）。
    - `transform.Find` や `FindFirstObjectByType` などのシーン検索ハック禁止。
