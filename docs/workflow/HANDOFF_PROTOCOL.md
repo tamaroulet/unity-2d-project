@@ -61,6 +61,36 @@ scripts/handoff.ps1 ask -Dir docs/handoff/<日付>-<連番>
 scripts/handoff.ps1 review -Dir docs/handoff/<日付>-<連番>
 ```
 
+### Claude は Unity を起動しない
+
+Unity が絡む検証（テスト実行・シーン確認・Editor スクリプトの実行）は
+**すべて Gemini に渡す。** Claude 側で `Unity.exe -batchmode` を回さない。
+
+実測（2026-09-04）:
+
+| | Unity-MCP（Gemini） | batchmode（Claude） |
+|---|---|---|
+| EditMode テスト | **0.74 秒** | 約 2 分 |
+| PlayMode テスト | **0.46 秒** | 約 2 分 |
+| シーン上のプロパティ確認 | 1 回叩けば出る | Editor スクリプトを書いてから実行 |
+
+この日 Claude は batchmode を 8 回以上起動し、待ち時間だけで 16 分を消費した。
+さらに batchmode は Unity を閉じることを要求するため、**その間は人間も Gemini も
+画面を見られない。** 1 人のために全体が止まる。
+
+Claude の仕事はファイルを読んで判断し、指示書を書くことである。
+
+### Gemini は完了時にチェックボックスを更新する
+
+`auto_runner` は `docs/instructions/*.md` の `- [ ]` を上から拾って次のタスクを
+決める。完了したのにチェックが残っていると、**終わった作業をやり直す。**
+
+2026-09-04 には未完了が 28 件に見えていたが、実態は 10 件だった。
+差の 18 件はチェックの付け忘れである。
+
+指示書のタスクを完了したら、**その場で `- [x]` に更新してからコミットする。**
+完了していないものを [x] にしてはならない。
+
 ### Claude には本文を流し込まない
 
 `ask` / `review` が Claude に渡すのは**ファイルを指す 1 行だけ**である。
