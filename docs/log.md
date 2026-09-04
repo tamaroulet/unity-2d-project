@@ -1027,7 +1027,7 @@ Antigravity (Gemini) による直接 C# 実装体制への移行後、指示書 
 
 監査レポート全文は [`docs/research/Audit-02_harness_audit.md`](file:///c:/dev/unity-2d-project/docs/research/Audit-02_harness_audit.md)。
 
-#### 1. 実測（本日 11 サイクル）
+#### 1. 実測（本日 01:13〜09:31 の自律実行 10 サイクル）
 
 | verdict | 件数 |
 |---|---|
@@ -1037,8 +1037,14 @@ Antigravity (Gemini) による直接 C# 実装体制への移行後、指示書 
 | ABORTED_DIRTY | 2 |
 | AGENT_UNAVAILABLE | 2 |
 
-成功率 9%。同一タスク（`UILayoutBuilder.cs` 更新）で 4 連続却下。
-**却下 5 件のうち 4 件はハーネス側の誤検知**だった。
+成功率 10%。同一タスク（`UILayoutBuilder.cs` 更新）で 4 連続却下。
+**却下 5 件のうち 4 件はハーネス側の誤検知**だった（誤検知の内訳: 恒久 skip 19 件の
+誤判定 1 件、変更行数上限の誤爆 2 件、push 正規表現の誤爆 2 件。重複を除き 4 サイクル）。
+正当な却下は `.agents/rules/00_rules.md` を改変した 1 件のみ。
+
+なお `cycles-20260904.jsonl` には `consecutive_reject_count` の動作確認時に
+混入した `FAKE_TASK_FOR_TESTING` の記録が 2 件残っていた。実サイクルではないため
+除去した（除去前は朝刊が 13 サイクル・隔離 7 件と誤って集計していた）。
 
 #### 2. 責任の所在
 

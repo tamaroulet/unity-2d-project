@@ -52,9 +52,9 @@ scope: 自律開発ハーネス（nightly_gate.py / auto_runner.py / スケジ�
 
 ---
 
-## 2. 実測: 本日（2026-09-04）の自律実行 11 サイクル
+## 2. 実測: 本日（2026-09-04）の自律実行 10 サイクル
 
-`logs/nightly/cycles-20260904.jsonl` より。
+`logs/nightly/cycles-20260904.jsonl` の 01:13〜09:31 の 10 サイクルより。
 
 | verdict | 件数 |
 |---|---|
@@ -64,7 +64,7 @@ scope: 自律開発ハーネス（nightly_gate.py / auto_runner.py / スケジ�
 | ABORTED_DIRTY | 2 |
 | AGENT_UNAVAILABLE | 2 |
 
-**成功率 9%。** 同一タスク（`UILayoutBuilder.cs` 更新）で **4 連続却下**。
+**成功率 10%。** 同一タスク（`UILayoutBuilder.cs` 更新）で **4 連続却下**。
 `nightly-reject/*` ブランチが 5 本、未処分で滞留。
 
 そして**却下 5 件のうち 4 件はハーネス側の誤検知**だった（後述 C-2 / C-3）。
