@@ -1,7 +1,6 @@
 # プロジェクト現在地（STATUS）
 
 最終更新日：2026-09-05
-Architect 移行日: 2026-09-05（Claude Opus → Claude Sonnet 移行）
 
 ---
 

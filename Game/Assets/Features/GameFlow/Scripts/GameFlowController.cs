@@ -221,6 +221,7 @@ namespace Game.Features.GameFlow
             switch (termination)
             {
                 case TerminationKind.GameOver:
+                    _endingDecidedChannel?.Raise(EndingKind.Defeat);
                     _currentPhase = GamePhase.GameOver;
                     FinalizeRun(isGameClear: false);
                     break;
@@ -333,11 +334,13 @@ namespace Game.Features.GameFlow
                         {
                             OnBossBattleOccurred.Invoke(boss, battleResult, () =>
                             {
+                                _endingDecidedChannel?.Raise(EndingKind.Defeat);
                                 FinalizeRun(isGameClear: false);
                             });
                         }
                         else
                         {
+                            _endingDecidedChannel?.Raise(EndingKind.Defeat);
                             FinalizeRun(isGameClear: false);
                         }
                         return;

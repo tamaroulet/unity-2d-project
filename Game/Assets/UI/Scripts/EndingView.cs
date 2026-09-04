@@ -160,6 +160,7 @@ namespace Game.UI
                 EndingKind.Skill => "SKILL MASTER ENDING",
                 EndingKind.Mental => "MENTAL FORTITUDE ENDING",
                 EndingKind.Stamina => "IRON VITALITY ENDING",
+                EndingKind.Defeat => "GAME OVER",
                 _ => "GAME CLEAR"
             };
         }

@@ -9,6 +9,7 @@ namespace Game.Core
         True,
         Skill,
         Mental,
-        Stamina
+        Stamina,
+        Defeat
     }
 }

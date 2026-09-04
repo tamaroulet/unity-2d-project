@@ -5,7 +5,7 @@
 param (
     [Parameter(Mandatory=$true)]
     [string]$Prompt,
-    [string]$Model = "sonnet",
+    [string]$Model = "opus",
     [switch]$Force
 )
 

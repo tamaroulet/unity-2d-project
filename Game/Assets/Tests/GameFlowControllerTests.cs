@@ -358,6 +358,25 @@ namespace Game.Tests.EditMode
             Assert.AreEqual(EndingKind.Stamina, raisedEndings[0]);
         }
 
+        [Test]
+        public void ExecuteCommand_TransitionsToGameOverAndRaisesEndingDecidedChannelWithDefeatWhenMentalDepleted()
+        {
+            GameRulesSO rules = CreateRules(0, 100, 100, 0, 10, 1, 24);
+            GameEventCatalogSO catalog = CreateCatalog(0, 100);
+            List<EndingKind> raisedEndings = new List<EndingKind>();
+            EndingDecidedChannelSO endingDecidedChannel = CreateChannel<EndingDecidedChannelSO, EndingKind>(raisedEndings.Add);
+            GameFlowController controller = CreateController(
+                rules, catalog, endingDecidedChannel: endingDecidedChannel);
+            controller.StartGame();
+            CommandDataSO stressCommand = CreateCommand("Stress", 0, 0, -10, 0);
+
+            controller.ExecuteCommand(stressCommand);
+
+            Assert.AreEqual(GamePhase.GameOver, controller.CurrentPhase);
+            Assert.AreEqual(1, raisedEndings.Count);
+            Assert.AreEqual(EndingKind.Defeat, raisedEndings[0]);
+        }
+
         private GameFlowController CreateController(
             GameRulesSO rules,
             GameEventCatalogSO catalog,

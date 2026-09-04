@@ -1,4 +1,4 @@
-#Requires -Version 5.1
+﻿#Requires -Version 5.1
 # SPDX-AI-Disclosure: ai-generated
 <#
 .SYNOPSIS
@@ -30,7 +30,7 @@ param(
 
     [string]$Request,
     [string]$Dir,
-    [string]$Model = 'sonnet'
+    [string]$Model = 'opus'
 )
 
 $ErrorActionPreference = 'Stop'
