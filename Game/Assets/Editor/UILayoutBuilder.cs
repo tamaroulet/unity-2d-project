@@ -116,6 +116,7 @@ namespace Game.EditorScripts
             EditorSceneManager.MarkSceneDirty(scene);
             EditorSceneManager.SaveScene(scene);
             Debug.Log("[UILayoutBuilder] Full UI Layout successfully built and saved without errors.");
+            SceneBindingReport.GenerateSceneSnapshot();
         }
 
         private static Sprite LoadSprite(string name)
