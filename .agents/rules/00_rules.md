@@ -59,6 +59,14 @@ Architect のモデルは、下の移行条件がすべて真になるまで **C
   - `Game/Assets/Editor/` 配下の Editor スクリプトが Editor API で行い、
     それを Unity から走らせる（メニュー実行、または `-executeMethod` のバッチモード）
   どちらの経路を通っても、シーンが変わったら人間が画面を見るまで完了ではない。
+- `.unity` / `.prefab` / `.asset` を **AI が読み込むことも禁止**（Read / 広い grep /
+  `git show` での本文表示）。`MainGame.unity` は単体で 10 万トークンを超え、
+  1 回読むだけでセッション枠を食い潰す。結線の確認手段は次の 3 つだけ。
+  - `Tools/Report Unbound Serialized Fields`（`SceneBindingReport`）の出力
+  - `04-result.md` に貼られた実測値
+  - フィールド 1 件を名指しする `grep -n "_fieldName:" -m 5`（前後の文脈は取らない）
+
+  コミット差分の確認は `git show --stat` まで。`.unity` の本文差分は表示しない。
 - ランタイムコードでのエディタ専用 API（`UnityEditor` 名前空間、`AssetDatabase`、
   およびそれらを囲む条件付きコンパイル）は禁止。
   WebGL ビルドでコードごと消滅し、参照が null になる。
@@ -101,6 +109,16 @@ Architect のモデルは、下の移行条件がすべて真になるまで **C
 - 1 タスクで 300 行を超える変更、または 3 コミットに到達した
 - 同じエラーの修正を 2 回試みて直らない
 - 指示書に書かれていない設計判断が必要になった
+
+## セッション枠
+
+- Claude を呼ぶ自動実行タスク（`auto_runner.py` / `pm1_opus_review.py`）の既定は **無効**。
+  人間がその日に明示的に有効化したときだけ動く。
+  （`morning_report.py` は git しか叩かず枠を消費しないため対象外。）
+  `invoke_claude_safe.ps1` の 85% 遮断は人間の作業ぶんを守らない。
+  自動実行が 85% まで使えば、人間が触る時点で枠は残っていない。
+- 1 サイクルの監査で読むファイルは、指示書が名指ししたものに限る。
+  「念のため周辺も読む」はしない。
 
 ## 文体・トーン
 
