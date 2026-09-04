@@ -60,7 +60,7 @@ Game/Packages/manifest.json  Game/Packages/packages-lock.json
 
 ### タスク
 
-- [x] `Game/Assets/Tests/PlayMode/SerializedBindingTest.cs` を新規作成する。`MainGame.unity` をロードし、シーン上の全 View コンポーネント（`Game.UI` 名前空間の `MonoBehaviour`）について、`[SerializeField]` 属性が付いた全フィールドが `null` でないことを reflection で検証する `[UnityTest]` を書くこと。失敗時は「どのコンポーネントのどのフィールドが未結線か」がテスト名とメッセージから一意に分かるようにすること。 **→ 指示書 21 の `Tools/Generate Scene Snapshot` で代替済み（945f7e4）。`docs/snapshot/scene_bindings.txt` が全 `Game.*` コンポーネントの結線先と `<unbound>` を出力する。**
+- [x] `Game/Assets/Tests/PlayMode/SerializedBindingTest.cs` を新規作成する。`MainGame.unity` をロードし、シーン上の全 View コンポーネント（`Game.UI` 名前空間の `MonoBehaviour`）について、`[SerializeField]` 属性が付いた全フィールドが `null` でないことを reflection で検証する `[UnityTest]` を書くこと。失敗時は「どのコンポーネントのどのフィールドが未結線か」がテスト名とメッセージから一意に分かるようにすること。 **→ 実ファイルを回収済み（2026-09-05）。あわせて指示書 21 の `Tools/Generate Scene Snapshot` が `docs/snapshot/scene_bindings.txt` に同じ情報を出す。**
 - [x] 上記テストで現在検出される未結線を一覧化し、**修正はせずに** 報告する。`.unity` はテキスト編集禁止であり、Inspector での結線は人間の作業である（`00_rules.md`「役割」）。エージェントは検出までを担当する。 **→ 同上。スナップショットと `Tools/Report Unbound Serialized Fields` が一覧を出す。**
 
 ### 実装上の制約
@@ -95,7 +95,7 @@ Game/Packages/manifest.json  Game/Packages/packages-lock.json
 ### タスク
 
 - [x] 未追跡ファイル `Game/Assets/Tests/RelicDraftDialogViewTests.cs` と `Game/Assets/Tests/RelicDraftDialogViewTests.cs.meta` を削除する（`git` の追跡対象ではないため `rm` でよい）。
-- [ ] `Game/Assets/Tests/PlayMode/RelicDraftFlowTest.cs` を新規作成し、削除したテストが担保していた 3 点を PlayMode で書き直す。検証内容は「ボス撃破後に RelicDraft パネルが表示される」「カード選択で `RelicAcquiredChannelSO` が発火する」「未所持レリックのみが候補に出る」。**`AddComponent` でモックを組まず、実シーン `MainGame.unity` の実コンポーネントを操作すること。** **【Architect 注記 2026-09-05】本項は指示書 21 では代替できない（スナップショットは静的な結線しか見ず、ドラフトの動作は検証しない）。実作業として残っている。ただし AutoRunner にこの箱を拾わせないこと。着手は正規の指示書経由とする。**
+- [ ] `Game/Assets/Tests/PlayMode/RelicDraftFlowTest.cs` を新規作成し、削除したテストが担保していた 3 点を PlayMode で書き直す。検証内容は「ボス撃破後に RelicDraft パネルが表示される」「カード選択で `RelicAcquiredChannelSO` が発火する」「未所持レリックのみが候補に出る」。**`AddComponent` でモックを組まず、実シーン `MainGame.unity` の実コンポーネントを操作すること。** **【Architect 注記 2026-09-05】ファイル本体は回収済みでコンパイルも通る。ただし\*\*まだ 1 度も実行していない\*\*ため箱は開けたままにする。PlayMode で緑になったら閉じること。**
 - [x] `Game/Assets/Tests/` 直下のテストファイルを目視で確認し、`new GameObject` / `AddComponent` を使っているものが `00_rules.md` の例外 3 枚以外に無いことを確認する。あれば**修正せず報告する**（設計判断が必要なため）。
 
 ---
