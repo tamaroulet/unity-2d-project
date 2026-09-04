@@ -2,6 +2,8 @@
 """
 PM 1:00 帰宅時用: 留守中自律実行の成果物（受理・隔離ブランチ）一括 Opus 評価レポート生成スクリプト。
 """
+import json
+import sys
 import subprocess
 from datetime import datetime
 from pathlib import Path
@@ -17,7 +19,28 @@ def git(*args: str) -> str:
     return proc.stdout.strip() if proc.returncode == 0 else ""
 
 
+def check_quota_available() -> bool:
+    quota_script = PROJECT_ROOT / "scripts" / "get_claude_quota.ps1"
+    try:
+        proc = subprocess.run(
+            ["powershell", "-ExecutionPolicy", "Bypass", "-NoProfile", "-File", str(quota_script)],
+            capture_output=True, text=True, encoding="utf-8", errors="replace", cwd=str(PROJECT_ROOT)
+        )
+        if proc.returncode == 0 and proc.stdout.strip():
+            data = json.loads(proc.stdout)
+            return bool(data.get("IsAvailable", False))
+    except Exception as exc:
+        print(f"[WARN] Failed to check quota: {exc}")
+    return False
+
+
 def main():
+    force = "--force" in sys.argv
+    if not force:
+        if not check_quota_available():
+            print("[SKIP] Claude Code quota is restricted (IsAvailable == False). Exiting without running review.")
+            return
+
     today_key = datetime.now().strftime("%Y-%m-%d")
     report_file = REPORT_DIR / f"{today_key}_pm1_review.md"
 
@@ -30,10 +53,12 @@ def main():
     if not recent_commits:
         recent_commits = git("log", "-n", "5", "--oneline")
 
-    # 3. 隔離ブランチごとの差分概要
+    # 3. 隔離ブランチごとの差分概要（各ブランチ 20 行まで）
     quarantine_summaries = []
     for branch in branches:
-        stat = git("diff", "--stat", f"main..{branch}")
+        stat_raw = git("diff", "--stat", f"main..{branch}")
+        stat_lines = stat_raw.splitlines()[:20]
+        stat = "\n".join(stat_lines)
         log_msg = git("log", "-n", "1", "--oneline", branch)
         quarantine_summaries.append(f"### ブランチ: `{branch}`\n- コミット: {log_msg}\n```\n{stat}\n```\n")
 
@@ -54,23 +79,15 @@ def main():
 ※平素で落ち着いた工学的なトーンで簡潔に回答してください。
 """
 
-    # Opus または Sonnet でレビュー実行
+    # Opus でレビュー実行 (timeout=600)
     script_path = PROJECT_ROOT / "scripts" / "invoke_claude_safe.ps1"
     res = subprocess.run(
         ["powershell", "-ExecutionPolicy", "Bypass", "-NoProfile",
          "-File", str(script_path), "-Prompt", review_prompt, "-Model", "opus"],
-        capture_output=True, text=True, timeout=1800, cwd=str(PROJECT_ROOT)
+        capture_output=True, text=True, timeout=600, cwd=str(PROJECT_ROOT)
     )
 
-    review_text = res.stdout if res.returncode == 0 and "API Error: 529" not in res.stdout else ""
-    if not review_text:
-        # 代打 Sonnet
-        res_sonnet = subprocess.run(
-            ["powershell", "-ExecutionPolicy", "Bypass", "-NoProfile",
-             "-File", str(script_path), "-Prompt", review_prompt, "-Model", "sonnet"],
-            capture_output=True, text=True, timeout=1800, cwd=str(PROJECT_ROOT)
-        )
-        review_text = res_sonnet.stdout if res_sonnet.returncode == 0 else "レビュー取得失敗"
+    review_text = res.stdout if res.returncode == 0 and "API Error: 529" not in res.stdout else "レビュー取得失敗"
 
     content = f"""# PM 1:00 留守中自律開発 Opus 総合評価レポート — {today_key}
 

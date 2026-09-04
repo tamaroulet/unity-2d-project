@@ -239,17 +239,21 @@ namespace Game.EditorScripts
         private static void SetupEventDialogPanel(Transform canvasTr)
         {
             Transform tr = canvasTr.Find("EventDialogPanel");
-            GameObject go = tr != null ? tr.gameObject : new GameObject("EventDialogPanel", typeof(RectTransform), typeof(Image), typeof(EventDialogView));
+            GameObject go = tr != null ? tr.gameObject : new GameObject("EventDialogPanel", typeof(RectTransform), typeof(Image));
+            EventDialogView oldView = go.GetComponent<EventDialogView>();
+            if (oldView != null)
+            {
+                Object.DestroyImmediate(oldView);
+            }
             go.transform.SetParent(canvasTr, false);
 
             ConfigureModalPanel(go.transform, new Vector2(850, 520), ColorBgDialog);
             Transform rootTr = go.transform.Find("PanelRoot");
             if (rootTr != null)
             {
-                CreateLabel(rootTr.GetComponent<RectTransform>(), "EventTitleText", "EVENT OCCURRED", new Vector2(0, 180), new Vector2(700, 50), 32, TextAlignmentOptions.Center);
-                CreateLabel(rootTr.GetComponent<RectTransform>(), "EventDescriptionText", "A training event has occurred.\nChoose your option carefully.", new Vector2(0, 50), new Vector2(700, 120), 22, TextAlignmentOptions.Center);
-                CreateModalButton(rootTr.GetComponent<RectTransform>(), "OptionAButton", "Option A (Stamina Cost / Skill Boost)", new Vector2(0, -90), new Vector2(600, 60));
-                CreateModalButton(rootTr.GetComponent<RectTransform>(), "OptionBButton", "Option B (Safe Action / Mental Guard)", new Vector2(0, -170), new Vector2(600, 60));
+                CreateLabel(rootTr.GetComponent<RectTransform>(), "EventTitleText", "EVENT OCCURRED", new Vector2(0, 160), new Vector2(700, 50), 32, TextAlignmentOptions.Center);
+                CreateLabel(rootTr.GetComponent<RectTransform>(), "EventDescriptionText", "A training event has occurred.\nChoose your option carefully.", new Vector2(0, 40), new Vector2(700, 140), 22, TextAlignmentOptions.Center);
+                CreateModalButton(rootTr.GetComponent<RectTransform>(), "OkButton", "OK", new Vector2(0, -120), new Vector2(300, 60));
             }
             go.SetActive(false); // 初期状態は非表示
         }
@@ -368,6 +372,10 @@ namespace Game.EditorScripts
             if (go.GetComponent<MetaShopDialogView>() == null)
             {
                 go.AddComponent<MetaShopDialogView>();
+            }
+            if (go.GetComponent<EventDialogView>() == null)
+            {
+                go.AddComponent<EventDialogView>();
             }
         }
 
@@ -627,6 +635,7 @@ namespace Game.EditorScripts
             BindBossBattleDialogSceneReferences(canvasTr);
             BindEndingViewSceneReferences(canvasTr, controller);
             BindMetaShopDialogSceneReferences(canvasTr, controller);
+            BindEventDialogSceneReferences(canvasTr, controller);
         }
 
         private static void BindBossBattleDialogSceneReferences(Transform canvasTr)
@@ -804,6 +813,46 @@ namespace Game.EditorScripts
                         }
                     }
                 }
+            }
+
+            so.ApplyModifiedProperties();
+        }
+
+        private static void BindEventDialogSceneReferences(Transform canvasTr, GameFlowController controller)
+        {
+            Transform panelTr = canvasTr.Find("EventDialogPanel");
+            if (panelTr == null)
+            {
+                Debug.LogError("[UILayoutBuilder] EventDialogPanel not found on Canvas.");
+                return;
+            }
+
+            Transform viewsTr = canvasTr.Find("UIViews");
+            if (viewsTr == null)
+            {
+                Debug.LogError("[UILayoutBuilder] UIViews not found on Canvas for EventDialogView.");
+                return;
+            }
+
+            EventDialogView view = viewsTr.GetComponent<EventDialogView>();
+            if (view == null)
+            {
+                Debug.LogError("[UILayoutBuilder] EventDialogView component not found on UIViews.");
+                return;
+            }
+
+            SerializedObject so = new SerializedObject(view);
+            so.FindProperty("_panelRoot").objectReferenceValue = panelTr.gameObject;
+            so.FindProperty("_gameFlowController").objectReferenceValue = controller;
+            BindAsset<GameEventFiredChannelSO>(so, "_eventFiredChannel", "Assets/Data/Channels/EventFiredChannel.asset");
+            BindAsset<GameEventCatalogSO>(so, "_eventCatalog", "Assets/Data/Events/GameEventCatalog.asset");
+
+            Transform rootTr = panelTr.Find("PanelRoot");
+            if (rootTr != null)
+            {
+                BindComponentReference<TextMeshProUGUI>(so, "_titleText", rootTr, "EventDialogPanel", "EventTitleText");
+                BindComponentReference<TextMeshProUGUI>(so, "_bodyText", rootTr, "EventDialogPanel", "EventDescriptionText");
+                BindComponentReference<Button>(so, "_okButton", rootTr, "EventDialogPanel", "OkButton");
             }
 
             so.ApplyModifiedProperties();

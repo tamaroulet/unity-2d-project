@@ -19,15 +19,6 @@ Canvas/CommandPanel/TrainButton  [active=true]
     _costText -> <unbound>
     _gameFlowController -> GameFlowController/GameFlowController (GameFlowController)
     _nameText -> Text/TextMeshProUGUI (TextMeshProUGUI)
-Canvas/EventDialogPanel  [active=false]
-  EventDialogView
-    _bodyText -> <unbound>
-    _eventCatalog -> <unbound>
-    _eventFiredChannel -> <unbound>
-    _gameFlowController -> <unbound>
-    _okButton -> <unbound>
-    _panelRoot -> <unbound>
-    _titleText -> <unbound>
 Canvas/RelicDraftDialogPanel/PanelRoot/Card1  [active=false]
   RelicCardView
     _descriptionText -> DescText/TextMeshProUGUI (TextMeshProUGUI)
@@ -77,6 +68,15 @@ Canvas/UIViews  [active=true]
     _restartButton -> RestartButton/Button (Button)
     _resultText -> EndingTitleText/TextMeshProUGUI (TextMeshProUGUI)
 Canvas/UIViews  [active=true]
+  EventDialogView
+    _bodyText -> EventDescriptionText/TextMeshProUGUI (TextMeshProUGUI)
+    _eventCatalog -> GameEventCatalog (GameEventCatalogSO)
+    _eventFiredChannel -> EventFiredChannel (GameEventFiredChannelSO)
+    _gameFlowController -> GameFlowController/GameFlowController (GameFlowController)
+    _okButton -> OkButton/Button (Button)
+    _panelRoot -> EventDialogPanel (GameObject)
+    _titleText -> EventTitleText/TextMeshProUGUI (TextMeshProUGUI)
+Canvas/UIViews  [active=true]
   MetaShopDialogView
     _availablePointsText -> PointsText/TextMeshProUGUI (TextMeshProUGUI)
     _closeButton -> CloseShopButton/Button (Button)
@@ -107,4 +107,4 @@ GameFlowController  [active=true]
     _relicAcquiredChannel -> RelicAcquiredChannel (RelicAcquiredChannelSO)
     _relicCatalog -> RelicCatalog (RelicCatalogSO)
     _relicResolver -> RelicResolver (RelicResolverSO)
-=== components: 13 / bound: 68 / unbound: 15 ===
+=== components: 13 / bound: 75 / unbound: 8 ===
