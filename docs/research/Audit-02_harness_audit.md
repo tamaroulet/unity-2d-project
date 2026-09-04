@@ -40,7 +40,7 @@ scope: 自律開発ハーネス（nightly_gate.py / auto_runner.py / スケジ�
 
 | # | 内容 |
 |---|---|
-| B-1 | Gate 1 が要求する `refresh_unity` / `run_tests` / `read_console` は Unity-MCP のツールだが、**本プロジェクトに Unity-MCP サーバは未登録**（`Game/.mcp.json` は `rider` のみ）。実行不能な手順を必須ゲートにすると「通ったことにする」経路が生まれる |
+| B-1 | Gate 1 が要求する `refresh_unity` / `run_tests` / `read_console` は Unity-MCP のツールだが、**Claude Code からは使えない**。Unity-MCP は Antigravity 側（`~/.gemini/config/mcp_config.json` の `unityMCP` → `http://127.0.0.1:8080/mcp`）にのみ登録されており、`.claude/settings.json` と `Game/.mcp.json`（`rider` のみ）には無い。実行者によって使える／使えないが変わる手順を、全員に必須のゲートにはできない |
 | B-2 | 「EditMode は 1 秒未満だからゲート強制は許容範囲か」という前提が誤り。テストは `nightly_gate.py` の Unity batchmode で実行され、`TEST_TIMEOUT_SEC = 1800`。かつ Unity エディタ起動中は Library ロックで必ず失敗する |
 | B-3 | 改修対象の `.agents/rules/**` と `scripts/auto_runner.py` は `PROTECTED_PREFIXES`。auto_runner 経由で触れば無条件隔離される。**人間が `main` 上の対話セッションで行う必要がある**（提案の検証手順に記載なし） |
 
@@ -261,8 +261,13 @@ Gemini 側の事前ガード（`agy` を PowerShell ラッパーで包み、コ�
 `check_policy()` を掛ける）は本監査では実施していない。
 実装を全量担う側が無防備という構図は残っている。
 
-### Unity-MCP について（未判断）
+### Unity-MCP について（2026-09-04 追記・当初の記述は誤り）
 
-`Game/.mcp.json` には `rider` しか登録がない。Unity-MCP を導入しないのであれば、
-上流診断の客観データ源は `nightly_gate.py` の batchmode テスト結果 XML のみである、
-と明示的に決める必要がある。
+当初「Unity-MCP サーバは未登録」と書いたが誤りだった。実際には
+`~/.gemini/config/mcp_config.json` に `unityMCP`（`http://127.0.0.1:8080/mcp`）が
+登録されている。ただし登録先は **Antigravity のみ**であり、Claude Code の
+`.claude/settings.json` と `Game/.mcp.json`（`rider` のみ）には無い。
+
+つまり **Gemini は `refresh_unity` / `run_tests` を使えるが、Claude Code は使えない。**
+Unity の実機検証を伴う作業は Gemini 側が有利であり、Claude Code 側の客観データ源は
+`nightly_gate.py` の batchmode テスト結果 XML に限られる。
