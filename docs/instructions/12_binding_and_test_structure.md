@@ -94,9 +94,9 @@ Game/Packages/manifest.json  Game/Packages/packages-lock.json
 
 ### タスク
 
-- [ ] 未追跡ファイル `Game/Assets/Tests/RelicDraftDialogViewTests.cs` と `Game/Assets/Tests/RelicDraftDialogViewTests.cs.meta` を削除する（`git` の追跡対象ではないため `rm` でよい）。
+- [x] 未追跡ファイル `Game/Assets/Tests/RelicDraftDialogViewTests.cs` と `Game/Assets/Tests/RelicDraftDialogViewTests.cs.meta` を削除する（`git` の追跡対象ではないため `rm` でよい）。
 - [ ] `Game/Assets/Tests/PlayMode/RelicDraftFlowTest.cs` を新規作成し、削除したテストが担保していた 3 点を PlayMode で書き直す。検証内容は「ボス撃破後に RelicDraft パネルが表示される」「カード選択で `RelicAcquiredChannelSO` が発火する」「未所持レリックのみが候補に出る」。**`AddComponent` でモックを組まず、実シーン `MainGame.unity` の実コンポーネントを操作すること。**
-- [ ] `Game/Assets/Tests/` 直下のテストファイルを目視で確認し、`new GameObject` / `AddComponent` を使っているものが `00_rules.md` の例外 3 枚以外に無いことを確認する。あれば**修正せず報告する**（設計判断が必要なため）。
+- [x] `Game/Assets/Tests/` 直下のテストファイルを目視で確認し、`new GameObject` / `AddComponent` を使っているものが `00_rules.md` の例外 3 枚以外に無いことを確認する。あれば**修正せず報告する**（設計判断が必要なため）。
 
 ---
 
@@ -116,10 +116,10 @@ Game/Packages/manifest.json  Game/Packages/packages-lock.json
 
 ### タスク
 
-- [ ] `git cherry-pick 2583e28` を実行し、GameFlowController の RelicDraft 配線（+91 行）と `RelicDraftDialogView.cs`（+43 行）を `main` へ回収する。コンフリクトが出た場合、**保護対象ファイル側は必ず `main` の内容を採用する**（`git checkout --ours <path>`）。
-- [ ] cherry-pick に `RelicDraftDialogViewTests.cs` が含まれていた場合、そのファイルだけを `git rm --cached` で外してから commit する（§3 で破棄する対象のため）。
-- [ ] `d433269`（UILayoutBuilder + MainGame.unity のスプライト割当）については、**cherry-pick せず、対象範囲と差分行数のみ報告する**。`MainGame.unity` の差分が 2,527 行あり、`00_rules.md` により人間の目視確認が必要なため、実施可否は人間が判断する。
-- [ ] `805b604` / `2db418f` / `7552a2b` / `5628d55` は回収しない。`main` の方が新しいか、wip コミットであるため。
+- [x] `git cherry-pick 2583e28` を実行し、GameFlowController の RelicDraft 配線（+91 行）と `RelicDraftDialogView.cs`（+43 行）を `main` へ回収する。コンフリクトが出た場合、**保護対象ファイル側は必ず `main` の内容を採用する**（`git checkout --ours <path>`）。
+- [x] cherry-pick に `RelicDraftDialogViewTests.cs` が含まれていた場合、そのファイルだけを `git rm --cached` で外してから commit する（§3 で破棄する対象のため）。
+- [x] `d433269`（UILayoutBuilder + MainGame.unity のスプライト割当）については、**cherry-pick せず、対象範囲と差分行数のみ報告する**。`MainGame.unity` の差分が 2,527 行あり、`00_rules.md` により人間の目視確認が必要なため、実施可否は人間が判断する。
+- [x] `805b604` / `2db418f` / `7552a2b` / `5628d55` は回収しない。`main` の方が新しいか、wip コミットであるため。
 
 ---
 

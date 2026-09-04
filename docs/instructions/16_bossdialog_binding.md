@@ -17,10 +17,10 @@ BRANCH: main
 
 ## タスク
 
-- [ ] `Game/Assets/Editor/UILayoutBuilder.cs` に `BindBossBattleDialogSceneReferences(Transform canvasTr)` を追加し、581-582 行の既存 2 メソッドと同じ場所から呼ぶ。`BossBattleDialogPanel` 配下の実要素を `_panelRoot` / `_bossNameText` / `_bossHpText` / `_bossHpSlider` / `_shieldText` / `_battleLogText` / `_dismissButton` / `_dismissButtonText` に結線すること。実装は既存の `BindStatusViewSceneReferences` に揃える
-- [ ] 参照先の要素がパネル配下に存在しない場合は、**黙って null を書かず** `Debug.LogError` でどの要素が見つからなかったかを名指しすること（`BindAsset` と同じ方針）
-- [ ] `Tools/Setup Complete UI Layout (Simple Shapes)` を実行してシーンを更新する
-- [ ] `Game/Assets/Editor/SceneBindingReport.cs` を新規作成する。`Tools/Report Unbound Serialized Fields` メニューで `MainGame.unity` を走査し、`Game.UI` 名前空間の `MonoBehaviour` について `[SerializeField]` が null のものを「コンポーネント名 / フィールド名」の形で全件 Console に出力すること。**テストにはしない**（現在 28 箇所あり、いきなり赤にすると他の作業が止まるため）。まず可視化する
+- [x] `Game/Assets/Editor/UILayoutBuilder.cs` に `BindBossBattleDialogSceneReferences(Transform canvasTr)` を追加し、581-582 行の既存 2 メソッドと同じ場所から呼ぶ。`BossBattleDialogPanel` 配下の実要素を `_panelRoot` / `_bossNameText` / `_bossHpText` / `_bossHpSlider` / `_shieldText` / `_battleLogText` / `_dismissButton` / `_dismissButtonText` に結線すること。実装は既存の `BindStatusViewSceneReferences` に揃える
+- [x] 参照先の要素がパネル配下に存在しない場合は、**黙って null を書かず** `Debug.LogError` でどの要素が見つからなかったかを名指しすること（`BindAsset` と同じ方針）
+- [x] `Tools/Setup Complete UI Layout (Simple Shapes)` を実行してシーンを更新する
+- [x] `Game/Assets/Editor/SceneBindingReport.cs` を新規作成する。`Tools/Report Unbound Serialized Fields` メニューで `MainGame.unity` を走査し、`Game.UI` 名前空間の `MonoBehaviour` について `[SerializeField]` が null のものを「コンポーネント名 / フィールド名」の形で全件 Console に出力すること。**テストにはしない**（現在 28 箇所あり、いきなり赤にすると他の作業が止まるため）。まず可視化する
 
 ## 判断が要る場面
 
