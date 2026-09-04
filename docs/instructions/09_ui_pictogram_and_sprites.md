@@ -30,4 +30,4 @@ AI画像生成や外部イラスト素材を使わず、純粋な C# プロシ�
 - [x] Unity バッチモードで EditMode / PlayMode テストを実行し、既定のベースライン（EditMode 113 件収集 / 94 passed / 0 failed / 19 は `[Explicit]` 凍結、PlayMode 1/1 passed）を維持していることを確認する。
 
 ### 2.4 ドキュメント同期とGitコミット
-- [ ] `docs/STATUS.md` および `docs/log.md` を更新し、Git コミット＆プッシュする。
+- [x] `docs/STATUS.md` および `docs/log.md` を更新し、Git コミット＆プッシュする。
