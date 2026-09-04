@@ -47,6 +47,14 @@ trigger: always_on
 - PlayMode テストは `Game/Assets/Tests/PlayMode/` 配下にのみ置く。EditMode テストは `Game/Assets/Tests/` 直下に置く。
 - EditMode テストは「入力と出力が純粋な計算」に限る。MonoBehaviour / シーン / SO の
   モックを組み立てるテストは書かない。
+  例外は次の 3 枚のみ。`GameFlowController` を器として `AddComponent` するが、
+  検証しているのは状態遷移の純粋計算であるため許可する。これ以外の EditMode テストで
+  `new GameObject` / `AddComponent` / private フィールドへの reflection を使うことは禁止。
+  - `Game/Assets/Tests/GameFlowControllerTests.cs`
+  - `Game/Assets/Tests/GameFlowControllerRelicTests.cs`
+  - `Game/Assets/Tests/GameMonteCarloSimulationTests.cs`
+- View（`*View.cs`）の検証は PlayMode テストで行う。EditMode で View を
+  `AddComponent` して組み立てるテストは書かない。
 - テストを通すためにプロダクションコードへ分岐や自己修復を足すことは禁止。
   テストが通らない場合は実装をやめて人間に報告する。
 

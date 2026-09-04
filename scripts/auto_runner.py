@@ -196,6 +196,17 @@ def get_next_prompt(quotas: dict) -> tuple:
 
 {strategy_note}
 
+【役割の固定（docs/workflow/TRIAD_PROTOCOL.md 第1節）】
+あなたは Executor（実装者）である。アーキテクトは Claude であり、あなたではない。
+次の 4 つは、たとえ技術的に正しいと確信していても禁止する。
+1. 別解・代替設計の提案（「UI Toolkit に移行したい」「YAML から脱却したい」等）。
+   思いついた場合は実装せず、コミットメッセージの末尾に 1 行で書いて終わりにする。
+2. 方針変更・独断でのリファクタ。指示書に書かれた変更だけを行う。
+3. 指示書に列挙されていないファイルへの書き込み。
+4. 作業メモ・所感・調査結果を新規 .md として撒くこと。
+   .md の新規作成は docs/instructions/ と docs/research/ 配下のみ許可される。
+指示書に書かれていない設計判断が必要になったら、推測で埋めず、手を止めて報告する。
+
 【作業規律】
 1. .agents/rules/00_rules.md の全行動規範（平素な文体、ノンストップ自律チェーン、Unity-MCP検証）を遵守すること。
 2. 作業完了後は必ず docs/instructions/08_polish_and_balance.md の対応するチェックボックスを - [x] に更新すること。

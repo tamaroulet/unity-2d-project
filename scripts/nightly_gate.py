@@ -93,6 +93,11 @@ PROTECTED_PREFIXES = (
     "scripts/morning_report.py",
     "scripts/nightly_baseline.json",
     "scripts/auto_runner.py",
+    # 依存の無断追加を物理的に封鎖する。UI Toolkit / VContainer / Rosalina 等は
+    # manifest.json の 1 行で入る。00_rules.md は DI コンテナと Addressables を
+    # 禁止しており、その制約はここで初めて実効化される。
+    "Game/Packages/manifest.json",
+    "Game/Packages/packages-lock.json",
 )
 
 TEST_PREFIX = "Game/Assets/Tests/"
@@ -141,6 +146,47 @@ ABUSE_RULES = [
      "origin/main への直接 push が埋め込まれた（origin/main 直接 push の禁止）"),
     (re.compile(r"--dangerously-skip-permissions"), "権限スキップフラグが新たに埋め込まれた"),
 ]
+
+# EditMode テストの純粋性（00_rules.md「テスト」）。
+# EditMode は入力と出力が純粋な計算に限る。View を AddComponent して組み立てる
+# テストは PlayMode で書く。private フィールドへの reflection は実装のフィールド名を
+# 変えた瞬間に静かに壊れるため禁止する。
+#
+# private フィールドへの reflection は意図的に対象外にしている。00_rules.md が
+# `.asset` のテキスト編集を禁じているため、ScriptableObject のフィクスチャを組む
+# 唯一の手段が reflection であり、*SOFactory.cs が正規の用途で使っている。
+EDITMODE_PURITY_RULES = [
+    (re.compile(r"\bnew\s+GameObject\s*\("), "EditMode テストで GameObject を生成している"),
+    (re.compile(r"\.AddComponent\s*<"), "EditMode テストで AddComponent している"),
+]
+
+# 00_rules.md が明記する 3 枚の例外。GameFlowController を器として使うが、
+# 検証内容は状態遷移の純粋計算であるため許可されている。
+EDITMODE_PURITY_ALLOWLIST = frozenset({
+    "Game/Assets/Tests/GameFlowControllerTests.cs",
+    "Game/Assets/Tests/GameFlowControllerRelicTests.cs",
+    "Game/Assets/Tests/GameMonteCarloSimulationTests.cs",
+})
+
+# アーティファクトの無断作成。エージェントが作業メモや所感を .md で撒くのを防ぐ。
+# 既存ファイルの編集は対象外で、あくまで「新規作成」だけを見る。
+# 文書を置いてよい場所を列挙するのではなく、コードツリーへの散布を禁じる形にする。
+# docs/ 配下は自由（そこが文書の置き場である）。禁じたいのは Game/ や scripts/ に
+# 作業メモが湧くことなので、そちらを名指しで塞ぐ。
+ARTIFACT_MD = re.compile(r"\.md$", re.IGNORECASE)
+MD_FORBIDDEN_PREFIXES = ("Game/", "scripts/", "logs/")
+MD_ALWAYS_ALLOWED_NAMES = ("README.md", "AGENTS.md", "CLAUDE.md")
+
+
+def _md_allowed(path: str) -> bool:
+    """新規 .md を置いてよい場所か。docs/ 配下は自由、コードツリーは規約ファイルのみ。"""
+    if path.rsplit("/", 1)[-1] in MD_ALWAYS_ALLOWED_NAMES:
+        return True
+    if any(path.startswith(prefix) for prefix in MD_FORBIDDEN_PREFIXES):
+        return False
+    # リポジトリ直下の野良 .md も禁じる（docs/ に置くこと）
+    return "/" in path
+
 
 # コード行の上限。シーン等のシリアライズ資産は _diff_numstat_code_only が除外する。
 MAX_CHANGED_LINES = 3000
@@ -239,8 +285,18 @@ def check_policy(base: str, head: str) -> dict:
             violations.append(f"テストファイルが削除された: {path}")
         if status == "D" and SERIALIZED.search(path):
             violations.append(f"Unity シリアライズ資産が削除された: {path}")
-        if status in ("M", "A") and SERIALIZED.search(path):
+        # asmdef の新設は 00_rules.md「アーキテクチャ」で禁止されている。
+        # 他のシリアライズ資産と同じ warning 扱いでは制約が実効化されない。
+        if status == "A" and path.lower().endswith(".asmdef"):
+            violations.append(
+                f"asmdef が新設された: {path}"
+                "（00_rules.md はランタイム 1 枚 + Editor 1 枚 + テスト 2 枚のみを許可）")
+        elif status in ("M", "A") and SERIALIZED.search(path):
             warnings.append(f"Unity シリアライズ資産が変更された（人間の目視確認が必要）: {path}")
+        if status == "A" and ARTIFACT_MD.search(path) and not _md_allowed(path):
+            violations.append(
+                f"許可されていない場所に .md が新規作成された: {path}"
+                "（指示書は docs/instructions/、調査は docs/research/ に置く）")
 
     for path, sign, text in _iter_diff_lines(base, head):
         if path is None:
@@ -262,6 +318,15 @@ def check_policy(base: str, head: str) -> dict:
                 for pattern, message in TEST_WEAKENING_RULES:
                     if pattern.search(text):
                         violations.append(f"{message} [{path}] -> {text.strip()[:120]}")
+
+                # EditMode の純粋性。PlayMode 配下と 00_rules の例外 3 枚は対象外
+                if (not path.startswith(TEST_PREFIX + "PlayMode/")
+                        and path not in EDITMODE_PURITY_ALLOWLIST):
+                    for pattern, message in EDITMODE_PURITY_RULES:
+                        if pattern.search(text):
+                            violations.append(
+                                f"{message} [{path}] -> {text.strip()[:120]}"
+                                "（View の検証は PlayMode で書く）")
 
             if RUNTIME_CS.match(path) and not EDITOR_OR_TEST_CS.search("/" + path):
                 for pattern, message in RUNTIME_HACK_RULES:
