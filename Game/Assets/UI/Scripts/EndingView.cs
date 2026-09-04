@@ -1,8 +1,10 @@
 // SPDX-AI-Disclosure: ai-generated
 using System;
 using Game.Core;
+using Game.Features.GameFlow;
 using TMPro;
 using UnityEngine;
+using UnityEngine.UI;
 
 namespace Game.UI
 {
@@ -23,6 +25,8 @@ namespace Game.UI
         [SerializeField] private GameObject _panelRoot;
         [SerializeField] private TextMeshProUGUI _resultText;
         [SerializeField] private EndingLabel[] _endingLabels;
+        [SerializeField] private Button _restartButton;
+        [SerializeField] private GameFlowController _gameFlowController;
 
         /// <summary>
         /// パネルの表示状態。
@@ -46,6 +50,11 @@ namespace Game.UI
             {
                 _endingDecidedChannel.OnEventRaised += OnEndingDecided;
             }
+
+            if (_restartButton != null)
+            {
+                _restartButton.onClick.AddListener(OnRestartClicked);
+            }
         }
 
         private void OnDisable()
@@ -53,6 +62,28 @@ namespace Game.UI
             if (_endingDecidedChannel != null)
             {
                 _endingDecidedChannel.OnEventRaised -= OnEndingDecided;
+            }
+
+            if (_restartButton != null)
+            {
+                _restartButton.onClick.RemoveListener(OnRestartClicked);
+            }
+        }
+
+        /// <summary>
+        /// リスタートボタンがクリックされたときに呼ばれる。
+        /// パネルを非表示にし、GameFlowController.StartGame() で新たな周回を開始する。
+        /// </summary>
+        public void OnRestartClicked()
+        {
+            if (_panelRoot != null)
+            {
+                _panelRoot.SetActive(false);
+            }
+
+            if (_gameFlowController != null)
+            {
+                _gameFlowController.StartGame();
             }
         }
 
@@ -88,7 +119,7 @@ namespace Game.UI
 
         /// <summary>
         /// _endingLabels からエンディングに対応する表示名を探す。見つからなければ
-        /// enum 名をそのままフォールバックとして返す。
+        /// enum に応じたフォールバック名を返す。
         /// </summary>
         private string ResolveDisplayName(EndingKind ending)
         {
@@ -103,7 +134,14 @@ namespace Game.UI
                 }
             }
 
-            return ending.ToString();
+            return ending switch
+            {
+                EndingKind.True => "TRUE ENDING",
+                EndingKind.Skill => "SKILL MASTER ENDING",
+                EndingKind.Mental => "MENTAL FORTITUDE ENDING",
+                EndingKind.Stamina => "IRON VITALITY ENDING",
+                _ => "GAME CLEAR"
+            };
         }
     }
 }

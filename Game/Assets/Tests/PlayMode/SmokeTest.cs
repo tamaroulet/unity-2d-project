@@ -399,9 +399,28 @@ namespace Game.Tests.PlayMode
             Assert.IsTrue(endingView.IsPanelActive, "ゲームクリア後に EndingView.IsPanelActive が true になっていない。");
             Assert.IsFalse(string.IsNullOrEmpty(endingView.DisplayedResult), "EndingView.DisplayedResult が空文字列。");
 
+            // ---------- Act: エンディング画面の RestartButton をクリックして周回ループを検証 ----------
+            Button restartButton = GetSerializedField<Button>(endingView, "_restartButton");
+            Assert.IsTrue(restartButton != null, "EndingView._restartButton が null。");
+            AssertRaycastReachesButton(restartButton, "EndingView.RestartButton");
+
+            bool restartClicked = ExecuteEvents.Execute(
+                restartButton.gameObject,
+                new PointerEventData(EventSystem.current),
+                ExecuteEvents.pointerClickHandler);
+            Assert.IsTrue(restartClicked, "EndingView の RestartButton クリックが受理されなかった。");
+
+            yield return WaitForCondition(
+                () => !endingView.IsPanelActive && flow.CurrentPhase == GamePhase.WaitingInput && flow.CurrentState.CurrentTurn == 1,
+                () => $"リスタート後にエンディング画面が閉じてターン1のWaitingInputへ復帰しなかった。IsPanelActive={endingView.IsPanelActive}, Phase={flow.CurrentPhase}, Turn={flow.CurrentState?.CurrentTurn}");
+
+            Assert.IsFalse(endingView.IsPanelActive, "リスタート後に EndingView.IsPanelActive が false になっていない。");
+            Assert.AreEqual(1, flow.CurrentState.CurrentTurn, "リスタート後に Turn が 1 に戻っていない。");
+            Assert.AreEqual(GamePhase.WaitingInput, flow.CurrentPhase, "リスタート後に入力待ちへ戻っていない。");
+
             Assert.IsEmpty(
                 _capturedFailures,
-                "24 ターン進行中に Error / Exception / Assert ログが発生した:\n"
+                "24 ターン進行およびリスタート中に Error / Exception / Assert ログが発生した:\n"
                 + string.Join("\n", _capturedFailures));
         }
 

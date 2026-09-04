@@ -589,7 +589,7 @@ namespace Game.EditorScripts
             BindStatusViewSceneReferences(canvasTr, controller);
             BindRelicDraftDialogSceneReferences(canvasTr, controller);
             BindBossBattleDialogSceneReferences(canvasTr);
-            BindEndingViewSceneReferences(canvasTr);
+            BindEndingViewSceneReferences(canvasTr, controller);
         }
 
         private static void BindBossBattleDialogSceneReferences(Transform canvasTr)
@@ -745,7 +745,7 @@ namespace Game.EditorScripts
             so.ApplyModifiedProperties();
         }
 
-        private static void BindEndingViewSceneReferences(Transform canvasTr)
+        private static void BindEndingViewSceneReferences(Transform canvasTr, GameFlowController controller)
         {
             Transform viewsTr = canvasTr.Find("UIViews");
             if (viewsTr == null)
@@ -764,6 +764,7 @@ namespace Game.EditorScripts
             SerializedObject so = new SerializedObject(view);
 
             BindAsset<EndingDecidedChannelSO>(so, "_endingDecidedChannel", "Assets/Data/Channels/EndingDecidedChannel.asset");
+            so.FindProperty("_gameFlowController").objectReferenceValue = controller;
 
             Transform panelTr = canvasTr.Find("EndingPanel");
             if (panelTr != null)
@@ -788,10 +789,21 @@ namespace Game.EditorScripts
                 {
                     Debug.LogError("[UILayoutBuilder] EndingPanel/PanelRoot/EndingTitleText (TextMeshProUGUI) not found for EndingView._resultText.");
                 }
+
+                Transform restartBtnTr = rootTr.Find("RestartButton");
+                Button restartBtn = restartBtnTr != null ? restartBtnTr.GetComponent<Button>() : null;
+                if (restartBtn != null)
+                {
+                    so.FindProperty("_restartButton").objectReferenceValue = restartBtn;
+                }
+                else
+                {
+                    Debug.LogError("[UILayoutBuilder] EndingPanel/PanelRoot/RestartButton (Button) not found for EndingView._restartButton.");
+                }
             }
             else
             {
-                Debug.LogError("[UILayoutBuilder] EndingPanel/PanelRoot not found for EndingView._resultText.");
+                Debug.LogError("[UILayoutBuilder] EndingPanel/PanelRoot not found for EndingView.");
             }
 
             so.ApplyModifiedProperties();
