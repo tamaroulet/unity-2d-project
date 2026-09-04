@@ -162,13 +162,16 @@ namespace Game.EditorScripts
             CreateLabel(rect, "PointsText", "POINTS: 0", new Vector2(750, 0), new Vector2(200, 50), 28, TextAlignmentOptions.Right);
 
             // StatusView の SerializedObject バインド
-            GameStateEventChannelSO channel = AssetDatabase.LoadAssetAtPath<GameStateEventChannelSO>("Assets/Data/Channels/GameStateEventChannel.asset");
+            GameStateEventChannelSO channel = AssetDatabase.LoadAssetAtPath<GameStateEventChannelSO>("Assets/Data/Channels/GameStateChannel.asset");
             SerializedObject so = new SerializedObject(view);
             so.FindProperty("_gameStateChannel").objectReferenceValue = channel;
             so.FindProperty("_turnText").objectReferenceValue = turnGo.GetComponent<TextMeshProUGUI>();
             so.FindProperty("_staminaText").objectReferenceValue = staminaGo.transform.Find("Label").GetComponent<TextMeshProUGUI>();
             so.FindProperty("_skillText").objectReferenceValue = skillGo.transform.Find("Label").GetComponent<TextMeshProUGUI>();
             so.FindProperty("_mentalText").objectReferenceValue = mentalGo.transform.Find("Label").GetComponent<TextMeshProUGUI>();
+            so.FindProperty("_staminaBarFill").objectReferenceValue = staminaGo.transform.Find("BarBg/BarFill").GetComponent<RectTransform>();
+            so.FindProperty("_skillBarFill").objectReferenceValue = skillGo.transform.Find("BarBg/BarFill").GetComponent<RectTransform>();
+            so.FindProperty("_mentalBarFill").objectReferenceValue = mentalGo.transform.Find("BarBg/BarFill").GetComponent<RectTransform>();
             so.ApplyModifiedProperties();
         }
 
@@ -279,6 +282,15 @@ namespace Game.EditorScripts
                 CreateGaugeGroup(rootTr.GetComponent<RectTransform>(), "BossShieldGroup", "Icon_Shield", ColorShield, new Vector2(0, -130), "Shield: 10");
 
                 CreateModalButton(rootTr.GetComponent<RectTransform>(), "AutoBattleNextButton", "AUTO BATTLE / NEXT", new Vector2(0, -260), new Vector2(400, 70));
+
+                BossBattleDialogView bossView = go.GetComponent<BossBattleDialogView>();
+                Transform dismissTextTr = rootTr.Find("AutoBattleNextButton/Text");
+                if (bossView != null && dismissTextTr != null)
+                {
+                    SerializedObject bossSo = new SerializedObject(bossView);
+                    bossSo.FindProperty("_dismissButtonText").objectReferenceValue = dismissTextTr.GetComponent<TextMeshProUGUI>();
+                    bossSo.ApplyModifiedProperties();
+                }
             }
             go.SetActive(false);
         }
@@ -380,7 +392,10 @@ namespace Game.EditorScripts
             RectTransform barBgRect = EnsureRectTransform(barBgGo);
             barBgRect.anchoredPosition = new Vector2(20, -5);
             barBgRect.sizeDelta = new Vector2(220, 24);
-            barBgGo.GetComponent<Image>().color = ColorBarBg;
+            Image barBgImg = barBgGo.GetComponent<Image>();
+            barBgImg.sprite = LoadSprite("Bar_Fill");
+            barBgImg.type = Image.Type.Simple;
+            barBgImg.color = ColorBarBg;
 
             // ゲージバー
             Transform barFillTr = barBgRect.Find("BarFill");
@@ -390,7 +405,10 @@ namespace Game.EditorScripts
             barFillRect.anchorMin = Vector2.zero;
             barFillRect.anchorMax = new Vector2(0.7f, 1f); // 70% 仮置き
             barFillRect.sizeDelta = Vector2.zero;
-            barFillGo.GetComponent<Image>().color = barColor;
+            Image barFillImg = barFillGo.GetComponent<Image>();
+            barFillImg.sprite = LoadSprite("Bar_Fill");
+            barFillImg.type = Image.Type.Simple;
+            barFillImg.color = barColor;
 
             // ラベル
             CreateLabel(rect, "Label", label, new Vector2(20, 15), new Vector2(220, 24), 18, TextAlignmentOptions.Center);
@@ -507,8 +525,8 @@ namespace Game.EditorScripts
             so.FindProperty("_eventResolver").objectReferenceValue = AssetDatabase.LoadAssetAtPath<EventResolverSO>("Assets/Data/Events/EventResolver.asset");
             so.FindProperty("_endingRules").objectReferenceValue = AssetDatabase.LoadAssetAtPath<EndingRulesSO>("Assets/Data/Endings/EndingRules.asset");
             so.FindProperty("_endingResolver").objectReferenceValue = AssetDatabase.LoadAssetAtPath<EndingResolverSO>("Assets/Data/Endings/EndingResolver.asset");
-            so.FindProperty("_gameStateChannel").objectReferenceValue = AssetDatabase.LoadAssetAtPath<GameStateEventChannelSO>("Assets/Data/Channels/GameStateEventChannel.asset");
-            so.FindProperty("_eventFiredChannel").objectReferenceValue = AssetDatabase.LoadAssetAtPath<GameEventFiredChannelSO>("Assets/Data/Channels/GameEventFiredChannel.asset");
+            so.FindProperty("_gameStateChannel").objectReferenceValue = AssetDatabase.LoadAssetAtPath<GameStateEventChannelSO>("Assets/Data/Channels/GameStateChannel.asset");
+            so.FindProperty("_eventFiredChannel").objectReferenceValue = AssetDatabase.LoadAssetAtPath<GameEventFiredChannelSO>("Assets/Data/Channels/EventFiredChannel.asset");
             so.FindProperty("_endingDecidedChannel").objectReferenceValue = AssetDatabase.LoadAssetAtPath<EndingDecidedChannelSO>("Assets/Data/Channels/EndingDecidedChannel.asset");
             so.FindProperty("_relicCatalog").objectReferenceValue = AssetDatabase.LoadAssetAtPath<RelicCatalogSO>("Assets/Features/Relic/Instances/RelicCatalog.asset");
             so.FindProperty("_relicResolver").objectReferenceValue = AssetDatabase.LoadAssetAtPath<RelicResolverSO>("Assets/Features/Relic/Instances/RelicResolver.asset");

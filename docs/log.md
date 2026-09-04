@@ -869,6 +869,59 @@ Antigravity (Gemini) による直接 C# 実装体制への移行後、指示書 
 
 ## 2026-09-04
 
+### UI スプライトのシーン割り当て（第8週 Step 24 / 指示書 09 の 2.2〜2.4）
+
+`Tools/Setup Complete UI Layout (Simple Shapes)` を Unity バッチモードで実行し、
+`MainGame.unity` を再生成して保存した。生成済みの 13 枚のピクトグラム／枠／ゲージ
+スプライトが、すべてシーン上の `Image` から参照されている状態になった。
+
+| スプライト | シーン内の参照数 |
+|---|---|
+| `Frame_Card` | 25（カード枠・ボタン枠・モーダル枠） |
+| `Icon_Relic` | 6（レリックカード・ショップカード） |
+| `Bar_Fill` | 10（ゲージ背景と塗り） |
+| `Icon_*` / `Boss_Emblem_Act1` | 各 1 |
+
+#### 途中で踏んだ回帰と、その根本原因
+
+1 回目の実行直後に PlayMode 曳光弾 `SmokeTest` が赤になった。
+`UILayoutBuilder` は Canvas の子を毎回全削除してから作り直す設計のため、
+**ビルダーがバインドしていない参照はシーン再生成のたびに失われる**。
+旧シーンでバインド済みだった以下 6 件が `{fileID: 0}` に落ちていた。
+
+| 落ちた参照 | 根本原因 |
+|---|---|
+| `StatusView._gameStateChannel` / `GameFlowController._gameStateChannel` | ビルダーが `Assets/Data/Channels/GameStateEventChannel.asset` を読んでいたが、実在するのは `GameStateChannel.asset`。`LoadAssetAtPath` が null を返していた |
+| `GameFlowController._eventFiredChannel` | 同上（`GameEventFiredChannel.asset` → 実在は `EventFiredChannel.asset`） |
+| `StatusView._staminaBarFill` / `_skillBarFill` / `_mentalBarFill` | ビルダーがテキストしかバインドしておらず、ゲージ `BarFill` の `RectTransform` を一切バインドしていなかった |
+| `BossBattleDialogView._dismissButtonText` | 同上（ビルダー未対応） |
+
+存在しないパスを `LoadAssetAtPath` に渡しても例外にならず静かに null が入るため、
+ビルダーは「エラーなく完了」を出しながら参照だけを落としていた。
+テスト側を緩めるのではなく、ビルダー側の 3 点（パス誤り 2 件・未バインド 4 件）を修正して再生成した。
+
+あわせて `Bar_Fill.png` が生成されているのにどの `Image` からも参照されていなかったため、
+ゲージ背景と塗りの両方に割り当てた（指示書 2.1 の生成物を 2.2 で使い切る形にした）。
+
+#### 検証
+
+| 手段 | 結果 |
+|---|---|
+| Unity バッチモード `-executeMethod UILayoutBuilder.SetupCompleteLayout` | 成功。`Full UI Layout successfully built and saved without errors.` |
+| 旧シーンとの参照バインド差分（スクリプト比較） | 参照落ち 0 件（回帰なし） |
+| EditMode テスト（バッチモード） | 113 件収集 / 94 passed / 0 failed / 19 skipped（Explicit） |
+| PlayMode テスト（バッチモード） | 1 / 1 passed（`SmokeTest`：TURN 1→2、ゲージ 1.000→0.900 / 0.000→0.050 / 0.500→0.550、例外 0） |
+
+#### 残課題
+
+- `MainGame.unity` の差分は約 4,400 行（シーン全体の再生成のため）。夜間規約の
+  「1 サイクル 3,000 行以内」を超えるが、これは自動生成されたシリアライズ資産 1 ファイル
+  であり、手書きコードの変更は `UILayoutBuilder.cs` の約 20 行のみ。
+- `BossBattleDialogView` / `EventDialogView` / `MetaShopDialogView` / `EndingView` の
+  参照は旧シーンでも未バインドのまま（ランタイム側にフォールバックがある）。
+  今回は回帰を作らないことを優先し、スコープ外として据え置いた。
+
+
 ### 自律開発インフラ実地検証と夜間運用トラブル（Hour 12-14）
 
 #### 1. 人間ディレクターからの指導と規約改定

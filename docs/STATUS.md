@@ -34,6 +34,7 @@
 | **第7週 Step 21** | 単純図形UIワイヤーフレーム配置（UILayoutBuilder）＆シーン完全バインド | 完了 | `814cc19` |
 | **第7週 Step 22** | WebGL ローカルビルド確定（WASM 8.4MB / Data 4.5MB）＆ AutoRunner 常駐 | 完了 | `54704c5` |
 | **第8週 Step 23** | 幾何学ピクトグラム生成器の是正（Study 独立化 / Act 別 N 角形紋章 / 角丸カード枠） | 完了 | `HEAD` |
+| **第8週 Step 24** | UI スプライトのシーン割り当て（13 スプライト全結線）＆ ビルダーの参照落ち 6 件を修正 | 完了（EditMode 0 failed / PlayMode 1-1 passed） | `HEAD` |
 
 ---
 
@@ -62,3 +63,5 @@
 - **朝刊レポート**: `scripts/morning_report.py`（Task Scheduler `UnityProject_MorningReport` 06:10 登録済み）
 - **夜間自律ランナー**: Task Scheduler（`UnityProject_AutoRunner` 毎日 01:00〜06:00、30分間隔）登録済み
 - **引き継ぎマスターガイド**: `docs/workflow/ONBOARDING.md` 整備完了
+- **UI スプライト結線**: `Assets/UI/Sprites/` の 13 枚すべてが `MainGame.unity` の `Image` から参照済み
+  （`UILayoutBuilder` はチャンネル資産のパス誤り 2 件と未バインド 4 件を抱えており、シーン再生成のたびに参照を落としていた。コミット時点で修正済み）
