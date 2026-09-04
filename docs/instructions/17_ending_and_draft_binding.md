@@ -48,13 +48,13 @@ Canvas
 
 ## タスク
 
-- [ ] `Game/Assets/Editor/UILayoutBuilder.cs` に、`Canvas` 直下へ `UIViews`（`RectTransform` のみ、
+- [x] `Game/Assets/Editor/UILayoutBuilder.cs` に、`Canvas` 直下へ `UIViews`（`RectTransform` のみ、
       `Image` なし、アクティブ）を生成する処理を追加する。全パネル生成後・
       `RebindGameFlowControllerReferences` の前に置くこと
-- [ ] `EndingView` と `RelicDraftDialogView` のコンポーネント配置を `UIViews` 配下に移す。
+- [x] `EndingView` と `RelicDraftDialogView` のコンポーネント配置を `UIViews` 配下に移す。
       `SetupEndingPanel` / `SetupRelicDraftDialogPanel` は**パネルの見た目の生成のみ**を担当し、
       View の付与と結線は分離すること
-- [ ] `BindEndingViewSceneReferences(Transform canvasTr)` を追加し、581-583 行の既存 3 メソッドと
+- [x] `BindEndingViewSceneReferences(Transform canvasTr)` を追加し、581-583 行の既存 3 メソッドと
       同じ場所から呼ぶ。実装は `BindBossBattleDialogSceneReferences` に揃える
       - `_endingDecidedChannel` → `BindAsset<EndingDecidedChannelSO>` で
         `Assets/Data/Channels/EndingDecidedChannel.asset`
@@ -62,15 +62,15 @@ Canvas
       - `_panelRoot` → `EndingPanel` の GameObject
       - `_resultText` → `EndingPanel/PanelRoot/EndingTitleText`
         （`EndingDescriptionText` ではない。エンディング名を出すフィールドである）
-- [ ] `BindRelicDraftDialogSceneReferences` を、移動後の配置に合わせて更新する。
+- [x] `BindRelicDraftDialogSceneReferences` を、移動後の配置に合わせて更新する。
       `_gameFlowController` に加えて `_panelRoot` = `RelicDraftDialogPanel` の GameObject、
       `_cardViews` の 3 件、`_relicAcquiredChannel` が移動後も張られていること
-- [ ] 参照先が見つからない場合は**黙って null を書かず** `Debug.LogError` で名指しする
+- [x] 参照先が見つからない場合は**黙って null を書かず** `Debug.LogError` で名指しする
       （`BindAsset` / `BindComponentReference` と同じ方針）。
       `BindComponentReference` のエラーメッセージが `BossBattleDialogPanel` 決め打ちなので、
       使い回すなら対象名を引数で渡せるようにすること
-- [ ] `Tools/Setup Complete UI Layout (Simple Shapes)` を実行してシーンを更新する
-- [ ] PlayMode テストを 1 本追加する。**ターン 1 から 24 まで進め、最終ボス撃破後に
+- [x] `Tools/Setup Complete UI Layout (Simple Shapes)` を実行してシーンを更新する
+- [x] PlayMode テストを 1 本追加する。**ターン 1 から 24 まで進め、最終ボス撃破後に
       `EndingView.IsPanelActive == true` になることを、例外ゼロで確認する**。
       既存の `MainGame_AdvanceToTurn6_BossBattleDismiss_AdvancesToTurn7_WithZeroExceptions` に
       形を揃える。途中のボス（6/12/18）では `RelicDraftDialogView.IsVisible == true` を
