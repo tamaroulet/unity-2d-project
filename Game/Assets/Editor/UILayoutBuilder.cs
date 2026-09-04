@@ -580,7 +580,87 @@ namespace Game.EditorScripts
 
             BindStatusViewSceneReferences(canvasTr, controller);
             BindRelicDraftDialogSceneReferences(canvasTr, controller);
+            BindBossBattleDialogSceneReferences(canvasTr);
         }
+
+        private static void BindBossBattleDialogSceneReferences(Transform canvasTr)
+        {
+            Transform bossPanelTr = canvasTr.Find("BossBattleDialogPanel");
+            if (bossPanelTr == null)
+            {
+                Debug.LogError("[UILayoutBuilder] BossBattleDialogPanel not found on Canvas.");
+                return;
+            }
+
+            BossBattleDialogView view = bossPanelTr.GetComponent<BossBattleDialogView>();
+            if (view == null)
+            {
+                Debug.LogError("[UILayoutBuilder] BossBattleDialogView component not found on BossBattleDialogPanel.");
+                return;
+            }
+
+            SerializedObject so = new SerializedObject(view);
+
+            Transform rootTr = bossPanelTr.Find("PanelRoot");
+            if (rootTr != null)
+            {
+                so.FindProperty("_panelRoot").objectReferenceValue = rootTr.gameObject;
+            }
+            else
+            {
+                Debug.LogError("[UILayoutBuilder] BossBattleDialogPanel/PanelRoot not found for _panelRoot. Existing reference is kept.");
+            }
+
+            BindComponentReference<TextMeshProUGUI>(so, "_bossNameText", rootTr, "BossTitleText", "BossNameText");
+            BindComponentReference<TextMeshProUGUI>(so, "_bossHpText", rootTr, "BossHpGroup/Label", "BossHpText");
+            BindComponentReference<Slider>(so, "_bossHpSlider", rootTr, "BossHpSlider", "BossHpGroup/BossHpSlider");
+            BindComponentReference<TextMeshProUGUI>(so, "_shieldText", rootTr, "BossShieldGroup/Label", "ShieldText");
+            BindComponentReference<TextMeshProUGUI>(so, "_battleLogText", rootTr, "BattleLogText");
+            BindComponentReference<Button>(so, "_dismissButton", rootTr, "AutoBattleNextButton", "DismissButton");
+            BindComponentReference<TextMeshProUGUI>(so, "_dismissButtonText", rootTr, "AutoBattleNextButton/Text", "DismissButton/Text", "DismissButtonText");
+
+            so.ApplyModifiedProperties();
+        }
+
+        private static void BindComponentReference<T>(SerializedObject so, string propName, Transform rootTr, params string[] candidatePaths) where T : Component
+        {
+            SerializedProperty prop = so.FindProperty(propName);
+            if (prop == null)
+            {
+                Debug.LogError($"[UILayoutBuilder] Serialized property not found: {propName}");
+                return;
+            }
+
+            if (rootTr == null)
+            {
+                Debug.LogError($"[UILayoutBuilder] Root transform is null, cannot bind {propName}. Existing reference is kept.");
+                return;
+            }
+
+            T comp = null;
+            foreach (string path in candidatePaths)
+            {
+                Transform targetTr = rootTr.Find(path);
+                if (targetTr != null)
+                {
+                    comp = targetTr.GetComponent<T>();
+                    if (comp != null)
+                    {
+                        break;
+                    }
+                }
+            }
+
+            if (comp != null)
+            {
+                prop.objectReferenceValue = comp;
+            }
+            else
+            {
+                Debug.LogError($"[UILayoutBuilder] Element ({typeof(T).Name}) not found for '{propName}' (searched: {string.Join(", ", candidatePaths)}) under BossBattleDialogPanel. Existing reference is kept.");
+            }
+        }
+
 
         // StatusView はボス戦の発生を GameFlowController から受け取り、BossBattleDialogView へ橋渡しする。
         // どちらもシーン内オブジェクトなので、全パネル生成後にまとめて結線する。

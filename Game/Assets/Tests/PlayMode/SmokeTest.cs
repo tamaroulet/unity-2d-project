@@ -185,6 +185,90 @@ namespace Game.Tests.PlayMode
             LogAssert.NoUnexpectedReceived();
         }
 
+        [UnityTest]
+        public IEnumerator MainGame_AdvanceToTurn6_BossBattleDismiss_AdvancesToTurn7_WithZeroExceptions()
+        {
+            // ---------- Arrange: MainGame をロード ----------
+            AsyncOperation load = SceneManager.LoadSceneAsync(SceneName, LoadSceneMode.Single);
+            Assert.IsTrue(load != null, $"シーン '{SceneName}' のロードを開始できなかった。");
+            while (!load.isDone) yield return null;
+            yield return null;
+
+            GameFlowController flow = UnityEngine.Object.FindFirstObjectByType<GameFlowController>();
+            Assert.IsTrue(flow != null, "GameFlowController が MainGame シーンに存在しない。");
+
+            BossBattleDialogView bossDialog = UnityEngine.Object.FindFirstObjectByType<BossBattleDialogView>(FindObjectsInactive.Include);
+            Assert.IsTrue(bossDialog != null, "BossBattleDialogView が MainGame シーンに存在しない。");
+
+            CommandButtonView studyView = FindCommandButtonByName(StudyButtonName);
+            Button studyButton = studyView.GetComponent<Button>();
+
+            // ターン 1 から 5 まで Study コマンドを連続実行してターン 6（ボス戦）へ進める
+            for (int t = 1; t <= 5; t++)
+            {
+                int currentTurn = t;
+                yield return WaitForCondition(
+                    () => flow.CurrentPhase == GamePhase.WaitingInput && flow.CurrentState.CurrentTurn == currentTurn,
+                    () => $"ターン {currentTurn} の WaitingInput に到達しなかった。Phase={flow.CurrentPhase}");
+
+                bool clicked = ExecuteEvents.Execute(
+                    studyButton.gameObject,
+                    new PointerEventData(EventSystem.current),
+                    ExecuteEvents.pointerClickHandler);
+                Assert.IsTrue(clicked, $"ターン {currentTurn} で '{StudyButtonName}' のクリックが受理されなかった。");
+
+                yield return null;
+            }
+
+            // ---------- Act: ターン 6（ボス戦）への突入とダイアログ確認 ----------
+            yield return WaitForCondition(
+                () => flow.CurrentState != null && flow.CurrentState.CurrentTurn == 6,
+                () => $"ターン 6 に進まなかった。CurrentTurn={flow.CurrentState?.CurrentTurn}, Phase={flow.CurrentPhase}");
+
+            yield return WaitForCondition(
+                () => bossDialog.IsVisible,
+                () => $"ターン 6 到達後に BossBattleDialogView が表示されなかった。Phase={flow.CurrentPhase}");
+
+            Button dismissButton = GetSerializedField<Button>(bossDialog, "_dismissButton");
+            Assert.IsTrue(dismissButton != null, "BossBattleDialogView._dismissButton が null。");
+            Assert.IsTrue(dismissButton.IsInteractable(), "BossBattleDialogView._dismissButton が interactable でない。");
+
+            // ボス戦ダイアログの決定（Dismiss）ボタンをクリック
+            bool dismissed = ExecuteEvents.Execute(
+                dismissButton.gameObject,
+                new PointerEventData(EventSystem.current),
+                ExecuteEvents.pointerClickHandler);
+            Assert.IsTrue(dismissed, "BossBattleDialogView の dismissButton クリックが受理されなかった。");
+
+            // ダイアログが閉じ、WaitingInput へ復帰することを確認
+            yield return WaitForCondition(
+                () => !bossDialog.IsVisible && flow.CurrentPhase == GamePhase.WaitingInput,
+                () => $"ボス戦ダイアログ決定後に入力待ちへ復帰しなかった。IsVisible={bossDialog.IsVisible}, Phase={flow.CurrentPhase}");
+
+            // ---------- ターン 6 のコマンドを実行してターン 7 へ進める ----------
+            bool turn6Clicked = ExecuteEvents.Execute(
+                studyButton.gameObject,
+                new PointerEventData(EventSystem.current),
+                ExecuteEvents.pointerClickHandler);
+            Assert.IsTrue(turn6Clicked, "ターン 6 でのコマンドクリックが受理されなかった。");
+
+            yield return WaitForCondition(
+                () => flow.CurrentState != null && flow.CurrentState.CurrentTurn == 7,
+                () => $"ターン 7 へ進まなかった。CurrentTurn={flow.CurrentState?.CurrentTurn}, Phase={flow.CurrentPhase}");
+
+            yield return WaitForCondition(
+                () => flow.CurrentPhase == GamePhase.WaitingInput,
+                () => $"ターン 7 開始後に入力待ちへ戻らなかった。Phase={flow.CurrentPhase}");
+
+            // ---------- Assert: 例外 0 件とターン 7 到達 ----------
+            Assert.AreEqual(7, flow.CurrentState.CurrentTurn, "ターンが 7 になっていない。");
+            Assert.IsEmpty(
+                _capturedFailures,
+                "ターン 1〜7 進行中に Error / Exception / Assert ログが発生した:\n"
+                + string.Join("\n", _capturedFailures));
+        }
+
+
         /// <summary>
         /// predicate が真になるまで毎フレーム待つ。TimeoutSeconds を超えたら失敗する。
         /// </summary>
