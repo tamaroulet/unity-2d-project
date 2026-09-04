@@ -8,8 +8,9 @@
   2. 差分なし                                        -> NO_CHANGE
   3. ポリシー違反（ハックコード・自己改変・秘密情報）-> REJECT_POLICY
   4. Unity 起動中でローカル検証が不能                -> UNVERIFIED
-  5. テスト失敗 / 件数がベースライン未満             -> REJECT_TESTS
-  6. すべて通過                                      -> ACCEPT
+  5. コンパイルエラー（dotnet build・2〜3秒）        -> REJECT_COMPILE
+  6. テスト失敗 / 件数がベースライン未満             -> REJECT_TESTS
+  7. すべて通過                                      -> ACCEPT
 
 ACCEPT 以外は「隔離ブランチへ全成果物をコミットして保全 -> スナップショットへ巻き戻し」。
 作業は 1 行も失われない。朝、人間が cherry-pick できる。
@@ -43,6 +44,7 @@ TEST_TIMEOUT_SEC = 1800
 VERDICT_ACCEPT = "ACCEPT"
 VERDICT_NO_CHANGE = "NO_CHANGE"
 VERDICT_REJECT_POLICY = "REJECT_POLICY"
+VERDICT_REJECT_COMPILE = "REJECT_COMPILE"
 VERDICT_REJECT_TESTS = "REJECT_TESTS"
 VERDICT_UNVERIFIED = "UNVERIFIED"
 VERDICT_ABORTED_DIRTY = "ABORTED_DIRTY"
@@ -192,6 +194,26 @@ def _md_allowed(path: str) -> bool:
     return "/" in path
 
 
+# UI Toolkit（UXML）の幻覚対策。
+# LLM の学習データは Web フロントエンド（HTML/CSS）に強く偏っているため、UXML を
+# 書かせると <div> や <span> といった無効タグを出力する。Unity は読み込み時に
+# パースエラーになるが、実行するまで気づけない。UXML はテキストなのでエージェントが
+# 直接編集でき、それが UI Toolkit へ移行する理由そのものであるから、
+# 「編集できる代わりに機械検査する」形で釣り合いを取る。
+UXML_EXT = re.compile(r"\.uxml$", re.IGNORECASE)
+UXML_RULES = [
+    (re.compile(r"<\s*/?\s*(div|span|p|a|img|input|form|section|header|footer|ul|ol|li|table|tr|td|h[1-6])\b",
+                re.IGNORECASE),
+     "UXML に HTML タグが混入（UI Toolkit のタグは ui:VisualElement / ui:Label / ui:Button 等）"),
+    (re.compile(r"<\s*/?\s*(Image|Text|RawImage|Toggle|Slider|InputField)\b"),
+     "UXML に uGUI 由来の名称が混入（ui: 名前空間を付けるか UI Toolkit の型名を使う）"),
+    (re.compile(r"\bstyle\s*=\s*\"[^\"]*\b(float|display\s*:\s*(block|inline)|position\s*:\s*(fixed|sticky))\b"),
+     "UXML のインラインスタイルに CSS 固有のプロパティが混入（USS は Flexbox のみ）"),
+]
+# UXML は名前空間宣言が無いと Unity がパースできない
+UXML_NAMESPACE = re.compile(r'xmlns:ui\s*=\s*"UnityEngine\.UIElements"')
+
+
 # コード行の上限。シーン等のシリアライズ資産は _diff_numstat_code_only が除外する。
 MAX_CHANGED_LINES = 3000
 # シリアライズ資産は行数ではなくファイル数で暴走を見る。
@@ -297,6 +319,19 @@ def check_policy(base: str, head: str) -> dict:
                 "（00_rules.md はランタイム 1 枚 + Editor 1 枚 + テスト 2 枚のみを許可）")
         elif status in ("M", "A") and SERIALIZED.search(path):
             warnings.append(f"Unity シリアライズ資産が変更された（人間の目視確認が必要）: {path}")
+        # 新規 UXML の名前空間宣言は行単位の diff では見られないためファイルごと検査する
+        if status in ("A", "M") and UXML_EXT.search(path):
+            uxml_file = PROJECT_ROOT / path
+            if uxml_file.exists():
+                try:
+                    body = uxml_file.read_text(encoding="utf-8", errors="replace")
+                except OSError:
+                    body = ""
+                if body and not UXML_NAMESPACE.search(body):
+                    violations.append(
+                        f"UXML に xmlns:ui=\"UnityEngine.UIElements\" の宣言が無い: {path}"
+                        "（Unity がパースできない）")
+
         if status == "A" and ARTIFACT_MD.search(path) and not _md_allowed(path):
             violations.append(
                 f"許可されていない場所に .md が新規作成された: {path}"
@@ -331,6 +366,11 @@ def check_policy(base: str, head: str) -> dict:
                             violations.append(
                                 f"{message} [{path}] -> {text.strip()[:120]}"
                                 "（View の検証は PlayMode で書く）")
+
+            if UXML_EXT.search(path):
+                for pattern, message in UXML_RULES:
+                    if pattern.search(text):
+                        violations.append(f"{message} [{path}] -> {text.strip()[:120]}")
 
             if RUNTIME_CS.match(path) and not EDITOR_OR_TEST_CS.search("/" + path):
                 for pattern, message in RUNTIME_HACK_RULES:
@@ -382,6 +422,57 @@ def parse_nunit(xml_path: Path) -> dict:
         "skipped": as_int("skipped") + as_int("inconclusive"),
         "duration": float(root.get("duration") or 0.0),
         "failed_names": failed_names[:20],
+    }
+
+
+GAME_SLN = GAME_PATH / "Game.sln"
+COMPILE_TIMEOUT_SEC = 240
+
+# csproj / sln は Unity の生成物で .gitignore 対象。作業ツリーより古くなることがあり、
+# 削除済みファイルへの参照が残ると CS2001 が出る。これはコードの誤りではないため
+# 違反として扱わない（誤検知を作らないことを最優先する）。
+STALE_CSPROJ_ERROR = re.compile(r"\berror\s+CS2001\b", re.IGNORECASE)
+COMPILE_ERROR = re.compile(r"\berror\s+(CS\d{4}|MSB\d{4})\b", re.IGNORECASE)
+
+
+def run_compile_check() -> dict:
+    """dotnet build による高速コンパイル検査。Unity を起動しない。
+
+    batchmode の Unity テストは 1 プラットフォームあたり最大 30 分かかる。
+    型エラーや構文エラーはこの 2〜3 秒の検査で先に落とせるため、
+    重いテストへ進む前の一次フィルタとして使う。
+
+    csproj/sln が無い環境（clone 直後・CI）では skip する。ここで落とすと
+    「検証できない」を「不合格」と取り違えることになる。
+    """
+    if not GAME_SLN.exists():
+        return {"skipped": True, "reason": "Game.sln が無い（Unity 未起動の環境）"}
+
+    try:
+        proc = subprocess.run(
+            ["dotnet", "build", str(GAME_SLN), "-v", "q", "--nologo"],
+            capture_output=True, text=True, encoding="utf-8", errors="replace",
+            timeout=COMPILE_TIMEOUT_SEC, cwd=str(PROJECT_ROOT))
+    except FileNotFoundError:
+        return {"skipped": True, "reason": "dotnet SDK が無い"}
+    except subprocess.TimeoutExpired:
+        return {"skipped": True, "reason": f"{COMPILE_TIMEOUT_SEC} 秒でタイムアウト"}
+
+    real_errors, stale = [], []
+    for line in (proc.stdout or "").splitlines():
+        if not COMPILE_ERROR.search(line):
+            continue
+        (stale if STALE_CSPROJ_ERROR.search(line) else real_errors).append(line.strip()[:200])
+
+    # 同一エラーが複数 csproj から重複して出るため潰す
+    real_errors = list(dict.fromkeys(real_errors))
+    stale = list(dict.fromkeys(stale))
+    return {
+        "skipped": False,
+        "ok": not real_errors,
+        "errors": real_errors[:20],
+        "stale_csproj": stale[:5],
+        "exit_code": proc.returncode,
     }
 
 
@@ -558,7 +649,7 @@ def consecutive_reject_count(target_task: str) -> int:
             rec_task = rec.get("target_task", "")
             if rec_task.startswith(prefix):
                 verdict = rec.get("verdict")
-                if verdict in (VERDICT_REJECT_TESTS, VERDICT_REJECT_POLICY):
+                if verdict in (VERDICT_REJECT_TESTS, VERDICT_REJECT_POLICY, VERDICT_REJECT_COMPILE):
                     count += 1
                 elif verdict == VERDICT_ACCEPT:
                     break
@@ -664,7 +755,22 @@ def finalize_cycle(cycle: Cycle, agent_ok: bool = True) -> dict:
         record["consecutive_rejects"] = consecutive_reject_count(cycle.target_task)
         return record
 
-    # 4. テスト実行（一次ゲート）
+    # 4. コンパイル検査（2〜3 秒）。型エラーはここで落とし、30 分のテストへ進ませない
+    compile_result = run_compile_check()
+    record["compile"] = compile_result
+    if compile_result.get("stale_csproj"):
+        record["warnings"].append(
+            "csproj が作業ツリーより古い（Unity で開き直すと解消）: "
+            + compile_result["stale_csproj"][0][:120])
+    if not compile_result.get("skipped") and not compile_result.get("ok"):
+        record["verdict"] = VERDICT_REJECT_COMPILE
+        record["reasons"] = ["コンパイルエラー: " + e for e in compile_result["errors"]]
+        record["quarantine_branch"] = _quarantine_and_rollback(cycle, work_head)
+        _write_record(record)
+        record["consecutive_rejects"] = consecutive_reject_count(cycle.target_task)
+        return record
+
+    # 5. テスト実行（重いゲート）
     verdict_tests = evaluate_tests(cycle.cycle_id)
     record["tests"] = verdict_tests["results"]
     if not verdict_tests["ok"]:
