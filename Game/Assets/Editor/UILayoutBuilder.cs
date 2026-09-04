@@ -1,5 +1,6 @@
 // SPDX-AI-Disclosure: ai-generated
 #if UNITY_EDITOR
+using System.Collections.Generic;
 using Game.Core;
 using Game.Features.Boss;
 using Game.Features.Command;
@@ -247,18 +248,43 @@ namespace Game.EditorScripts
         private static void SetupRelicDraftDialogPanel(Transform canvasTr)
         {
             Transform tr = canvasTr.Find("RelicDraftDialogPanel");
-            GameObject go = tr != null ? tr.gameObject : new GameObject("RelicDraftDialogPanel", typeof(RectTransform), typeof(Image));
+            GameObject go = tr != null ? tr.gameObject : new GameObject("RelicDraftDialogPanel", typeof(RectTransform), typeof(Image), typeof(RelicDraftDialogView));
+            if (go.GetComponent<RelicDraftDialogView>() == null)
+            {
+                go.AddComponent<RelicDraftDialogView>();
+            }
             go.transform.SetParent(canvasTr, false);
 
             ConfigureModalPanel(go.transform, new Vector2(1150, 650), ColorBgDialog);
             Transform rootTr = go.transform.Find("PanelRoot");
+            List<RelicCardView> cardViews = new List<RelicCardView>();
             if (rootTr != null)
             {
                 CreateLabel(rootTr.GetComponent<RectTransform>(), "DraftTitleText", "RELIC DRAFT (SELECT PASSIVE)", new Vector2(0, 240), new Vector2(800, 50), 32, TextAlignmentOptions.Center);
-                CreateRelicCard(rootTr.GetComponent<RectTransform>(), "Card1", "Iron Dumbbell\n+5 Stamina/Turn", new Vector2(-340, -20));
-                CreateRelicCard(rootTr.GetComponent<RectTransform>(), "Card2", "Book of Wisdom\n+20% Skill Gain", new Vector2(0, -20));
-                CreateRelicCard(rootTr.GetComponent<RectTransform>(), "Card3", "Healing Amulet\n+30% Mental Guard", new Vector2(340, -20));
+                cardViews.Add(CreateRelicCard(rootTr.GetComponent<RectTransform>(), "Card1", "Iron Dumbbell", "+5 Stamina/Turn", new Vector2(-340, -20)));
+                cardViews.Add(CreateRelicCard(rootTr.GetComponent<RectTransform>(), "Card2", "Book of Wisdom", "+20% Skill Gain", new Vector2(0, -20)));
+                cardViews.Add(CreateRelicCard(rootTr.GetComponent<RectTransform>(), "Card3", "Healing Amulet", "+30% Mental Guard", new Vector2(340, -20)));
             }
+
+            RelicDraftDialogView draftView = go.GetComponent<RelicDraftDialogView>();
+            if (draftView != null)
+            {
+                SerializedObject so = new SerializedObject(draftView);
+                so.FindProperty("_panelRoot").objectReferenceValue = rootTr != null ? rootTr.gameObject : go;
+                BindAsset<RelicAcquiredChannelSO>(so, "_relicAcquiredChannel", "Assets/Data/Channels/RelicAcquiredChannel.asset");
+                SerializedProperty cardsProp = so.FindProperty("_cardViews");
+                if (cardsProp != null)
+                {
+                    cardsProp.ClearArray();
+                    for (int i = 0; i < cardViews.Count; i++)
+                    {
+                        cardsProp.InsertArrayElementAtIndex(i);
+                        cardsProp.GetArrayElementAtIndex(i).objectReferenceValue = cardViews[i];
+                    }
+                }
+                so.ApplyModifiedProperties();
+            }
+
             go.SetActive(false);
         }
 
@@ -434,10 +460,14 @@ namespace Game.EditorScripts
             CreateLabel(rect, "Text", text, Vector2.zero, size, 22, TextAlignmentOptions.Center);
         }
 
-        private static void CreateRelicCard(RectTransform parent, string name, string text, Vector2 pos)
+        private static RelicCardView CreateRelicCard(RectTransform parent, string name, string relicName, string desc, Vector2 pos)
         {
             Transform existing = parent.Find(name);
-            GameObject cardGo = existing != null ? existing.gameObject : new GameObject(name, typeof(RectTransform), typeof(Image), typeof(Button));
+            GameObject cardGo = existing != null ? existing.gameObject : new GameObject(name, typeof(RectTransform), typeof(Image), typeof(RelicCardView));
+            if (cardGo.GetComponent<RelicCardView>() == null)
+            {
+                cardGo.AddComponent<RelicCardView>();
+            }
             cardGo.transform.SetParent(parent, false);
 
             RectTransform rect = EnsureRectTransform(cardGo);
@@ -450,13 +480,29 @@ namespace Game.EditorScripts
             img.color = ColorButtonBg;
 
             AttachIcon(rect, "Icon", LoadSprite("Icon_Relic"), new Vector2(0, 80), new Vector2(80, 80));
-            CreateLabel(rect, "Text", text, new Vector2(0, -60), new Vector2(240, 120), 20, TextAlignmentOptions.Center);
+            TextMeshProUGUI nameLbl = CreateLabel(rect, "NameText", relicName, new Vector2(0, 0), new Vector2(240, 40), 22, TextAlignmentOptions.Center).GetComponent<TextMeshProUGUI>();
+            TextMeshProUGUI descLbl = CreateLabel(rect, "DescText", desc, new Vector2(0, -60), new Vector2(240, 80), 18, TextAlignmentOptions.Center).GetComponent<TextMeshProUGUI>();
             CreateModalButton(rect, "SelectButton", "選択する", new Vector2(0, -130), new Vector2(200, 45));
+
+            Transform btnTr = rect.Find("SelectButton");
+            Button btn = btnTr != null ? btnTr.GetComponent<Button>() : null;
+
+            RelicCardView cardView = cardGo.GetComponent<RelicCardView>();
+            if (cardView != null)
+            {
+                SerializedObject cSo = new SerializedObject(cardView);
+                cSo.FindProperty("_nameText").objectReferenceValue = nameLbl;
+                cSo.FindProperty("_descriptionText").objectReferenceValue = descLbl;
+                cSo.FindProperty("_selectButton").objectReferenceValue = btn;
+                cSo.ApplyModifiedProperties();
+            }
+
+            return cardView;
         }
 
         private static void CreateShopItemCard(RectTransform parent, string name, string text, Vector2 pos)
         {
-            CreateRelicCard(parent, name, text, pos);
+            CreateRelicCard(parent, name, name, text, pos);
         }
 
         private static void AttachIcon(Transform parent, string iconName, Sprite sprite, Vector2 anchoredPos, Vector2 size)
@@ -527,6 +573,62 @@ namespace Game.EditorScripts
             }
 
             so.ApplyModifiedProperties();
+
+            BindStatusViewSceneReferences(canvasTr, controller);
+            BindRelicDraftDialogSceneReferences(canvasTr, controller);
+        }
+
+        // StatusView はボス戦の発生を GameFlowController から受け取り、BossBattleDialogView へ橋渡しする。
+        // どちらもシーン内オブジェクトなので、全パネル生成後にまとめて結線する。
+        private static void BindStatusViewSceneReferences(Transform canvasTr, GameFlowController controller)
+        {
+            Transform statusTr = canvasTr.Find("StatusPanel");
+            if (statusTr == null) return;
+
+            StatusView view = statusTr.GetComponent<StatusView>();
+            if (view == null) return;
+
+            Transform bossPanelTr = canvasTr.Find("BossBattleDialogPanel");
+            BossBattleDialogView bossDialog = bossPanelTr != null ? bossPanelTr.GetComponent<BossBattleDialogView>() : null;
+
+            SerializedObject so = new SerializedObject(view);
+            so.FindProperty("_gameFlowController").objectReferenceValue = controller;
+            so.FindProperty("_bossBattleDialog").objectReferenceValue = bossDialog;
+            so.ApplyModifiedProperties();
+        }
+
+        private static void BindRelicDraftDialogSceneReferences(Transform canvasTr, GameFlowController controller)
+        {
+            Transform relicPanelTr = canvasTr.Find("RelicDraftDialogPanel");
+            if (relicPanelTr == null) return;
+
+            RelicDraftDialogView view = relicPanelTr.GetComponent<RelicDraftDialogView>();
+            if (view == null) return;
+
+            SerializedObject so = new SerializedObject(view);
+            so.FindProperty("_gameFlowController").objectReferenceValue = controller;
+            so.ApplyModifiedProperties();
+        }
+
+        // 参照先が見つからないときは既存の結線を残したままエラーで知らせる。
+        // 黙って null を書き込むと、シーン再構築のたびに Inspector のアサインが消えて原因を追えなくなる。
+        private static void BindAsset<T>(SerializedObject so, string propName, string assetPath) where T : Object
+        {
+            SerializedProperty prop = so.FindProperty(propName);
+            if (prop == null)
+            {
+                Debug.LogError($"[UILayoutBuilder] Serialized property not found: {propName}");
+                return;
+            }
+
+            T asset = AssetDatabase.LoadAssetAtPath<T>(assetPath);
+            if (asset == null)
+            {
+                Debug.LogError($"[UILayoutBuilder] Asset not found: {assetPath} ({typeof(T).Name}). Existing reference on {propName} is kept.");
+                return;
+            }
+
+            prop.objectReferenceValue = asset;
         }
 
         private static void SetViewProperty(SerializedObject so, string propName, Transform tr)

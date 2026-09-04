@@ -1,6 +1,7 @@
 // SPDX-AI-Disclosure: ai-generated
 using System.Collections.Generic;
 using Game.Core;
+using Game.Features.GameFlow;
 using Game.Features.Relic;
 using UnityEngine;
 
@@ -13,12 +14,54 @@ namespace Game.UI
     public class RelicDraftDialogView : MonoBehaviour
     {
         [SerializeField] private RelicAcquiredChannelSO _relicAcquiredChannel;
+        [SerializeField] private GameFlowController _gameFlowController;
         [SerializeField] private GameObject _panelRoot;
         [SerializeField] private List<RelicCardView> _cardViews = new List<RelicCardView>();
 
         public int LastSelectedRelicId { get; private set; } = -1;
 
         public bool IsVisible => _panelRoot != null && _panelRoot.activeSelf;
+
+        private void OnEnable()
+        {
+            HookController();
+        }
+
+        private void OnDisable()
+        {
+            UnhookController();
+        }
+
+        private void HookController()
+        {
+            if (_gameFlowController != null)
+            {
+                _gameFlowController.OnRelicDraftRequested -= Show;
+                _gameFlowController.OnRelicDraftRequested += Show;
+            }
+        }
+
+        private void UnhookController()
+        {
+            if (_gameFlowController != null)
+            {
+                _gameFlowController.OnRelicDraftRequested -= Show;
+            }
+        }
+
+        /// <summary>
+        /// テスト等から明示的に依存を注入・購読するためのバインドメソッド。
+        /// </summary>
+        public void Bind(GameFlowController controller, RelicAcquiredChannelSO channel = null)
+        {
+            UnhookController();
+            _gameFlowController = controller;
+            if (channel != null)
+            {
+                _relicAcquiredChannel = channel;
+            }
+            HookController();
+        }
 
         /// <summary>
         /// 提示されたレリック一覧（通常3件）を各カードにバインドし、パネルを表示する。

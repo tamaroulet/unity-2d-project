@@ -66,6 +66,11 @@ namespace Game.Features.GameFlow
         /// </summary>
         public event System.Action<BossSO, FullBattleResult, System.Action> OnBossBattleOccurred;
 
+        /// <summary>
+        /// ボス撃破後のレリックドラフト提示イベント (DraftCandidates)。
+        /// </summary>
+        public event System.Action<IReadOnlyList<RelicSO>> OnRelicDraftRequested;
+
         public IReadOnlyList<int> BossBattleTurns => _bossBattleTurns;
 
         private void Awake()
@@ -246,11 +251,56 @@ namespace Game.Features.GameFlow
                     if (battleResult.Outcome == BattleOutcomeKind.Victory)
                     {
                         _bossDefeatedCount++;
-                        _currentPhase = GamePhase.ShowingRelicDraft;
-                        OnBossBattleOccurred?.Invoke(boss, battleResult, () =>
+                        bool isFinalBoss = (actIndex >= _bossBattleTurns.Count - 1);
+
+                        if (isFinalBoss)
                         {
-                            OnRelicAcquired(bossId);
-                        });
+                            _currentPhase = GamePhase.GameClear;
+                            System.Action triggerEnding = () =>
+                            {
+                                EndingKind ending = _endingResolver != null && _endingRules != null
+                                    ? _endingResolver.Resolve(_currentState, _endingRules)
+                                    : EndingKind.Stamina;
+                                _endingDecidedChannel?.Raise(ending);
+                                FinalizeRun(isGameClear: true);
+                            };
+
+                            if (OnBossBattleOccurred != null)
+                            {
+                                OnBossBattleOccurred.Invoke(boss, battleResult, triggerEnding);
+                            }
+                            else
+                            {
+                                triggerEnding();
+                            }
+                            return;
+                        }
+
+                        // Act 1〜3 ボス勝利: レリックドラフト画面へ
+                        _currentPhase = GamePhase.ShowingRelicDraft;
+                        System.Action proceedToDraft = () =>
+                        {
+                            List<RelicSO> draftOptions = GetDraftCandidates();
+                            if (OnRelicDraftRequested != null)
+                            {
+                                OnRelicDraftRequested.Invoke(draftOptions);
+                            }
+                            else
+                            {
+                                // UI未バインド（テスト実行時など）の自動フォールバック
+                                int fallbackRelicId = draftOptions.Count > 0 ? draftOptions[0].RelicId : bossId;
+                                OnRelicAcquired(fallbackRelicId);
+                            }
+                        };
+
+                        if (OnBossBattleOccurred != null)
+                        {
+                            OnBossBattleOccurred.Invoke(boss, battleResult, proceedToDraft);
+                        }
+                        else
+                        {
+                            proceedToDraft();
+                        }
                         return;
                     }
                     else
@@ -353,6 +403,41 @@ namespace Game.Features.GameFlow
             _currentState = _currentState with { AcquiredRelicIds = newIds };
             _gameStateChannel?.Raise(_currentState);
             _currentPhase = GamePhase.WaitingInput;
+        }
+
+        /// <summary>
+        /// カタログから現在未所持のレリックを最大3件抽出する。
+        /// </summary>
+        public List<RelicSO> GetDraftCandidates()
+        {
+            List<RelicSO> candidates = new List<RelicSO>();
+            if (_relicCatalog != null && _relicCatalog.Relics != null)
+            {
+                foreach (RelicSO relic in _relicCatalog.Relics)
+                {
+                    if (relic == null) continue;
+
+                    bool alreadyAcquired = false;
+                    if (_currentState != null && _currentState.AcquiredRelicIds != null)
+                    {
+                        for (int i = 0; i < _currentState.AcquiredRelicIds.Count; i++)
+                        {
+                            if (_currentState.AcquiredRelicIds[i] == relic.RelicId)
+                            {
+                                alreadyAcquired = true;
+                                break;
+                            }
+                        }
+                    }
+
+                    if (!alreadyAcquired)
+                    {
+                        candidates.Add(relic);
+                        if (candidates.Count >= 3) break;
+                    }
+                }
+            }
+            return candidates;
         }
     }
 }
