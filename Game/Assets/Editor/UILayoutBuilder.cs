@@ -163,14 +163,18 @@ namespace Game.EditorScripts
             CreateLabel(rect, "PointsText", "POINTS: 0", new Vector2(750, 0), new Vector2(200, 50), 28, TextAlignmentOptions.Right);
 
             // StatusView の SerializedObject バインド
-            GameStateEventChannelSO channel = AssetDatabase.LoadAssetAtPath<GameStateEventChannelSO>("Assets/Data/Channels/GameStateEventChannel.asset");
+            GameStateEventChannelSO channel = AssetDatabase.LoadAssetAtPath<GameStateEventChannelSO>("Assets/Data/Channels/GameStateChannel.asset");
             SerializedObject so = new SerializedObject(view);
             so.FindProperty("_gameStateChannel").objectReferenceValue = channel;
             so.FindProperty("_turnText").objectReferenceValue = turnGo.GetComponent<TextMeshProUGUI>();
             so.FindProperty("_staminaText").objectReferenceValue = staminaGo.transform.Find("Label").GetComponent<TextMeshProUGUI>();
             so.FindProperty("_skillText").objectReferenceValue = skillGo.transform.Find("Label").GetComponent<TextMeshProUGUI>();
             so.FindProperty("_mentalText").objectReferenceValue = mentalGo.transform.Find("Label").GetComponent<TextMeshProUGUI>();
+            so.FindProperty("_staminaBarFill").objectReferenceValue = staminaGo.transform.Find("BarBg/BarFill")?.GetComponent<RectTransform>();
+            so.FindProperty("_skillBarFill").objectReferenceValue = skillGo.transform.Find("BarBg/BarFill")?.GetComponent<RectTransform>();
+            so.FindProperty("_mentalBarFill").objectReferenceValue = mentalGo.transform.Find("BarBg/BarFill")?.GetComponent<RectTransform>();
             so.ApplyModifiedProperties();
+
         }
 
         private static void SetupCommandPanel(Transform canvasTr)
@@ -271,7 +275,7 @@ namespace Game.EditorScripts
             {
                 SerializedObject so = new SerializedObject(draftView);
                 so.FindProperty("_panelRoot").objectReferenceValue = rootTr != null ? rootTr.gameObject : go;
-                BindAsset<RelicAcquiredChannelSO>(so, "_relicAcquiredChannel", "Assets/Data/Channels/RelicAcquiredChannel.asset");
+                BindAsset<RelicAcquiredChannelSO>(so, "_relicAcquiredChannel", "Assets/Features/Relic/Instances/RelicAcquiredChannel.asset");
                 SerializedProperty cardsProp = so.FindProperty("_cardViews");
                 if (cardsProp != null)
                 {
@@ -547,21 +551,21 @@ namespace Game.EditorScripts
             if (controller == null) return;
 
             SerializedObject so = new SerializedObject(controller);
-            so.FindProperty("_gameRules").objectReferenceValue = AssetDatabase.LoadAssetAtPath<GameRulesSO>("Assets/Data/Rules/GameRules.asset");
-            so.FindProperty("_commandResolver").objectReferenceValue = AssetDatabase.LoadAssetAtPath<CommandResolverSO>("Assets/Data/Commands/CommandResolver.asset");
-            so.FindProperty("_eventCatalog").objectReferenceValue = AssetDatabase.LoadAssetAtPath<GameEventCatalogSO>("Assets/Data/Events/GameEventCatalog.asset");
-            so.FindProperty("_eventResolver").objectReferenceValue = AssetDatabase.LoadAssetAtPath<EventResolverSO>("Assets/Data/Events/EventResolver.asset");
-            so.FindProperty("_endingRules").objectReferenceValue = AssetDatabase.LoadAssetAtPath<EndingRulesSO>("Assets/Data/Endings/EndingRules.asset");
-            so.FindProperty("_endingResolver").objectReferenceValue = AssetDatabase.LoadAssetAtPath<EndingResolverSO>("Assets/Data/Endings/EndingResolver.asset");
-            so.FindProperty("_gameStateChannel").objectReferenceValue = AssetDatabase.LoadAssetAtPath<GameStateEventChannelSO>("Assets/Data/Channels/GameStateEventChannel.asset");
-            so.FindProperty("_eventFiredChannel").objectReferenceValue = AssetDatabase.LoadAssetAtPath<GameEventFiredChannelSO>("Assets/Data/Channels/GameEventFiredChannel.asset");
-            so.FindProperty("_endingDecidedChannel").objectReferenceValue = AssetDatabase.LoadAssetAtPath<EndingDecidedChannelSO>("Assets/Data/Channels/EndingDecidedChannel.asset");
-            so.FindProperty("_relicCatalog").objectReferenceValue = AssetDatabase.LoadAssetAtPath<RelicCatalogSO>("Assets/Features/Relic/Instances/RelicCatalog.asset");
-            so.FindProperty("_relicResolver").objectReferenceValue = AssetDatabase.LoadAssetAtPath<RelicResolverSO>("Assets/Features/Relic/Instances/RelicResolver.asset");
-            so.FindProperty("_bossCatalog").objectReferenceValue = AssetDatabase.LoadAssetAtPath<BossCatalogSO>("Assets/Features/Boss/Instances/BossCatalog.asset");
-            so.FindProperty("_autoBattleResolver").objectReferenceValue = AssetDatabase.LoadAssetAtPath<AutoBattleResolverSO>("Assets/Features/Boss/Instances/AutoBattleResolver.asset");
-            so.FindProperty("_metaPointResolver").objectReferenceValue = AssetDatabase.LoadAssetAtPath<MetaPointResolverSO>("Assets/Features/MetaProgression/Instances/MetaPointResolver.asset");
-            so.FindProperty("_metaUnlockCatalog").objectReferenceValue = AssetDatabase.LoadAssetAtPath<MetaUnlockCatalogSO>("Assets/Features/MetaProgression/Instances/MetaUnlockCatalog.asset");
+            BindAsset<GameRulesSO>(so, "_gameRules", "Assets/Data/Rules/GameRules.asset");
+            BindAsset<CommandResolverSO>(so, "_commandResolver", "Assets/Data/Commands/CommandResolver.asset");
+            BindAsset<GameEventCatalogSO>(so, "_eventCatalog", "Assets/Data/Events/GameEventCatalog.asset");
+            BindAsset<EventResolverSO>(so, "_eventResolver", "Assets/Data/Events/EventResolver.asset");
+            BindAsset<EndingRulesSO>(so, "_endingRules", "Assets/Data/Endings/EndingRules.asset");
+            BindAsset<EndingResolverSO>(so, "_endingResolver", "Assets/Data/Endings/EndingResolver.asset");
+            BindAsset<GameStateEventChannelSO>(so, "_gameStateChannel", "Assets/Data/Channels/GameStateChannel.asset");
+            BindAsset<GameEventFiredChannelSO>(so, "_eventFiredChannel", "Assets/Data/Channels/EventFiredChannel.asset");
+            BindAsset<EndingDecidedChannelSO>(so, "_endingDecidedChannel", "Assets/Data/Channels/EndingDecidedChannel.asset");
+            BindAsset<RelicCatalogSO>(so, "_relicCatalog", "Assets/Features/Relic/Instances/RelicCatalog.asset");
+            BindAsset<RelicResolverSO>(so, "_relicResolver", "Assets/Features/Relic/Instances/RelicResolver.asset");
+            BindAsset<BossCatalogSO>(so, "_bossCatalog", "Assets/Features/Boss/Instances/BossCatalog.asset");
+            BindAsset<AutoBattleResolverSO>(so, "_autoBattleResolver", "Assets/Features/Boss/Instances/AutoBattleResolver.asset");
+            BindAsset<MetaPointResolverSO>(so, "_metaPointResolver", "Assets/Features/MetaProgression/Instances/MetaPointResolver.asset");
+            BindAsset<MetaUnlockCatalogSO>(so, "_metaUnlockCatalog", "Assets/Features/MetaProgression/Instances/MetaUnlockCatalog.asset");
 
             int[] bossBattleTurns = { 6, 12, 18, 24 };
             SerializedProperty turnsProp = so.FindProperty("_bossBattleTurns");

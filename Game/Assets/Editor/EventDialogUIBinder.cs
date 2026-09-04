@@ -37,6 +37,13 @@ namespace Game.EditorScripts
                 return;
             }
 
+            // 資産のロードは必ずシーンを開いた後に行う。
+            // EditorSceneManager.OpenScene(Single) はそれ以前にロードした
+            // UnityEngine.Object 参照を無効化する。無効化された参照は
+            // GetType() は返すが == null が真になる「偽 null」であり、
+            // 開く前のチェックを通過して代入時に静かに null を書き込む。
+            EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
+
             VisualTreeAsset uxml = AssetDatabase.LoadAssetAtPath<VisualTreeAsset>(UxmlPath);
             if (uxml == null)
             {
@@ -51,8 +58,6 @@ namespace Game.EditorScripts
                 Debug.LogError($"[EventDialogUIBinder] Event channel not found: {ChannelPath}");
                 return;
             }
-
-            EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
 
             GameObject panel = FindInScene(PanelName);
             if (panel == null)
@@ -79,29 +84,20 @@ namespace Game.EditorScripts
                     + "The UI will not render until one is assigned to the UIDocument.");
             }
 
-            SerializedObject docSo = new SerializedObject(document);
-            SerializedProperty sourceProp = docSo.FindProperty("sourceAsset");
-            if (sourceProp == null)
+            // UIDocument は public プロパティを持つ。SerializedObject 経由で
+            // バッキングフィールドを直接叩くと、内部のセッター処理を飛ばすため
+            // 値が定着しないことがある（実際 sourceAsset が null のままになった）。
+            document.visualTreeAsset = uxml;
+            if (document.panelSettings == null && panelSettings is PanelSettings ps)
             {
-                Debug.LogError("[EventDialogUIBinder] UIDocument has no 'sourceAsset' property. "
-                    + "The Unity version may have renamed it.");
-                return;
+                document.panelSettings = ps;
             }
-            sourceProp.objectReferenceValue = uxml;
+            EditorUtility.SetDirty(document);
 
-            SerializedProperty panelSettingsProp = docSo.FindProperty("m_PanelSettings");
-            if (panelSettingsProp != null && panelSettingsProp.objectReferenceValue == null
-                && panelSettings != null)
+            // 書き込めたことを確認する。ここで落とせば、半端に結線されたシーンを保存せずに済む
+            if (document.visualTreeAsset == null)
             {
-                panelSettingsProp.objectReferenceValue = panelSettings;
-            }
-            docSo.ApplyModifiedPropertiesWithoutUndo();
-
-            // 書き込めたことを確認する。SerializedObject は黙って落ちることがある
-            docSo.Update();
-            if (docSo.FindProperty("sourceAsset").objectReferenceValue == null)
-            {
-                Debug.LogError("[EventDialogUIBinder] sourceAsset remained null after apply. "
+                Debug.LogError("[EventDialogUIBinder] visualTreeAsset remained null after assignment. "
                     + "The UXML was not bound.");
                 return;
             }
