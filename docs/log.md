@@ -1099,6 +1099,82 @@ Windows PowerShell 5.1 は BOM が無い場合 cp932 として読むため、日
   想定外の push 経路がある。
 
 ---
+### 実行者の調査結果 ─ headless Gemini は不可能（結論・再調査不要）
+
+自律実行の実行者を確定させるための調査。**結論から先に書く。無料で Gemini を
+headless 実行する方法は存在しない。** 以下は再調査を防ぐための記録である。
+
+#### 1. 夜間実行は 3 日間、一度も成立していなかった
+
+`logs/auto_runner/run_*.log` を全期間走査した結果、SDK の成功記録は **0 件**。
+毎回このエラーで失敗していた。
+
+```
+[SDK] エージェント実行エラー: A Gemini API key is required.
+```
+
+**`auto/wip` の成果物を作っていたのは Gemini ではなく Claude（Opus / Sonnet）だった。**
+唯一の ACCEPT も、00_rules 違反の `RelicDraftDialogViewTests.cs` も Claude の産物である。
+「Gemini の品質が悪くて夜間実行が回らない」という前提は誤りで、Gemini は一度も
+打席に立っていなかった。
+
+なお 01:54〜02:12 に 17 回のクラッシュループがあった
+（`'<' not supported between instances of 'NoneType' and 'int'` = `should_use_claude()` の
+`None < 25`）。Part A で当該関数を削除済みのため解消している。
+
+#### 2. 調べた経路と結果
+
+| 経路 | 結果 |
+|---|---|
+| `google.antigravity` SDK | **不可**。`models.py:119` が `GEMINI_API_KEY` を無条件要求。IDE のサブスク枠にフォールバックしない |
+| `agy` CLI | **存在しない**。`Antigravity IDE/bin` にあるのは `antigravity-ide` のみ |
+| `antigravity-ide` CLI | **不可**。VS Code フォークの CLI で diff/merge/goto のみ。エージェントモード無し |
+| Language Server の HTTP RPC | 口はある（ポート 53530 等が CSRF で 403）。ただしトークンは IDE のメモリ内生成。**追わない**（脆く、ToS に触れうる） |
+| **Gemini CLI 0.58.0** (`@google/gemini-cli`) | **不可**。`-p` による headless 実行機能はあるが、認証で拒否される |
+
+Gemini CLI の拒否メッセージ（Google アカウントの OAuth は成功した上で）:
+
+```
+This client is no longer supported for Gemini Code Assist for individuals.
+To continue using Gemini, please migrate to the Antigravity suite of products
+```
+
+**Google が Gemini CLI の個人向け無料枠を廃止し、Antigravity へ誘導している。**
+残る認証方式は `gemini-api-key`（従量課金）と `vertex-ai`（GCP 課金）のみで、
+人間ディレクターの判断により課金は却下。
+
+#### 3. 確定した作業フロー
+
+Antigravity のサブスク枠は **IDE の UI からしか届かない**。したがって:
+
+```
+① Claude セッション  session_brief.py で状態把握 → 判断 → 指示書発行
+② 人間（10秒）       指示書を Antigravity に貼る   ← 唯一の橋。自動化不能と確定
+③ Gemini（IDE内）    実装 → コミット
+④ ハーネス           nightly_gate が判定
+```
+
+**指示書は無駄な工程ではなく、Claude の限られた枠から Gemini の潤沢な枠へ
+仕事を移す唯一の橋である。** ②を消す方法が無い以上、②を軽くする方向に投資する。
+
+夜間の無人実行は実行者不在のため停止（タスクは Disabled）。
+
+#### 4. 副産物
+
+- **Unity-MCP は Claude Code でも使える**（人間ディレクターの指摘により判明）。
+  `unityMCP` は `http://127.0.0.1:8080/mcp` の HTTP エンドポイントであり、
+  プロジェクト直下に `.mcp.json` を作成して登録した。Audit-02 の
+  「Claude Code は使えない」は誤りで訂正済み。ただし MCP サーバは Unity Editor 内で
+  動くため、**エディタを開いていなければ Gemini 側からも使えない**。
+- `.mcp.json` / `Game/.mcp.json` を `PROTECTED_PREFIXES` に追加した。
+  MCP サーバの追加はエージェントが自分にツールを生やす行為であり、
+  依存パッケージの追加（G-2）と同じ性質を持つ。
+- `scripts/session_brief.py` を追加。Claude の枠の律速は判断ではなく
+  「セッション冒頭の状態把握」だったため（本日 1 セッションで 20 回以上の
+  ツール呼び出し）、git / cycles / 指示書 / ベースライン / 実行者状態を
+  1 コマンドにまとめた。
+
+---
 ## 評価指標の定義
 
 本プロジェクトで記録している指標のうち、既存の評価系との対応は以下の通り。
