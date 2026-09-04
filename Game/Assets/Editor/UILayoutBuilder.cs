@@ -107,7 +107,10 @@ namespace Game.EditorScripts
             SetupMetaShopDialogPanel(canvas.transform);
             SetupEndingPanel(canvas.transform);
 
-            // 6. GameFlowController へのバインド
+            // 6. UIViews の構築（常時アクティブな View コンポーネントホスト）
+            SetupUIViews(canvas.transform);
+
+            // 7. GameFlowController へのバインド
             RebindGameFlowControllerReferences(canvas.transform);
 
             EditorSceneManager.MarkSceneDirty(scene);
@@ -252,41 +255,17 @@ namespace Game.EditorScripts
         private static void SetupRelicDraftDialogPanel(Transform canvasTr)
         {
             Transform tr = canvasTr.Find("RelicDraftDialogPanel");
-            GameObject go = tr != null ? tr.gameObject : new GameObject("RelicDraftDialogPanel", typeof(RectTransform), typeof(Image), typeof(RelicDraftDialogView));
-            if (go.GetComponent<RelicDraftDialogView>() == null)
-            {
-                go.AddComponent<RelicDraftDialogView>();
-            }
+            GameObject go = tr != null ? tr.gameObject : new GameObject("RelicDraftDialogPanel", typeof(RectTransform), typeof(Image));
             go.transform.SetParent(canvasTr, false);
 
             ConfigureModalPanel(go.transform, new Vector2(1150, 650), ColorBgDialog);
             Transform rootTr = go.transform.Find("PanelRoot");
-            List<RelicCardView> cardViews = new List<RelicCardView>();
             if (rootTr != null)
             {
                 CreateLabel(rootTr.GetComponent<RectTransform>(), "DraftTitleText", "RELIC DRAFT (SELECT PASSIVE)", new Vector2(0, 240), new Vector2(800, 50), 32, TextAlignmentOptions.Center);
-                cardViews.Add(CreateRelicCard(rootTr.GetComponent<RectTransform>(), "Card1", "Iron Dumbbell", "+5 Stamina/Turn", new Vector2(-340, -20)));
-                cardViews.Add(CreateRelicCard(rootTr.GetComponent<RectTransform>(), "Card2", "Book of Wisdom", "+20% Skill Gain", new Vector2(0, -20)));
-                cardViews.Add(CreateRelicCard(rootTr.GetComponent<RectTransform>(), "Card3", "Healing Amulet", "+30% Mental Guard", new Vector2(340, -20)));
-            }
-
-            RelicDraftDialogView draftView = go.GetComponent<RelicDraftDialogView>();
-            if (draftView != null)
-            {
-                SerializedObject so = new SerializedObject(draftView);
-                so.FindProperty("_panelRoot").objectReferenceValue = rootTr != null ? rootTr.gameObject : go;
-                BindAsset<RelicAcquiredChannelSO>(so, "_relicAcquiredChannel", "Assets/Features/Relic/Instances/RelicAcquiredChannel.asset");
-                SerializedProperty cardsProp = so.FindProperty("_cardViews");
-                if (cardsProp != null)
-                {
-                    cardsProp.ClearArray();
-                    for (int i = 0; i < cardViews.Count; i++)
-                    {
-                        cardsProp.InsertArrayElementAtIndex(i);
-                        cardsProp.GetArrayElementAtIndex(i).objectReferenceValue = cardViews[i];
-                    }
-                }
-                so.ApplyModifiedProperties();
+                CreateRelicCard(rootTr.GetComponent<RectTransform>(), "Card1", "Iron Dumbbell", "+5 Stamina/Turn", new Vector2(-340, -20));
+                CreateRelicCard(rootTr.GetComponent<RectTransform>(), "Card2", "Book of Wisdom", "+20% Skill Gain", new Vector2(0, -20));
+                CreateRelicCard(rootTr.GetComponent<RectTransform>(), "Card3", "Healing Amulet", "+30% Mental Guard", new Vector2(340, -20));
             }
 
             go.SetActive(false);
@@ -335,7 +314,7 @@ namespace Game.EditorScripts
         private static void SetupEndingPanel(Transform canvasTr)
         {
             Transform tr = canvasTr.Find("EndingPanel");
-            GameObject go = tr != null ? tr.gameObject : new GameObject("EndingPanel", typeof(RectTransform), typeof(Image), typeof(EndingView));
+            GameObject go = tr != null ? tr.gameObject : new GameObject("EndingPanel", typeof(RectTransform), typeof(Image));
             go.transform.SetParent(canvasTr, false);
 
             ConfigureModalPanel(go.transform, new Vector2(950, 650), ColorBgDialog);
@@ -347,6 +326,26 @@ namespace Game.EditorScripts
                 CreateModalButton(rootTr.GetComponent<RectTransform>(), "RestartButton", "RESTART / SHOP", new Vector2(0, -180), new Vector2(450, 70));
             }
             go.SetActive(false);
+        }
+
+        private static void SetupUIViews(Transform canvasTr)
+        {
+            Transform tr = canvasTr.Find("UIViews");
+            GameObject go = tr != null ? tr.gameObject : new GameObject("UIViews", typeof(RectTransform));
+            go.transform.SetParent(canvasTr, false);
+            go.SetActive(true);
+
+            EnsureRectTransform(go);
+
+            // EndingView と RelicDraftDialogView を常時アクティブなホストへ配置
+            if (go.GetComponent<EndingView>() == null)
+            {
+                go.AddComponent<EndingView>();
+            }
+            if (go.GetComponent<RelicDraftDialogView>() == null)
+            {
+                go.AddComponent<RelicDraftDialogView>();
+            }
         }
 
         // --- UI 生成ヘルパー群 ---
@@ -581,6 +580,7 @@ namespace Game.EditorScripts
             BindStatusViewSceneReferences(canvasTr, controller);
             BindRelicDraftDialogSceneReferences(canvasTr, controller);
             BindBossBattleDialogSceneReferences(canvasTr);
+            BindEndingViewSceneReferences(canvasTr);
         }
 
         private static void BindBossBattleDialogSceneReferences(Transform canvasTr)
@@ -611,18 +611,18 @@ namespace Game.EditorScripts
                 Debug.LogError("[UILayoutBuilder] BossBattleDialogPanel/PanelRoot not found for _panelRoot. Existing reference is kept.");
             }
 
-            BindComponentReference<TextMeshProUGUI>(so, "_bossNameText", rootTr, "BossTitleText", "BossNameText");
-            BindComponentReference<TextMeshProUGUI>(so, "_bossHpText", rootTr, "BossHpGroup/Label", "BossHpText");
-            BindComponentReference<Slider>(so, "_bossHpSlider", rootTr, "BossHpSlider", "BossHpGroup/BossHpSlider");
-            BindComponentReference<TextMeshProUGUI>(so, "_shieldText", rootTr, "BossShieldGroup/Label", "ShieldText");
-            BindComponentReference<TextMeshProUGUI>(so, "_battleLogText", rootTr, "BattleLogText");
-            BindComponentReference<Button>(so, "_dismissButton", rootTr, "AutoBattleNextButton", "DismissButton");
-            BindComponentReference<TextMeshProUGUI>(so, "_dismissButtonText", rootTr, "AutoBattleNextButton/Text", "DismissButton/Text", "DismissButtonText");
+            BindComponentReference<TextMeshProUGUI>(so, "_bossNameText", rootTr, "BossBattleDialogPanel", "BossTitleText", "BossNameText");
+            BindComponentReference<TextMeshProUGUI>(so, "_bossHpText", rootTr, "BossBattleDialogPanel", "BossHpGroup/Label", "BossHpText");
+            BindComponentReference<Slider>(so, "_bossHpSlider", rootTr, "BossBattleDialogPanel", "BossHpSlider", "BossHpGroup/BossHpSlider");
+            BindComponentReference<TextMeshProUGUI>(so, "_shieldText", rootTr, "BossBattleDialogPanel", "BossShieldGroup/Label", "ShieldText");
+            BindComponentReference<TextMeshProUGUI>(so, "_battleLogText", rootTr, "BossBattleDialogPanel", "BattleLogText");
+            BindComponentReference<Button>(so, "_dismissButton", rootTr, "BossBattleDialogPanel", "AutoBattleNextButton", "DismissButton");
+            BindComponentReference<TextMeshProUGUI>(so, "_dismissButtonText", rootTr, "BossBattleDialogPanel", "AutoBattleNextButton/Text", "DismissButton/Text", "DismissButtonText");
 
             so.ApplyModifiedProperties();
         }
 
-        private static void BindComponentReference<T>(SerializedObject so, string propName, Transform rootTr, params string[] candidatePaths) where T : Component
+        private static void BindComponentReference<T>(SerializedObject so, string propName, Transform rootTr, string containerName, params string[] candidatePaths) where T : Component
         {
             SerializedProperty prop = so.FindProperty(propName);
             if (prop == null)
@@ -657,7 +657,7 @@ namespace Game.EditorScripts
             }
             else
             {
-                Debug.LogError($"[UILayoutBuilder] Element ({typeof(T).Name}) not found for '{propName}' (searched: {string.Join(", ", candidatePaths)}) under BossBattleDialogPanel. Existing reference is kept.");
+                Debug.LogError($"[UILayoutBuilder] Element ({typeof(T).Name}) not found for '{propName}' (searched: {string.Join(", ", candidatePaths)}) under {containerName}. Existing reference is kept.");
             }
         }
 
@@ -683,14 +683,107 @@ namespace Game.EditorScripts
 
         private static void BindRelicDraftDialogSceneReferences(Transform canvasTr, GameFlowController controller)
         {
-            Transform relicPanelTr = canvasTr.Find("RelicDraftDialogPanel");
-            if (relicPanelTr == null) return;
+            Transform viewsTr = canvasTr.Find("UIViews");
+            if (viewsTr == null)
+            {
+                Debug.LogError("[UILayoutBuilder] UIViews not found on Canvas for RelicDraftDialogView.");
+                return;
+            }
 
-            RelicDraftDialogView view = relicPanelTr.GetComponent<RelicDraftDialogView>();
-            if (view == null) return;
+            RelicDraftDialogView view = viewsTr.GetComponent<RelicDraftDialogView>();
+            if (view == null)
+            {
+                Debug.LogError("[UILayoutBuilder] RelicDraftDialogView component not found on UIViews.");
+                return;
+            }
 
             SerializedObject so = new SerializedObject(view);
             so.FindProperty("_gameFlowController").objectReferenceValue = controller;
+
+            Transform panelTr = canvasTr.Find("RelicDraftDialogPanel");
+            if (panelTr != null)
+            {
+                so.FindProperty("_panelRoot").objectReferenceValue = panelTr.gameObject;
+            }
+            else
+            {
+                Debug.LogError("[UILayoutBuilder] RelicDraftDialogPanel not found for RelicDraftDialogView._panelRoot.");
+            }
+
+            BindAsset<RelicAcquiredChannelSO>(so, "_relicAcquiredChannel", "Assets/Features/Relic/Instances/RelicAcquiredChannel.asset");
+
+            Transform rootTr = panelTr != null ? panelTr.Find("PanelRoot") : null;
+            if (rootTr != null)
+            {
+                RelicCardView[] cardViews = rootTr.GetComponentsInChildren<RelicCardView>(true);
+                SerializedProperty cardsProp = so.FindProperty("_cardViews");
+                if (cardsProp != null)
+                {
+                    cardsProp.ClearArray();
+                    for (int i = 0; i < cardViews.Length; i++)
+                    {
+                        cardsProp.InsertArrayElementAtIndex(i);
+                        cardsProp.GetArrayElementAtIndex(i).objectReferenceValue = cardViews[i];
+                    }
+                }
+            }
+            else
+            {
+                Debug.LogError("[UILayoutBuilder] RelicDraftDialogPanel/PanelRoot not found for RelicDraftDialogView._cardViews.");
+            }
+
+            so.ApplyModifiedProperties();
+        }
+
+        private static void BindEndingViewSceneReferences(Transform canvasTr)
+        {
+            Transform viewsTr = canvasTr.Find("UIViews");
+            if (viewsTr == null)
+            {
+                Debug.LogError("[UILayoutBuilder] UIViews not found on Canvas for EndingView.");
+                return;
+            }
+
+            EndingView view = viewsTr.GetComponent<EndingView>();
+            if (view == null)
+            {
+                Debug.LogError("[UILayoutBuilder] EndingView component not found on UIViews.");
+                return;
+            }
+
+            SerializedObject so = new SerializedObject(view);
+
+            BindAsset<EndingDecidedChannelSO>(so, "_endingDecidedChannel", "Assets/Data/Channels/EndingDecidedChannel.asset");
+
+            Transform panelTr = canvasTr.Find("EndingPanel");
+            if (panelTr != null)
+            {
+                so.FindProperty("_panelRoot").objectReferenceValue = panelTr.gameObject;
+            }
+            else
+            {
+                Debug.LogError("[UILayoutBuilder] EndingPanel not found for EndingView._panelRoot.");
+            }
+
+            Transform rootTr = panelTr != null ? panelTr.Find("PanelRoot") : null;
+            if (rootTr != null)
+            {
+                Transform titleTr = rootTr.Find("EndingTitleText");
+                TextMeshProUGUI titleTmp = titleTr != null ? titleTr.GetComponent<TextMeshProUGUI>() : null;
+                if (titleTmp != null)
+                {
+                    so.FindProperty("_resultText").objectReferenceValue = titleTmp;
+                }
+                else
+                {
+                    Debug.LogError("[UILayoutBuilder] EndingPanel/PanelRoot/EndingTitleText (TextMeshProUGUI) not found for EndingView._resultText.");
+                }
+            }
+            else
+            {
+                Debug.LogError("[UILayoutBuilder] EndingPanel/PanelRoot not found for EndingView._resultText.");
+            }
+
             so.ApplyModifiedProperties();
         }
 

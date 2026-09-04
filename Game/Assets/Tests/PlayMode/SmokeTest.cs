@@ -240,10 +240,29 @@ namespace Game.Tests.PlayMode
                 ExecuteEvents.pointerClickHandler);
             Assert.IsTrue(dismissed, "BossBattleDialogView の dismissButton クリックが受理されなかった。");
 
-            // ダイアログが閉じ、WaitingInput へ復帰することを確認
+            // ボス勝利後、レリックドラフト画面が表示されることを確認
+            RelicDraftDialogView relicDraftDialog = UnityEngine.Object.FindFirstObjectByType<RelicDraftDialogView>(FindObjectsInactive.Include);
+            Assert.IsTrue(relicDraftDialog != null, "RelicDraftDialogView がシーンに見つからない。");
             yield return WaitForCondition(
-                () => !bossDialog.IsVisible && flow.CurrentPhase == GamePhase.WaitingInput,
-                () => $"ボス戦ダイアログ決定後に入力待ちへ復帰しなかった。IsVisible={bossDialog.IsVisible}, Phase={flow.CurrentPhase}");
+                () => relicDraftDialog.IsVisible,
+                () => $"ボス戦ダイアログ決定後に RelicDraftDialogView が表示されなかった。Phase={flow.CurrentPhase}");
+
+            // カード1を選択してドラフトを完了する
+            List<RelicCardView> cards = GetField<List<RelicCardView>>(relicDraftDialog, "_cardViews");
+            Assert.IsTrue(cards != null && cards.Count > 0, "RelicDraftDialogView._cardViews が空。");
+            Button selectButton = GetSerializedField<Button>(cards[0], "_selectButton");
+            Assert.IsTrue(selectButton != null, "RelicCardView._selectButton が null。");
+
+            bool cardClicked = ExecuteEvents.Execute(
+                selectButton.gameObject,
+                new PointerEventData(EventSystem.current),
+                ExecuteEvents.pointerClickHandler);
+            Assert.IsTrue(cardClicked, "RelicCardView の SelectButton クリックが受理されなかった。");
+
+            // ドラフトが閉じ、WaitingInput へ復帰することを確認
+            yield return WaitForCondition(
+                () => !relicDraftDialog.IsVisible && flow.CurrentPhase == GamePhase.WaitingInput,
+                () => $"レリックドラフト選択後に入力待ちへ復帰しなかった。IsVisible={relicDraftDialog.IsVisible}, Phase={flow.CurrentPhase}");
 
             // ---------- ターン 6 のコマンドを実行してターン 7 へ進める ----------
             bool turn6Clicked = ExecuteEvents.Execute(
@@ -265,6 +284,120 @@ namespace Game.Tests.PlayMode
             Assert.IsEmpty(
                 _capturedFailures,
                 "ターン 1〜7 進行中に Error / Exception / Assert ログが発生した:\n"
+                + string.Join("\n", _capturedFailures));
+        }
+
+        [UnityTest]
+        public IEnumerator MainGame_AdvanceToTurn24_AllBossesDefeated_ShowsEndingPanel_WithZeroExceptions()
+        {
+            // ---------- Arrange: MainGame をロード ----------
+            AsyncOperation load = SceneManager.LoadSceneAsync(SceneName, LoadSceneMode.Single);
+            Assert.IsTrue(load != null, $"シーン '{SceneName}' のロードを開始できなかった。");
+            while (!load.isDone) yield return null;
+            yield return null;
+
+            GameFlowController flow = UnityEngine.Object.FindFirstObjectByType<GameFlowController>();
+            Assert.IsTrue(flow != null, "GameFlowController が MainGame シーンに存在しない。");
+
+            BossBattleDialogView bossDialog = UnityEngine.Object.FindFirstObjectByType<BossBattleDialogView>(FindObjectsInactive.Include);
+            Assert.IsTrue(bossDialog != null, "BossBattleDialogView が MainGame シーンに存在しない。");
+
+            RelicDraftDialogView relicDraftDialog = UnityEngine.Object.FindFirstObjectByType<RelicDraftDialogView>(FindObjectsInactive.Include);
+            Assert.IsTrue(relicDraftDialog != null, "RelicDraftDialogView が MainGame シーンに存在しない。");
+
+            EndingView endingView = UnityEngine.Object.FindFirstObjectByType<EndingView>(FindObjectsInactive.Include);
+            Assert.IsTrue(endingView != null, "EndingView が MainGame シーンに存在しない。");
+
+            Button studyButton = FindCommandButtonByName(StudyButtonName).GetComponent<Button>();
+            Button trainButton = FindCommandButtonByName("TrainButton").GetComponent<Button>();
+            Button restButton = FindCommandButtonByName("RestButton").GetComponent<Button>();
+
+            Button bossDismissButton = GetSerializedField<Button>(bossDialog, "_dismissButton");
+            List<RelicCardView> relicCards = GetField<List<RelicCardView>>(relicDraftDialog, "_cardViews");
+
+            // 初期状態では EndingPanel と RelicDraftDialogPanel は非アクティブ
+            Assert.IsFalse(endingView.IsPanelActive, "初期状態で EndingView がアクティブになっている。");
+            Assert.IsFalse(relicDraftDialog.IsVisible, "初期状態で RelicDraftDialogView がアクティブになっている。");
+
+            // ---------- Act: ターン 1 から 24 まで進行 ----------
+            float maxTime = Time.realtimeSinceStartup + 30f;
+            int bossCount = 0;
+            int draftCount = 0;
+
+            while (!endingView.IsPanelActive && flow.CurrentPhase != GamePhase.GameOver)
+            {
+                if (Time.realtimeSinceStartup > maxTime)
+                {
+                    Assert.Fail($"30 秒以内にエンディング画面へ到達しなかった。Phase={flow.CurrentPhase}, Turn={flow.CurrentState?.CurrentTurn}");
+                }
+
+                if (bossDialog.gameObject.activeInHierarchy && bossDialog.IsVisible)
+                {
+                    bossCount++;
+                    bool dismissed = ExecuteEvents.Execute(
+                        bossDismissButton.gameObject,
+                        new PointerEventData(EventSystem.current),
+                        ExecuteEvents.pointerClickHandler);
+                    Assert.IsTrue(dismissed, $"BossBattleDialogView の dismissButton クリックが受理されなかった。bossCount={bossCount}, btnActive={bossDismissButton.gameObject.activeInHierarchy}, btnEnabled={bossDismissButton.isActiveAndEnabled}");
+                }
+                else if (relicDraftDialog.IsVisible)
+                {
+                    draftCount++;
+                    Assert.IsTrue(relicCards.Count > 0, "RelicDraftDialogView._cardViews が空。");
+                    Button cardBtn = GetSerializedField<Button>(relicCards[0], "_selectButton");
+                    bool cardClicked = ExecuteEvents.Execute(
+                        cardBtn.gameObject,
+                        new PointerEventData(EventSystem.current),
+                        ExecuteEvents.pointerClickHandler);
+                    Assert.IsTrue(cardClicked, "RelicCardView の SelectButton クリックが受理されなかった。");
+                }
+                else if (flow.CurrentPhase == GamePhase.WaitingInput)
+                {
+                    int turn = flow.CurrentState.CurrentTurn;
+                    bool beforeBoss = (turn == 5 || turn == 11 || turn == 17 || turn == 23);
+
+                    Button chosen;
+                    if (beforeBoss && flow.CurrentState.Stamina < 70)
+                    {
+                        chosen = restButton;
+                    }
+                    else if (flow.CurrentState.Stamina <= 50)
+                    {
+                        chosen = restButton;
+                    }
+                    else if (flow.CurrentState.Mental <= 35)
+                    {
+                        chosen = studyButton;
+                    }
+                    else
+                    {
+                        chosen = trainButton;
+                    }
+
+                    bool clicked = ExecuteEvents.Execute(
+                        chosen.gameObject,
+                        new PointerEventData(EventSystem.current),
+                        ExecuteEvents.pointerClickHandler);
+                    Assert.IsTrue(clicked, $"コマンドボタン '{chosen.gameObject.name}' のクリックが受理されなかった。");
+                }
+
+                yield return null;
+            }
+
+            // UI 反映を確定させるため 1 フレーム待つ
+            yield return null;
+
+            // ---------- Assert: ターン 24 最終ボス撃破後のエンディング画面表示と例外ゼロ ----------
+            Assert.AreEqual(GamePhase.GameClear, flow.CurrentPhase, "GamePhase が GameClear に到達していない。");
+            Assert.AreEqual(4, bossCount, "4 回のボス戦ダイアログが表示されていない。");
+            Assert.AreEqual(3, draftCount, "Act 1〜3 の 3 回のレリックドラフトが表示されていない。");
+
+            Assert.IsTrue(endingView.IsPanelActive, "ゲームクリア後に EndingView.IsPanelActive が true になっていない。");
+            Assert.IsFalse(string.IsNullOrEmpty(endingView.DisplayedResult), "EndingView.DisplayedResult が空文字列。");
+
+            Assert.IsEmpty(
+                _capturedFailures,
+                "24 ターン進行中に Error / Exception / Assert ログが発生した:\n"
                 + string.Join("\n", _capturedFailures));
         }
 
@@ -331,6 +464,24 @@ namespace Game.Tests.PlayMode
                 + " 人間のアサインを確認せよ。");
 
             return value;
+        }
+
+        /// <summary>
+        /// [SerializeField] private フィールド（非 UnityEngine.Object 型）の実体を読む。
+        /// </summary>
+        private static T GetField<T>(Component target, string fieldName)
+        {
+            FieldInfo field = target.GetType().GetField(
+                fieldName, BindingFlags.NonPublic | BindingFlags.Instance);
+            Assert.IsTrue(
+                field != null, $"{target.GetType().Name}.{fieldName} というフィールドが存在しない。");
+
+            object value = field.GetValue(target);
+            Assert.IsTrue(
+                value != null,
+                $"{target.GetType().Name}.{fieldName} が null。");
+
+            return (T)value;
         }
     }
 }
