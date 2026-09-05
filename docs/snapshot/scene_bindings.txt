@@ -1,3 +1,8 @@
+Canvas  [active=true]
+  UiBootstrapper
+    _canvas -> Canvas/Canvas (Canvas)
+    _endingView -> UIViews/EndingView (EndingView)
+    _gameFlowController -> GameFlowController/GameFlowController (GameFlowController)
 Canvas/CommandPanel/RestButton  [active=true]
   CommandButtonView
     _button -> RestButton/Button (Button)
@@ -62,11 +67,7 @@ Canvas/UIViews  [active=true]
     _shieldText -> Label/TextMeshProUGUI (TextMeshProUGUI)
 Canvas/UIViews  [active=true]
   EndingView
-    _endingDecidedChannel -> EndingDecidedChannel (EndingDecidedChannelSO)
     _gameFlowController -> GameFlowController/GameFlowController (GameFlowController)
-    _panelRoot -> EndingPanel (GameObject)
-    _restartButton -> RestartButton/Button (Button)
-    _resultText -> EndingTitleText/TextMeshProUGUI (TextMeshProUGUI)
 Canvas/UIViews  [active=true]
   EventDialogView
     _bodyText -> EventDescriptionText/TextMeshProUGUI (TextMeshProUGUI)
@@ -107,4 +108,4 @@ GameFlowController  [active=true]
     _relicAcquiredChannel -> RelicAcquiredChannel (RelicAcquiredChannelSO)
     _relicCatalog -> RelicCatalog (RelicCatalogSO)
     _relicResolver -> RelicResolver (RelicResolverSO)
-=== components: 13 / bound: 75 / unbound: 8 ===
+=== components: 14 / bound: 74 / unbound: 8 ===

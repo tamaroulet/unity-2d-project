@@ -4,6 +4,7 @@
 版: 1.0（2026-09-05）
 入力: Research-07_AutonomousStudio_brief.md に対する Deep Research 回答 2 本
 裁定者: Claude Opus（Architect）
+承認: 2026-09-05 人間承認済み（Unity 継続 / AutoRunner 廃止 / ローカル SLM 却下）
 性質: 2 本が対立した点の裁定と、この現場の実測との突き合わせ
 ```
 

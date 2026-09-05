@@ -1,7 +1,7 @@
 # 自律型 AI ゲーム開発環境 — 目標定義書
 
 ```
-版: 2.0（2026-09-05）
+版: 2.0（2026-09-05。同日、人間承認済み）
 位置づけ: 目標アーキテクチャの定義。個別の設計判断は docs/decisions/ の ADR に落とす
 前提資料: docs/strategy/SOLO_AI_GAME_DEV_STRATEGY.md（現実認識と人間側の学習領域）
 外部資料: Deep Research 回答 2 本 → 裁定は docs/research/Research-07_AutonomousStudio_report.md
