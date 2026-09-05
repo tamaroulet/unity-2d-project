@@ -81,11 +81,11 @@ namespace Game.Tests.PlayMode
 
         private RunDriver()
         {
-            _bossDialog = Object.FindFirstObjectByType<BossBattleDialogView>(FindObjectsInactive.Include);
-            _relicDraft = Object.FindFirstObjectByType<RelicDraftDialogView>(FindObjectsInactive.Include);
-            _eventDialog = Object.FindFirstObjectByType<EventDialogView>(FindObjectsInactive.Include);
-            _metaShop = Object.FindFirstObjectByType<MetaShopDialogView>(FindObjectsInactive.Include);
-            _ending = Object.FindFirstObjectByType<EndingView>(FindObjectsInactive.Include);
+            _bossDialog = UnityEngine.Object.FindFirstObjectByType<BossBattleDialogView>(FindObjectsInactive.Include);
+            _relicDraft = UnityEngine.Object.FindFirstObjectByType<RelicDraftDialogView>(FindObjectsInactive.Include);
+            _eventDialog = UnityEngine.Object.FindFirstObjectByType<EventDialogView>(FindObjectsInactive.Include);
+            _metaShop = UnityEngine.Object.FindFirstObjectByType<MetaShopDialogView>(FindObjectsInactive.Include);
+            _ending = UnityEngine.Object.FindFirstObjectByType<EndingView>(FindObjectsInactive.Include);
 
             _bossDismiss = Field<Button>(_bossDialog, "_dismissButton");
             _eventOk = Field<Button>(_eventDialog, "_okButton");
@@ -255,7 +255,7 @@ namespace Game.Tests.PlayMode
         private static Button CommandButton(string gameObjectName)
         {
             foreach (CommandButtonView view in
-                     Object.FindObjectsByType<CommandButtonView>(FindObjectsInactive.Include, FindObjectsSortMode.None))
+                     UnityEngine.Object.FindObjectsByType<CommandButtonView>(FindObjectsInactive.Include, FindObjectsSortMode.None))
             {
                 if (view != null && view.gameObject.name == gameObjectName)
                 {
