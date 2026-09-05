@@ -72,3 +72,8 @@ Gemini   MSYS_NO_PATHCONV=1 agy -p "/quota" --dangerously-skip-permissions
 
 Gemini 側は「残り %」、Claude 側は「使用済み %」で向きが逆。
 `scripts/get_gemini_quota.ps1` は環境変数に依存していて画面外で動かない。上の方法へ置き換える（未実施）。
+
+## 常駐 Unity でのテスト実行（2026-09-05 確立）
+Unity 起動中に以下を実行（EditMode/PlayMode を一括実行し `logs/*_results.xml` を更新）:
+`python scripts/run_resident_tests.py`
+
