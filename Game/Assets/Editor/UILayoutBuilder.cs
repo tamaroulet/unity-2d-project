@@ -105,7 +105,6 @@ namespace Game.EditorScripts
             SetupRelicDraftDialogPanel(canvas.transform);
             SetupBossBattleDialogPanel(canvas.transform);
             SetupMetaShopDialogPanel(canvas.transform);
-            SetupEndingPanel(canvas.transform);
 
             // 6. UIViews の構築（常時アクティブな View コンポーネントホスト）
             SetupUIViews(canvas.transform);
@@ -326,23 +325,6 @@ namespace Game.EditorScripts
                 CreateShopItemCard(rootTr.GetComponent<RectTransform>(), "Item2", "Initial Skill +5\nCost: 100 Pts", new Vector2(0, 10));
                 CreateShopItemCard(rootTr.GetComponent<RectTransform>(), "Item3", "Initial Mental +15\nCost: 150 Pts", new Vector2(340, 10));
                 CreateModalButton(rootTr.GetComponent<RectTransform>(), "CloseShopButton", "CLOSE / NEXT RUN", new Vector2(0, -250), new Vector2(450, 60));
-            }
-            go.SetActive(false);
-        }
-
-        private static void SetupEndingPanel(Transform canvasTr)
-        {
-            Transform tr = canvasTr.Find("EndingPanel");
-            GameObject go = tr != null ? tr.gameObject : new GameObject("EndingPanel", typeof(RectTransform), typeof(Image));
-            go.transform.SetParent(canvasTr, false);
-
-            ConfigureModalPanel(go.transform, new Vector2(950, 650), ColorBgDialog);
-            Transform rootTr = go.transform.Find("PanelRoot");
-            if (rootTr != null)
-            {
-                CreateLabel(rootTr.GetComponent<RectTransform>(), "EndingTitleText", "GAME CLEAR!", new Vector2(0, 220), new Vector2(700, 60), 38, TextAlignmentOptions.Center);
-                CreateLabel(rootTr.GetComponent<RectTransform>(), "EndingDescriptionText", "You survived all 24 turns and defeated all 4 Act Bosses!\nEarned MetaPoints: +150 Pts", new Vector2(0, 60), new Vector2(700, 150), 24, TextAlignmentOptions.Center);
-                CreateModalButton(rootTr.GetComponent<RectTransform>(), "RestartButton", "RESTART / SHOP", new Vector2(0, -180), new Vector2(450, 70));
             }
             go.SetActive(false);
         }
@@ -611,7 +593,7 @@ namespace Game.EditorScripts
             BindAsset<EndingResolverSO>(so, "_endingResolver", "Assets/Data/Endings/EndingResolver.asset");
             BindAsset<GameStateEventChannelSO>(so, "_gameStateChannel", "Assets/Data/Channels/GameStateChannel.asset");
             BindAsset<GameEventFiredChannelSO>(so, "_eventFiredChannel", "Assets/Data/Channels/EventFiredChannel.asset");
-            BindAsset<EndingDecidedChannelSO>(so, "_endingDecidedChannel", "Assets/Data/Channels/EndingDecidedChannel.asset");
+            BindAsset<EndingDecidedChannelSO>(so, "_endingDecidedChannel", "Assets/Resources/EndingDecidedChannel.asset");
             BindAsset<RelicCatalogSO>(so, "_relicCatalog", "Assets/Features/Relic/Instances/RelicCatalog.asset");
             BindAsset<RelicResolverSO>(so, "_relicResolver", "Assets/Features/Relic/Instances/RelicResolver.asset");
             BindAsset<BossCatalogSO>(so, "_bossCatalog", "Assets/Features/Boss/Instances/BossCatalog.asset");
@@ -633,7 +615,6 @@ namespace Game.EditorScripts
             BindStatusViewSceneReferences(canvasTr, controller);
             BindRelicDraftDialogSceneReferences(canvasTr, controller);
             BindBossBattleDialogSceneReferences(canvasTr);
-            BindEndingViewSceneReferences(canvasTr, controller);
             BindMetaShopDialogSceneReferences(canvasTr, controller);
             BindEventDialogSceneReferences(canvasTr, controller);
         }
@@ -912,69 +893,6 @@ namespace Game.EditorScripts
             so.ApplyModifiedProperties();
         }
 
-        private static void BindEndingViewSceneReferences(Transform canvasTr, GameFlowController controller)
-        {
-            Transform viewsTr = canvasTr.Find("UIViews");
-            if (viewsTr == null)
-            {
-                Debug.LogError("[UILayoutBuilder] UIViews not found on Canvas for EndingView.");
-                return;
-            }
-
-            EndingView view = viewsTr.GetComponent<EndingView>();
-            if (view == null)
-            {
-                Debug.LogError("[UILayoutBuilder] EndingView component not found on UIViews.");
-                return;
-            }
-
-            SerializedObject so = new SerializedObject(view);
-
-            BindAsset<EndingDecidedChannelSO>(so, "_endingDecidedChannel", "Assets/Data/Channels/EndingDecidedChannel.asset");
-            so.FindProperty("_gameFlowController").objectReferenceValue = controller;
-
-            Transform panelTr = canvasTr.Find("EndingPanel");
-            if (panelTr != null)
-            {
-                so.FindProperty("_panelRoot").objectReferenceValue = panelTr.gameObject;
-            }
-            else
-            {
-                Debug.LogError("[UILayoutBuilder] EndingPanel not found for EndingView._panelRoot.");
-            }
-
-            Transform rootTr = panelTr != null ? panelTr.Find("PanelRoot") : null;
-            if (rootTr != null)
-            {
-                Transform titleTr = rootTr.Find("EndingTitleText");
-                TextMeshProUGUI titleTmp = titleTr != null ? titleTr.GetComponent<TextMeshProUGUI>() : null;
-                if (titleTmp != null)
-                {
-                    so.FindProperty("_resultText").objectReferenceValue = titleTmp;
-                }
-                else
-                {
-                    Debug.LogError("[UILayoutBuilder] EndingPanel/PanelRoot/EndingTitleText (TextMeshProUGUI) not found for EndingView._resultText.");
-                }
-
-                Transform restartBtnTr = rootTr.Find("RestartButton");
-                Button restartBtn = restartBtnTr != null ? restartBtnTr.GetComponent<Button>() : null;
-                if (restartBtn != null)
-                {
-                    so.FindProperty("_restartButton").objectReferenceValue = restartBtn;
-                }
-                else
-                {
-                    Debug.LogError("[UILayoutBuilder] EndingPanel/PanelRoot/RestartButton (Button) not found for EndingView._restartButton.");
-                }
-            }
-            else
-            {
-                Debug.LogError("[UILayoutBuilder] EndingPanel/PanelRoot not found for EndingView.");
-            }
-
-            so.ApplyModifiedProperties();
-        }
 
         // 参照先が見つからないときは既存の結線を残したままエラーで知らせる。
         // 黙って null を書き込むと、シーン再構築のたびに Inspector のアサインが消えて原因を追えなくなる。

@@ -21,11 +21,11 @@ namespace Game.UI
             public string DisplayName;
         }
 
-        [SerializeField] private EndingDecidedChannelSO _endingDecidedChannel;
-        [SerializeField] private GameObject _panelRoot;
-        [SerializeField] private TextMeshProUGUI _resultText;
+        private EndingDecidedChannelSO _endingDecidedChannel;
+        private GameObject _panelRoot;
+        private TextMeshProUGUI _resultText;
         [SerializeField] private EndingLabel[] _endingLabels;
-        [SerializeField] private Button _restartButton;
+        private Button _restartButton;
         [SerializeField] private GameFlowController _gameFlowController;
 
         /// <summary>
@@ -91,18 +91,35 @@ namespace Game.UI
         /// Unity EditMode では PlayerLoop が常時動作せず SetActive(true) による
         /// OnEnable() の自動発火が不安定になる場合があるため、テスト等から
         /// チャンネル購読を明示的に行うための公開メソッド。
+        /// ランタイムブートストラップ時には各 UI 参照も渡す。
         /// </summary>
-        public void Bind(EndingDecidedChannelSO channel, GameFlowController gameFlowController = null, Button restartButton = null)
+        public void Bind(
+            EndingDecidedChannelSO channel,
+            GameFlowController gameFlowController = null,
+            Button restartButton = null,
+            GameObject panelRoot = null,
+            TextMeshProUGUI resultText = null)
         {
             _endingDecidedChannel = channel;
             if (channel != null)
             {
+                channel.OnEventRaised -= OnEndingDecided;
                 channel.OnEventRaised += OnEndingDecided;
             }
 
             if (gameFlowController != null)
             {
                 _gameFlowController = gameFlowController;
+            }
+
+            if (panelRoot != null)
+            {
+                _panelRoot = panelRoot;
+            }
+
+            if (resultText != null)
+            {
+                _resultText = resultText;
             }
 
             if (restartButton != null)
