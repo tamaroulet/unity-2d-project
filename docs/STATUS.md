@@ -62,3 +62,13 @@
 - **朝刊レポート**: `scripts/morning_report.py`（Task Scheduler `UnityProject_MorningReport` 06:10 登録済み）
 - **夜間自律ランナー**: Task Scheduler（`UnityProject_AutoRunner` 毎日 01:00〜06:00、30分間隔）登録済み
 - **引き継ぎマスターガイド**: `docs/workflow/ONBOARDING.md` 整備完了
+
+## 残量の確認方法（2026-09-05 確立）
+
+```
+Claude   powershell -File scripts/get_claude_quota.ps1
+Gemini   MSYS_NO_PATHCONV=1 agy -p "/quota" --dangerously-skip-permissions
+```
+
+Gemini 側は「残り %」、Claude 側は「使用済み %」で向きが逆。
+`scripts/get_gemini_quota.ps1` は環境変数に依存していて画面外で動かない。上の方法へ置き換える（未実施）。
