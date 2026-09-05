@@ -16,7 +16,7 @@ MonoBehaviour:
   _displayName: Midterm Exam
   _body: The midterm exam is here. Everything you have studied is put to the test!
   _triggerKind: 0
-  _triggerTurn: 12
+  _triggerTurn: 11
   _targetParameter: 1
   _threshold: 0
   _priority: 1
