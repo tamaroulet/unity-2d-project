@@ -82,7 +82,7 @@ trigger: always_on
 
 1. `.agents/rules/` 配下の本ルール群
 2. `docs/spec/CodingSpec.md`、`docs/spec/BuildSpec.md`
-3. `docs/instructions/` 配下の指示書
+3. `docs/cycles/` 配下の指示書
 
 上位と下位が矛盾した場合、**下位を優先せず、停止して矛盾点を報告する。**
 上位を自動的に採用してはならない。

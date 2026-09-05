@@ -8,7 +8,8 @@ logs/
 logs/nightly/*
 !logs/nightly/cycles-*.jsonl
 
-# 朝刊レポート（docs/nightly/）は logs/ と違い追跡対象。除外しないこと。
+# 朝刊レポート（指示書 27: 追記型停止のため git 管理から除外）
+docs/nightly/
 
 # Python
 __pycache__/

@@ -52,13 +52,13 @@ scripts/handoff.ps1 start -Request "（人間の原文をそのまま）"
 #    - 既に潰した仮説 / 見立て / 判断してほしいこと（選択形式）
 
 # 3) Claude に判断させる。03-instruction.md と確定指示書が発行される
-scripts/handoff.ps1 ask -Dir docs/handoff/<日付>-<連番>
+scripts/handoff.ps1 ask -Dir docs/cycles/<日付>-<連番>
 
 # 4) 発行された指示書を実行する（IDE で自分で実装しても、agy に投げてもよい）
 #    結果を 04-result.md に規約 §5 の様式で書く
 
 # 5) Claude に合否を判定させる
-scripts/handoff.ps1 review -Dir docs/handoff/<日付>-<連番>
+scripts/handoff.ps1 review -Dir docs/cycles/<日付>-<連番>
 ```
 
 ### Claude は Unity を起動しない
@@ -82,7 +82,7 @@ Claude の仕事はファイルを読んで判断し、指示書を書くこと�
 
 ### Gemini は完了時にチェックボックスを更新する
 
-`auto_runner` は `docs/instructions/*.md` の `- [ ]` を上から拾って次のタスクを
+`auto_runner` は `docs/cycles/*/03-instruction.md` の `- [ ]` を上から拾って次のタスクを
 決める。完了したのにチェックが残っていると、**終わった作業をやり直す。**
 
 2026-09-04 には未完了が 28 件に見えていたが、実態は 10 件だった。
@@ -108,10 +108,10 @@ Claude 側が自分でファイルを読む。会話履歴も生ログ全文も�
 ## 1. 置き場所
 
 ```
-docs/handoff/YYYY-MM-DD-NN/
+docs/cycles/YYYY-MM-DD-NN/
   01-request.md      人間の原文
   02-context.md      Gemini が集めた事実          ← Claude が読む
-  03-instruction.md  Claude の判断（→ docs/instructions/XX.md へ）
+  03-instruction.md  Claude の判断（→ docs/cycles/YYYY-MM-DD-NN/03-instruction.md へ）
   04-result.md       agy の生出力                 ← Claude が読む
   05-review.md       Claude の合否と再試行回数
 ```
@@ -182,7 +182,7 @@ docs/handoff/YYYY-MM-DD-NN/
 ````markdown
 # 実行結果 YYYY-MM-DD-NN
 
-指示書: docs/instructions/XX.md
+指示書: docs/cycles/YYYY-MM-DD-NN/03-instruction.md
 再試行: N / 2
 
 ## 変更

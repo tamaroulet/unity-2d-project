@@ -52,12 +52,12 @@ scope: 本プロジェクトにおける人間・Claude・Gemini の全作業
 - **検証コマンド**（実行するコマンドと、期待される出力）
 - **完了報告フォーマット**（下記 ④）
 
-指示書は `docs/instructions/` に 1 枚 = 1 機能で保存し、コミットする。
+指示書は `docs/cycles/` に 1 枚 = 1 機能で保存し、コミットする。
 
 ### ④ Gemini の完了報告フォーマット
 
 ```
-指示書: docs/instructions/XX_xxx.md
+指示書: docs/cycles/YYYY-MM-DD-NN/03-instruction.md
 実施: Tasklist 1/2/3 完了（または N で停止）
 --- コマンド出力 ---
 （検証コマンドの生の出力をそのまま貼る）

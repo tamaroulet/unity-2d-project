@@ -118,7 +118,7 @@ Architect のモデルは、下の移行条件がすべて真になるまで **C
   `invoke_claude_safe.ps1` の 85% 遮断は人間の作業ぶんを守らない。
   自動実行が 85% まで使えば、人間が触る時点で枠は残っていない。
 - Architect が読んでよいファイルは次の 3 つだけ。
-  - 発行中または対象の指示書（`docs/instructions/NN_*.md`）
+  - 発行中または対象の指示書（`docs/cycles/*/03-instruction.md`）
   - `02-context.md`（指示書を発行するとき）
   - `04-result.md`（レビューするとき）
 
