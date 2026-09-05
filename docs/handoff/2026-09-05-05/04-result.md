@@ -54,10 +54,20 @@ PASS Snapshot: docs/snapshot/scene_bindings.txt no diff (0 lines)
 ## 止まった箇所
 なし（全 5 タスク完了）
 
+## 人間による実機確認結果（指示書 24 検証 4〜8）
+
+人間による実機マウス操作・目視確認、および WebGL ブラウザ検証がすべて完了。
+
+- **検証 4〜7（Unity エディタ実機確認）**: 完了
+  - 1周目開始: `[GameFlowController] Game Started! Initial State: Turn=1, Stamina=100, Skill=0, Mental=50`
+  - プレイ・周回終了後: メタショップにてスキルアンロック購入、540 ポイント獲得
+  - 2周目開始: `[GameFlowController] Game Started! Initial State: Turn=1, Stamina=100, Skill=5, Mental=50`
+  - HUD 表示: `POINTS: 540`、`Skill: 5` が正しく反映されていることを確認。
+- **検証 8（WebGL ビルドおよびブラウザ永続化確認 / DoD 3）**: 完了
+  - `Tools/Build WebGL` により `Game/Builds/WebGL` にビルド生成。
+  - ローカル HTTP サーバー（ポート 8000）経由でブラウザ（Chrome）起動。
+  - ブラウザ上でプレイ後、ページのリロード（F5）を実行しても `POINTS: 540` および `Skill: 5` がストレージ（IndexedDB）経由で正しく維持・復元されることを目視確認。
+
 ## 人間待ちとして残したもの
-指示書 24 の検証 4〜8（実機マウス操作・目視確認、および WebGL ビルドでのブラウザ検証）:
-- **検証 4**: `Tools/Clear Meta Profile` を実行 → Play して `POINTS: 0` から始まることの確認
-- **検証 5**: 1 周クリアしてポイントを貯め、Play を停止（停止前の AvailableMetaPoints を控える）
-- **検証 6**: もう一度 Play し、HUD の `POINTS:` が前周のポイントを維持していることの確認（本機能の本体）
-- **検証 7**: ショップでアンロックを購入後、Play 停止 → 再 Play → 新規周回で初期ステータスが上昇していることの確認
-- **検証 8**: WebGL ビルドを作成し、ブラウザで 1 周 → リロード → 再訪でポイントが残っていることの確認（DoD 3）
+なし（実機目視・WebGL検証を含め全検証完了）
+
