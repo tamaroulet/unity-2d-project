@@ -70,17 +70,7 @@ namespace Game.Tests.PlayMode
             Canvas canvas = null;
             yield return LoadSceneAndInit((f, c) => { flow = f; canvas = c; });
 
-            BossBattleDialogView bossDialog = Object.FindFirstObjectByType<BossBattleDialogView>(FindObjectsInactive.Include);
-            RelicDraftDialogView relicDraftDialog = Object.FindFirstObjectByType<RelicDraftDialogView>(FindObjectsInactive.Include);
-            EventDialogView eventDialog = Object.FindFirstObjectByType<EventDialogView>(FindObjectsInactive.Include);
-            EndingView endingView = Object.FindFirstObjectByType<EndingView>(FindObjectsInactive.Include);
-
-            Button studyBtn = GameObject.Find("StudyButton")?.GetComponent<Button>();
-            Button trainBtn = GameObject.Find("TrainButton")?.GetComponent<Button>();
-            Button restBtn = GameObject.Find("RestButton")?.GetComponent<Button>();
-            Button bossDismissBtn = GetField<Button>(bossDialog, "_dismissButton");
-            Button eventOkBtn = GetField<Button>(eventDialog, "_okButton");
-            List<RelicCardView> relicCards = GetField<List<RelicCardView>>(relicDraftDialog, "_cardViews");
+            RunDriver driver = RunDriver.FromScene();
 
             int endingCount = 0;
             EndingDecidedChannelSO endingChannel = GetField<EndingDecidedChannelSO>(flow, "_endingDecidedChannel");
@@ -88,32 +78,14 @@ namespace Game.Tests.PlayMode
 
             GamePhase lastPhase = flow.CurrentPhase;
             float phaseEnterTime = Time.realtimeSinceStartup;
-            string lastAction = "SceneLoaded";
 
             float deadline = Time.realtimeSinceStartup + 40f;
-            while (!endingView.IsPanelActive && Time.realtimeSinceStartup < deadline)
+            while (!driver.EndingVisible && Time.realtimeSinceStartup < deadline)
             {
                 // INV-1: フェーズ滞留チェック
-                GameInvariants.AssertPhaseProgress(flow, ref lastPhase, ref phaseEnterTime, lastAction, timeoutSeconds: 10f);
+                GameInvariants.AssertPhaseProgress(flow, ref lastPhase, ref phaseEnterTime, driver.LastAction, timeoutSeconds: 10f);
 
-                // ダイアログ・コマンド処理
-                if (bossDialog.gameObject.activeInHierarchy && bossDialog.IsVisible)
-                {
-                    lastAction = "DismissBossDialog";
-                    ExecuteEvents.Execute(bossDismissBtn.gameObject, new PointerEventData(EventSystem.current), ExecuteEvents.pointerClickHandler);
-                }
-                else if (relicDraftDialog.IsVisible)
-                {
-                    lastAction = "SelectRelicCard";
-                    Button cardBtn = GetField<Button>(relicCards[0], "_selectButton");
-                    ExecuteEvents.Execute(cardBtn.gameObject, new PointerEventData(EventSystem.current), ExecuteEvents.pointerClickHandler);
-                }
-                else if (eventDialog != null && eventDialog.IsPanelActive)
-                {
-                    lastAction = "DismissEventDialog";
-                    ExecuteEvents.Execute(eventOkBtn.gameObject, new PointerEventData(EventSystem.current), ExecuteEvents.pointerClickHandler);
-                }
-                else if (flow.CurrentPhase == GamePhase.WaitingInput)
+                if (driver.Peek(flow) == RunDriver.Action.ClickCommand)
                 {
                     // INV-3: WaitingInput 中にブロッカーが残っていないこと
                     GameInvariants.AssertNoFullscreenBlockerInWaitingInput(canvas);
@@ -123,18 +95,9 @@ namespace Game.Tests.PlayMode
 
                     // INV-5: 押せるボタンは押せること
                     GameInvariants.AssertInteractableButtonsReachable();
-
-                    // コマンド選択
-                    int turn = flow.CurrentState.CurrentTurn;
-                    bool beforeBoss = (turn == 5 || turn == 11 || turn == 17 || turn == 23);
-                    Button chosen = (beforeBoss && flow.CurrentState.Stamina < 70) ? restBtn
-                        : (flow.CurrentState.Stamina <= 50) ? restBtn
-                        : (flow.CurrentState.Mental <= 35) ? studyBtn
-                        : trainBtn;
-
-                    lastAction = $"ClickCommand_{chosen.gameObject.name}";
-                    ExecuteEvents.Execute(chosen.gameObject, new PointerEventData(EventSystem.current), ExecuteEvents.pointerClickHandler);
                 }
+
+                driver.Step(flow);
 
                 yield return null;
             }
@@ -153,10 +116,10 @@ namespace Game.Tests.PlayMode
             Canvas canvas = null;
             yield return LoadSceneAndInit((f, c) => { flow = f; canvas = c; });
 
-            BossBattleDialogView bossDialog = Object.FindFirstObjectByType<BossBattleDialogView>(FindObjectsInactive.Include);
-            EndingView endingView = Object.FindFirstObjectByType<EndingView>(FindObjectsInactive.Include);
-            Button trainBtn = GameObject.Find("TrainButton")?.GetComponent<Button>();
-            Button bossDismissBtn = GetField<Button>(bossDialog, "_dismissButton");
+            RunDriver driver = RunDriver.FromScene();
+            // 敗北させたいので Train を連打してスタミナを枯渇させる。
+            // ダイアログの捌きは共有し、コマンドの選び方だけを差し替える。
+            driver.CommandPolicy = _ => driver.TrainButton;
 
             int endingCount = 0;
             EndingDecidedChannelSO endingChannel = GetField<EndingDecidedChannelSO>(flow, "_endingDecidedChannel");
@@ -164,25 +127,12 @@ namespace Game.Tests.PlayMode
 
             GamePhase lastPhase = flow.CurrentPhase;
             float phaseEnterTime = Time.realtimeSinceStartup;
-            string lastAction = "SceneLoaded";
 
             float deadline = Time.realtimeSinceStartup + 30f;
-            while (!endingView.IsPanelActive && Time.realtimeSinceStartup < deadline)
+            while (!driver.EndingVisible && Time.realtimeSinceStartup < deadline)
             {
-                GameInvariants.AssertPhaseProgress(flow, ref lastPhase, ref phaseEnterTime, lastAction, timeoutSeconds: 10f);
-
-                if (bossDialog.gameObject.activeInHierarchy && bossDialog.IsVisible)
-                {
-                    lastAction = "DismissBossDialog";
-                    ExecuteEvents.Execute(bossDismissBtn.gameObject, new PointerEventData(EventSystem.current), ExecuteEvents.pointerClickHandler);
-                }
-                else if (flow.CurrentPhase == GamePhase.WaitingInput)
-                {
-                    // Train を連打してスタミナ枯渇状態でボス（ターン6）に突入させる
-                    lastAction = "ClickTrainButton";
-                    ExecuteEvents.Execute(trainBtn.gameObject, new PointerEventData(EventSystem.current), ExecuteEvents.pointerClickHandler);
-                }
-
+                GameInvariants.AssertPhaseProgress(flow, ref lastPhase, ref phaseEnterTime, driver.LastAction, timeoutSeconds: 10f);
+                driver.Step(flow);
                 yield return null;
             }
 
@@ -199,17 +149,7 @@ namespace Game.Tests.PlayMode
             Canvas canvas = null;
             yield return LoadSceneAndInit((f, c) => { flow = f; canvas = c; });
 
-            BossBattleDialogView bossDialog = Object.FindFirstObjectByType<BossBattleDialogView>(FindObjectsInactive.Include);
-            RelicDraftDialogView relicDraftDialog = Object.FindFirstObjectByType<RelicDraftDialogView>(FindObjectsInactive.Include);
-            EventDialogView eventDialog = Object.FindFirstObjectByType<EventDialogView>(FindObjectsInactive.Include);
-            EndingView endingView = Object.FindFirstObjectByType<EndingView>(FindObjectsInactive.Include);
-
-            Button studyBtn = GameObject.Find("StudyButton")?.GetComponent<Button>();
-            Button restBtn = GameObject.Find("RestButton")?.GetComponent<Button>();
-            Button trainBtn = GameObject.Find("TrainButton")?.GetComponent<Button>();
-            Button bossDismissBtn = GetField<Button>(bossDialog, "_dismissButton");
-            Button eventOkBtn = GetField<Button>(eventDialog, "_okButton");
-            List<RelicCardView> relicCards = GetField<List<RelicCardView>>(relicDraftDialog, "_cardViews");
+            RunDriver driver = RunDriver.FromScene();
 
             int eventCount = 0;
             int bossCount = 0;
@@ -221,40 +161,16 @@ namespace Game.Tests.PlayMode
             flow.OnRelicDraftRequested += _ => draftCount++;
 
             float deadline = Time.realtimeSinceStartup + 40f;
-            while (!endingView.IsPanelActive && flow.CurrentPhase != GamePhase.GameClear && flow.CurrentPhase != GamePhase.GameOver)
+            while (!driver.EndingVisible
+                   && flow.CurrentPhase != GamePhase.GameClear
+                   && flow.CurrentPhase != GamePhase.GameOver
+                   && Time.realtimeSinceStartup < deadline)
             {
-                if (Time.realtimeSinceStartup > deadline)
-                {
-                    Assert.Fail("Run timeout during INV-6 check.");
-                }
-
-                if (bossDialog.gameObject.activeInHierarchy && bossDialog.IsVisible)
-                {
-                    ExecuteEvents.Execute(bossDismissBtn.gameObject, new PointerEventData(EventSystem.current), ExecuteEvents.pointerClickHandler);
-                }
-                else if (relicDraftDialog.IsVisible)
-                {
-                    Button cardBtn = GetField<Button>(relicCards[0], "_selectButton");
-                    ExecuteEvents.Execute(cardBtn.gameObject, new PointerEventData(EventSystem.current), ExecuteEvents.pointerClickHandler);
-                }
-                else if (eventDialog != null && eventDialog.IsPanelActive)
-                {
-                    ExecuteEvents.Execute(eventOkBtn.gameObject, new PointerEventData(EventSystem.current), ExecuteEvents.pointerClickHandler);
-                }
-                else if (flow.CurrentPhase == GamePhase.WaitingInput)
-                {
-                    int turn = flow.CurrentState.CurrentTurn;
-                    bool beforeBoss = (turn == 5 || turn == 11 || turn == 17 || turn == 23);
-                    Button chosen = (beforeBoss && flow.CurrentState.Stamina < 70) ? restBtn
-                        : (flow.CurrentState.Stamina <= 50) ? restBtn
-                        : (flow.CurrentState.Mental <= 35) ? studyBtn
-                        : trainBtn;
-
-                    ExecuteEvents.Execute(chosen.gameObject, new PointerEventData(EventSystem.current), ExecuteEvents.pointerClickHandler);
-                }
-
+                driver.Step(flow);
                 yield return null;
             }
+
+            yield return null;
 
             Debug.Log($"[INV-6 実測値] EventCount={eventCount}, BossCount={bossCount}, DraftCount={draftCount}");
 

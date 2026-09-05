@@ -317,11 +317,7 @@ namespace Game.Tests.PlayMode
             Assert.IsTrue(statusView != null, "StatusView が MainGame シーンに存在しない。");
 
             Button studyButton = FindCommandButtonByName(StudyButtonName).GetComponent<Button>();
-            Button trainButton = FindCommandButtonByName("TrainButton").GetComponent<Button>();
-            Button restButton = FindCommandButtonByName("RestButton").GetComponent<Button>();
 
-            Button bossDismissButton = GetSerializedField<Button>(bossDialog, "_dismissButton");
-            List<RelicCardView> relicCards = GetField<List<RelicCardView>>(relicDraftDialog, "_cardViews");
 
             // 初期状態では EndingPanel と RelicDraftDialogPanel, MetaShopDialogPanel は非アクティブ
             Assert.IsFalse(endingView.IsPanelActive, "初期状態で EndingView がアクティブになっている。");
@@ -329,71 +325,36 @@ namespace Game.Tests.PlayMode
             Assert.IsFalse(metaShopDialog.IsPanelActive, "初期状態で MetaShopDialogView がアクティブになっている。");
 
             // ---------- Act: ターン 1 から 24 まで進行 ----------
+            // クリックの運転は RunDriver に一本化している。ダイアログが増えたら
+            // RunDriver へ 1 か所足す。以前は各テストが独自のクリックループを持ち、
+            // 互いに相手の知らないダイアログを 1 つずつ持っていた。
+            RunDriver driver = RunDriver.FromScene();
             float maxTime = Time.realtimeSinceStartup + 30f;
-            int bossCount = 0;
-            int draftCount = 0;
 
             while (!endingView.IsPanelActive && flow.CurrentPhase != GamePhase.GameOver)
             {
                 if (Time.realtimeSinceStartup > maxTime)
                 {
-                    Assert.Fail($"30 秒以内にエンディング画面へ到達しなかった。Phase={flow.CurrentPhase}, Turn={flow.CurrentState?.CurrentTurn}");
+                    Assert.Fail($"30 秒以内にエンディング画面へ到達しなかった。{driver.Describe(flow)}");
                 }
 
-                if (bossDialog.gameObject.activeInHierarchy && bossDialog.IsVisible)
+                if (driver.Peek(flow) == RunDriver.Action.DismissBoss)
                 {
-                    bossCount++;
-                    AssertRaycastReachesButton(bossDismissButton, "bossDismissButton");
-                    bool dismissed = ExecuteEvents.Execute(
-                        bossDismissButton.gameObject,
-                        new PointerEventData(EventSystem.current),
-                        ExecuteEvents.pointerClickHandler);
-                    Assert.IsTrue(dismissed, $"BossBattleDialogView の dismissButton クリックが受理されなかった。bossCount={bossCount}, btnActive={bossDismissButton.gameObject.activeInHierarchy}, btnEnabled={bossDismissButton.isActiveAndEnabled}");
+                    AssertRaycastReachesButton(driver.BossDismissButton, "bossDismissButton");
                 }
-                else if (relicDraftDialog.IsVisible)
-                {
-                    draftCount++;
-                    Assert.IsTrue(relicCards.Count > 0, "RelicDraftDialogView._cardViews が空。");
-                    Button cardBtn = GetSerializedField<Button>(relicCards[0], "_selectButton");
-                    AssertRaycastReachesButton(cardBtn, "relicCard[0]._selectButton");
-                    bool cardClicked = ExecuteEvents.Execute(
-                        cardBtn.gameObject,
-                        new PointerEventData(EventSystem.current),
-                        ExecuteEvents.pointerClickHandler);
-                    Assert.IsTrue(cardClicked, "RelicCardView の SelectButton クリックが受理されなかった。");
-                }
-                else if (flow.CurrentPhase == GamePhase.WaitingInput)
-                {
-                    int turn = flow.CurrentState.CurrentTurn;
-                    bool beforeBoss = (turn == 5 || turn == 11 || turn == 17 || turn == 23);
 
-                    Button chosen;
-                    if (beforeBoss && flow.CurrentState.Stamina < 70)
-                    {
-                        chosen = restButton;
-                    }
-                    else if (flow.CurrentState.Stamina <= 50)
-                    {
-                        chosen = restButton;
-                    }
-                    else if (flow.CurrentState.Mental <= 35)
-                    {
-                        chosen = studyButton;
-                    }
-                    else
-                    {
-                        chosen = trainButton;
-                    }
-
-                    bool clicked = ExecuteEvents.Execute(
-                        chosen.gameObject,
-                        new PointerEventData(EventSystem.current),
-                        ExecuteEvents.pointerClickHandler);
-                    Assert.IsTrue(clicked, $"コマンドボタン '{chosen.gameObject.name}' のクリックが受理されなかった。");
+                RunDriver.Action taken = driver.Step(flow);
+                if (taken != RunDriver.Action.None)
+                {
+                    Assert.IsTrue(driver.LastClickAccepted,
+                        $"クリックが受理されなかった（{taken}）。{driver.Describe(flow)}");
                 }
 
                 yield return null;
             }
+
+            int bossCount = driver.BossCount;
+            int draftCount = driver.DraftCount;
 
             // UI 反映を確定させるため 1 フレーム待つ
             yield return null;
