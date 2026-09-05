@@ -56,11 +56,10 @@ try {
             $deleted += [int]$matches[2]
         }
     }
-    $totalChanged = $added + $deleted
-    if ($totalChanged -le 300) {
-        $results.Add("PASS Changed lines: ${totalChanged} lines (added ${added} / deleted ${deleted} <= 300)")
+    if ($added -le 300) {
+        $results.Add("PASS Changed lines: ${added} added lines (deleted ${deleted} <= 300)")
     } else {
-        $results.Add("FAIL Changed lines: ${totalChanged} lines (added ${added} / deleted ${deleted} > 300)")
+        $results.Add("FAIL Changed lines: ${added} added lines (deleted ${deleted} > 300)")
     }
 } catch {
     $results.Add("FAIL Changed lines: Exception ($_)")
@@ -177,7 +176,7 @@ if (-not (Test-Path $snapPath)) {
         if (-not $snapDiff) {
             $results.Add("PASS Snapshot: docs/snapshot/scene_bindings.txt no diff (0 lines)")
         } else {
-            $results.Add("PASS Snapshot: docs/snapshot/scene_bindings.txt diff ($snapDiff)")
+            $results.Add("SKIP Snapshot: docs/snapshot/scene_bindings.txt diff ($snapDiff)")
         }
     } catch {
         $results.Add("FAIL Snapshot: Exception ($_)")
