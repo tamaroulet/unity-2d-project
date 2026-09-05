@@ -14,13 +14,6 @@ namespace Game.Tests.PlayMode
 {
     public class SerializedBindingTest
     {
-        private static readonly Type[] ViewTypes = new[]
-        {
-            typeof(StatusView), typeof(CommandButtonView), typeof(BossBattleDialogView),
-            typeof(EventDialogView), typeof(EndingView), typeof(MetaShopDialogView),
-            typeof(RelicCardView), typeof(RelicDraftDialogView)
-        };
-
         [UnityTest]
         public IEnumerator MainGame_AllViews_SerializedFields_MustNotBeNull()
         {
@@ -31,18 +24,6 @@ namespace Game.Tests.PlayMode
 
             if (unbound.Count > 0)
                 Assert.Fail($"Found {unbound.Count} unbound field(s):\n" + string.Join("\n", unbound));
-        }
-
-        [UnityTest, TestCaseSource(nameof(ViewTypes))]
-        public IEnumerator MainGame_View_SerializedFields_MustNotBeNull(Type viewType)
-        {
-            yield return LoadScene();
-            var unbound = new List<string>();
-            foreach (var mb in FindViews(viewType))
-                Inspect(mb, unbound);
-
-            if (unbound.Count > 0)
-                Assert.Fail($"Unbound fields in {viewType.Name} ({unbound.Count}):\n" + string.Join("\n", unbound));
         }
 
         private static IEnumerator LoadScene()
