@@ -36,10 +36,10 @@ Remove-Item logs/claude_session_id.txt
 powershell -ExecutionPolicy Bypass -NoProfile -File scripts/invoke_claude_safe.ps1 -Prompt "say ok"
 ```
 
-- [ ] 1 回目で `logs/claude_session_id.txt` が作られること
-- [ ] 2 回目が `--resume` で走ること
-- [ ] 3 回目（ID 削除後）がフォールバックで**止まらずに**走ること
-- [ ] 3 回分の標準出力をそのまま `docs/handoff/2026-09-05-03/04-result.md` に追記してコミット
+- [x] 1 回目で `logs/claude_session_id.txt` が作られること
+- [x] 2 回目が `--resume` で走ること
+- [x] 3 回目（ID 削除後）がフォールバックで**止まらずに**走ること
+- [x] 3 回分の標準出力をそのまま `docs/handoff/2026-09-05-03/04-result.md` に追記してコミット
 
 **枠が再び 85% を超えて遮断されたら、それはそれで正常である。** `-Force` は使わない。
 `[BLOCKED]` の出力をそのまま貼って、このタスクは「枠待ち」として記録し、2 へ進む。
@@ -48,34 +48,34 @@ powershell -ExecutionPolicy Bypass -NoProfile -File scripts/invoke_claude_safe.p
 
 `docs/handoff/2026-09-05-03/05-review.md` §3-A / §3-B の裁定に従う。
 
-- [ ] **追加行のみを 300 行の判定対象にする。** 削除行は併記に留める。
+- [x] **追加行のみを 300 行の判定対象にする。** 削除行は併記に留める。
       理由: 指示書 23 は撤去を命じたのに `FAIL Changed lines: 433 (added 54 / deleted 379)` になった。
       指示どおりに消したら FAIL になるのは判定側の誤りである
-- [ ] **`Snapshot` に差分があるときは `PASS` ではなく `SKIP`** とし、行数と内訳を併記する。
+- [x] **`Snapshot` に差分があるときは `PASS` ではなく `SKIP`** とし、行数と内訳を併記する。
       理由: 現在「差分あり」でも `PASS` と出て読み手を誤らせる
-- [ ] 修正後に 2 回連続実行して同じ出力になることを確認し、生出力を貼る
+- [x] 修正後に 2 回連続実行して同じ出力になることを確認し、生出力を貼る
 
 ### 3. 回収した 2 つの PlayMode テストを実行する
 
 `1bdcbc9` で `RelicDraftFlowTest.cs` と `SerializedBindingTest.cs` を main に回収した。
 コンパイルは通っているが、**まだ 1 度も実行していない。**
 
-- [ ] PlayMode テストを実行し、件数と結果の生出力を貼る
-- [ ] `RelicDraftFlowTest` が緑なら、`docs/instructions/12_binding_and_test_structure.md` の
+- [x] PlayMode テストを実行し、件数と結果の生出力を貼る
+- [x] `RelicDraftFlowTest` が緑なら、`docs/instructions/12_binding_and_test_structure.md` の
       98 行目の箱を `- [x]` にして注記を更新する
-- [ ] `SerializedBindingTest` が赤い場合、**それは想定内である。**
+- [x] `SerializedBindingTest` が赤い場合、**それは想定内である。**
       未結線が 15 件残っているので落ちて当然。**直さないこと。**
       落ちたフィールドの一覧をそのまま貼る（指示書 12 項目 64 が求めていたのはこれである）
-- [ ] `RelicDraftFlowTest` が赤い場合は、**1 回だけ**原因を調べてよい。
+- [x] `RelicDraftFlowTest` が赤い場合は、**1 回だけ**原因を調べてよい。
       直らなければ箱は開けたまま、観測結果を貼って次へ
 
 ### 4. `pm1_opus_review.py` の検証 9 を追記する
 
 `docs/handoff/2026-09-05-04/05-review.md` §4-A の指摘。
 
-- [ ] 枠が 85% を超えている状態で `python scripts/pm1_opus_review.py` を実行し、
+- [x] 枠が 85% を超えている状態で `python scripts/pm1_opus_review.py` を実行し、
       **何もせず終了すること**の生出力を `docs/handoff/2026-09-05-04/04-result.md` に追記
-- [ ] 枠が 85% 未満で試せない場合は「未実施（枠が閾値未満のため再現できず）」と書く。
+- [x] 枠が 85% 未満で試せない場合は「未実施（枠が閾値未満のため再現できず）」と書く。
       **枠を意図的に使って再現しようとしないこと**
 
 ### 5. 指示書 24 の実装（コードを書くところまで）

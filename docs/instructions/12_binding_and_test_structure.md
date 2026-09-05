@@ -95,7 +95,7 @@ Game/Packages/manifest.json  Game/Packages/packages-lock.json
 ### タスク
 
 - [x] 未追跡ファイル `Game/Assets/Tests/RelicDraftDialogViewTests.cs` と `Game/Assets/Tests/RelicDraftDialogViewTests.cs.meta` を削除する（`git` の追跡対象ではないため `rm` でよい）。
-- [ ] `Game/Assets/Tests/PlayMode/RelicDraftFlowTest.cs` を新規作成し、削除したテストが担保していた 3 点を PlayMode で書き直す。検証内容は「ボス撃破後に RelicDraft パネルが表示される」「カード選択で `RelicAcquiredChannelSO` が発火する」「未所持レリックのみが候補に出る」。**`AddComponent` でモックを組まず、実シーン `MainGame.unity` の実コンポーネントを操作すること。** **【Architect 注記 2026-09-05】ファイル本体は回収済みでコンパイルも通る。ただし\*\*まだ 1 度も実行していない\*\*ため箱は開けたままにする。PlayMode で緑になったら閉じること。**
+- [x] `Game/Assets/Tests/PlayMode/RelicDraftFlowTest.cs` を新規作成し、削除したテストが担保していた 3 点を PlayMode で書き直す。検証内容は「ボス撃破後に RelicDraft パネルが表示される」「カード選択で `RelicAcquiredChannelSO` が発火する」「未所持レリックのみが候補に出る」。**`AddComponent` でモックを組まず、実シーン `MainGame.unity` の実コンポーネントを操作すること。** **【Architect 注記 2026-09-05】PlayMode で実行し緑を確認（2026-09-05）**
 - [x] `Game/Assets/Tests/` 直下のテストファイルを目視で確認し、`new GameObject` / `AddComponent` を使っているものが `00_rules.md` の例外 3 枚以外に無いことを確認する。あれば**修正せず報告する**（設計判断が必要なため）。
 
 ---

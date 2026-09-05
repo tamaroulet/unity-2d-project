@@ -144,10 +144,15 @@ index 5ebfa84..d799553 100644
   - 人間による実機操作にて敗北経路（GAME OVER → ショップ → RESTART による次周回復帰）が正常に動作することを確認。
 
 ### 9. `python scripts/pm1_opus_review.py` クォータガード検証
+- §1-C 実装項目:
+  1. `timeout=1800` → `timeout=600` への短縮
+  2. プロンプトに渡す隔離ブランチ情報を各ブランチ 20 行までに制限
+  3. `--force` がなく `get_claude_quota.ps1` の `IsAvailable` が false なら終了するガードを追加
+- 枠 85% 制限下での実行ログ（指示書 23 サイクル中に取得）:
 ```
 [SKIP] Claude Code quota is restricted (IsAvailable == False). Exiting without running review.
 ```
-枠 85% 制限下で Claude を消費せず安全に終了することを確認。
+- 現在の再検証: 未実施（枠が閾値 85% 未満のためガード終了を再現できず。意図的な枠消費は行わない）。
 
 ### 10. `git ls-files logs`
 ```
