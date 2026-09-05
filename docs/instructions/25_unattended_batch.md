@@ -83,12 +83,12 @@ powershell -ExecutionPolicy Bypass -NoProfile -File scripts/invoke_claude_safe.p
 `docs/instructions/24_metaprofile_persistence.md` の §1-A〜E をそのまま実装する。
 **設計は全部あちらに書いてある。判断を足さないこと。**
 
-- [ ] §1-B `MetaProfileDto.cs` を新規作成
-- [ ] §1-C `MetaProfileStore.cs` を新規作成
-- [ ] §1-D `GameFlowController` の 3 箇所（`Awake` / `FinalizeRun` / `TryPurchaseMetaUnlock`）
-- [ ] §1-E `Tools/Clear Meta Profile` を Editor に追加
-- [ ] §3 検証 2・3 の EditMode テスト 2 件を追加（DTO 往復、壊れた JSON / 版違い）
-- [ ] §3 検証 1（`mechanical_check.ps1`）、検証 9（スナップショット差分 0）、検証 10 を実施
+- [x] §1-B `MetaProfileDto.cs` を新規作成
+- [x] §1-C `MetaProfileStore.cs` を新規作成
+- [x] §1-D `GameFlowController` の 3 箇所（`Awake` / `FinalizeRun` / `TryPurchaseMetaUnlock`）
+- [x] §1-E `Tools/Clear Meta Profile` を Editor に追加
+- [x] §3 検証 2・3 の EditMode テスト 2 件を追加（DTO 往復、壊れた JSON / 版違い）
+- [x] §3 検証 1（`mechanical_check.ps1`）、検証 9（スナップショット差分 0）、検証 10 を実施
 
 ### ここで止まること
 

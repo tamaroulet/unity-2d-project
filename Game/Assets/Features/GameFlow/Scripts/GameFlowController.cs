@@ -82,6 +82,7 @@ namespace Game.Features.GameFlow
 
         private void Awake()
         {
+            _metaProfile = MetaProfileStore.Load();
             _bossBattleTurns = new List<int> { 6, 12, 18, 24 };
         }
 
@@ -379,6 +380,7 @@ namespace Game.Features.GameFlow
             {
                 int earnedPoints = _metaPointResolver.CalculateEarnedPoints(_currentState, isGameClear, _bossDefeatedCount);
                 _metaProfile = _metaPointResolver.ApplyRunResult(_metaProfile, earnedPoints);
+                MetaProfileStore.Save(_metaProfile);
             }
 
             _runFinalized = true;
@@ -399,6 +401,7 @@ namespace Game.Features.GameFlow
             if (success)
             {
                 _metaProfile = newProfile;
+                MetaProfileStore.Save(_metaProfile);
                 OnMetaProfileChanged?.Invoke(_metaProfile);
             }
             return success;
