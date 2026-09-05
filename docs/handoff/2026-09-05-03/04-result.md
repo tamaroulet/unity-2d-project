@@ -60,12 +60,32 @@ PASS Snapshot: docs/snapshot/scene_bindings.txt no diff (0 lines)
 - `02-context.md`
 `03-instruction.md` は生成されていないことを確認。
 
-### 5・6. `invoke_claude_safe.ps1` のセッション管理
-現在 Claude Code のセッション枠が 85%（`IsAvailable: false`）に到達しているため、安全遮断が作動:
+### 5・6. `invoke_claude_safe.ps1` のセッション管理（枠リセット後に実施完了）
+指示書 24 §0 に基づき、枠リセット後に実測検証を実施:
+
+1回目（新規セッション作成 & ID 保存）:
 ```
-[BLOCKED] Claude Code is currently restricted (85% used). Execution blocked to prevent paid overage. Delegate task to Gemini.
+[ALLOWED] Claude Code session usage is 14%. Executing prompt with model: opus...
+[SESSION] Starting new session: 3698f4b7-1c22-4f03-af98-72b9c1da751f
+ok
 ```
-課金超過防止のため、本サイクルのコミット後に 4:20 リセットを待って実施予定。
+`logs/claude_session_id.txt` が生成されたことを確認。
+
+2回目（既存セッション再開 `--resume`）:
+```
+[ALLOWED] Claude Code session usage is 15%. Executing prompt with model: opus...
+[SESSION] Resuming existing session: 3698f4b7-1c22-4f03-af98-72b9c1da751f
+ok
+```
+`--resume` により同一セッションが再開されることを確認。
+
+3回目（`logs/claude_session_id.txt` 削除後のフォールバック）:
+```
+[ALLOWED] Claude Code session usage is 15%. Executing prompt with model: opus...
+[SESSION] Starting new session: 0333041e-1b29-4e21-a05c-5417d6ca9c08
+ok
+```
+ID 不在時も止まらず新規セッションとしてフォールバック実行されることを確認。全項目 PASS。
 
 ### 7. モデル設定の確認
 - `scripts/handoff.ps1`: `$Model = 'opus'`
