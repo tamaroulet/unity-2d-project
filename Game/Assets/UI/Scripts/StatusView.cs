@@ -15,20 +15,20 @@ namespace Game.UI
     /// </summary>
     public class StatusView : MonoBehaviour
     {
-        [SerializeField] private GameStateEventChannelSO _gameStateChannel;
-        [SerializeField] private TextMeshProUGUI _turnText;
-        [SerializeField] private TextMeshProUGUI _staminaText;
-        [SerializeField] private TextMeshProUGUI _skillText;
-        [SerializeField] private TextMeshProUGUI _mentalText;
-        [SerializeField] private Slider _staminaGauge;
-        [SerializeField] private Slider _skillGauge;
-        [SerializeField] private Slider _mentalGauge;
-        [SerializeField] private RectTransform _staminaBarFill;
-        [SerializeField] private RectTransform _skillBarFill;
-        [SerializeField] private RectTransform _mentalBarFill;
-        [SerializeField] private TextMeshProUGUI _metaPointsText;
-        [SerializeField] private GameFlowController _gameFlowController;
-        [SerializeField] private BossBattleDialogView _bossBattleDialog;
+        private GameStateEventChannelSO _gameStateChannel;
+        private TextMeshProUGUI _turnText;
+        private TextMeshProUGUI _staminaText;
+        private TextMeshProUGUI _skillText;
+        private TextMeshProUGUI _mentalText;
+        private Slider _staminaGauge;
+        private Slider _skillGauge;
+        private Slider _mentalGauge;
+        private RectTransform _staminaBarFill;
+        private RectTransform _skillBarFill;
+        private RectTransform _mentalBarFill;
+        private TextMeshProUGUI _metaPointsText;
+        private GameFlowController _gameFlowController;
+        private BossBattleDialogView _bossBattleDialog;
 
         /// <summary>
         /// 直近に受信した GameState。TMP Essential Resources 未インポート環境では
@@ -117,13 +117,66 @@ namespace Game.UI
         /// Unity EditMode では PlayerLoop が常時動作せず SetActive(true) による
         /// OnEnable() の自動発火が不安定になる場合があるため、テスト等から
         /// チャンネル購読を明示的に行うための公開メソッド。
+        /// ランタイムブートストラップ時には各 UI 参照も渡す。
         /// </summary>
-        public void Bind(GameStateEventChannelSO channel)
+        public void Bind(
+            GameStateEventChannelSO channel,
+            GameFlowController gameFlowController = null,
+            BossBattleDialogView bossBattleDialog = null,
+            TextMeshProUGUI turnText = null,
+            TextMeshProUGUI staminaText = null,
+            TextMeshProUGUI skillText = null,
+            TextMeshProUGUI mentalText = null,
+            TextMeshProUGUI metaPointsText = null,
+            Slider staminaGauge = null,
+            Slider skillGauge = null,
+            Slider mentalGauge = null,
+            RectTransform staminaBarFill = null,
+            RectTransform skillBarFill = null,
+            RectTransform mentalBarFill = null)
         {
             _gameStateChannel = channel;
             if (channel != null)
             {
+                channel.OnEventRaised -= OnGameStateChanged;
                 channel.OnEventRaised += OnGameStateChanged;
+            }
+
+            if (gameFlowController != null)
+            {
+                _gameFlowController = gameFlowController;
+                HookFlowControllerEvents();
+            }
+
+            if (bossBattleDialog != null)
+            {
+                _bossBattleDialog = bossBattleDialog;
+            }
+
+            if (turnText != null) _turnText = turnText;
+            if (staminaText != null) _staminaText = staminaText;
+            if (skillText != null) _skillText = skillText;
+            if (mentalText != null) _mentalText = mentalText;
+            if (metaPointsText != null) _metaPointsText = metaPointsText;
+
+            if (staminaGauge != null) _staminaGauge = staminaGauge;
+            if (skillGauge != null) _skillGauge = skillGauge;
+            if (mentalGauge != null) _mentalGauge = mentalGauge;
+
+            if (staminaBarFill != null) _staminaBarFill = staminaBarFill;
+            if (skillBarFill != null) _skillBarFill = skillBarFill;
+            if (mentalBarFill != null) _mentalBarFill = mentalBarFill;
+
+            if (_gameFlowController != null)
+            {
+                if (_gameFlowController.CurrentState != null)
+                {
+                    OnGameStateChanged(_gameFlowController.CurrentState);
+                }
+                if (_gameFlowController.MetaProfile != null)
+                {
+                    HandleMetaProfileChanged(_gameFlowController.MetaProfile);
+                }
             }
         }
 
@@ -147,10 +200,6 @@ namespace Game.UI
             SetGauge(_staminaGauge, state.Stamina);
             SetGauge(_skillGauge, state.Skill);
             SetGauge(_mentalGauge, state.Mental);
-
-            SetBarFill(_staminaBarFill, (float)state.Stamina / 100f);
-            SetBarFill(_skillBarFill, (float)Mathf.Clamp(state.Skill, 0, 100) / 100f);
-            SetBarFill(_mentalBarFill, (float)state.Mental / 100f);
         }
 
         private static void SetGauge(Slider gauge, int value)
@@ -158,17 +207,6 @@ namespace Game.UI
             if (gauge != null)
             {
                 gauge.value = value;
-            }
-        }
-
-        private static void SetBarFill(RectTransform barFill, float ratio)
-        {
-            if (barFill != null)
-            {
-                float clampedRatio = Mathf.Clamp01(ratio);
-                barFill.anchorMin = Vector2.zero;
-                barFill.anchorMax = new Vector2(clampedRatio, 1f);
-                barFill.sizeDelta = Vector2.zero;
             }
         }
     }

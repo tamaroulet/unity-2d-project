@@ -99,7 +99,6 @@ namespace Game.EditorScripts
             CreateOrUpdateBackground(canvas.transform);
 
             // 5. 各 UI パネルの完全構築
-            SetupStatusPanel(canvas.transform);
             SetupCommandPanel(canvas.transform);
             SetupEventDialogPanel(canvas.transform);
             SetupRelicDraftDialogPanel(canvas.transform);
@@ -138,47 +137,6 @@ namespace Game.EditorScripts
             Image img = bgGo.GetComponent<Image>();
             img.color = ColorBgMain;
             img.raycastTarget = false;
-        }
-
-        private static void SetupStatusPanel(Transform canvasTr)
-        {
-            Transform tr = canvasTr.Find("StatusPanel");
-            GameObject go = tr != null ? tr.gameObject : new GameObject("StatusPanel", typeof(RectTransform), typeof(Image), typeof(StatusView));
-            go.transform.SetParent(canvasTr, false);
-
-            RectTransform rect = EnsureRectTransform(go);
-            rect.anchorMin = new Vector2(0f, 0.82f);
-            rect.anchorMax = new Vector2(1f, 1f);
-            rect.offsetMin = new Vector2(20f, -10f);
-            rect.offsetMax = new Vector2(-20f, -10f);
-
-            Image img = go.GetComponent<Image>() ?? go.AddComponent<Image>();
-            img.color = ColorBgHeader;
-
-            StatusView view = go.GetComponent<StatusView>() ?? go.AddComponent<StatusView>();
-
-            // ゲージとテキストの配置
-            GameObject staminaGo = CreateGaugeGroup(rect, "StaminaGroup", "Icon_Stamina", ColorStamina, new Vector2(-400, 0), "Stamina: 50 / 100");
-            GameObject skillGo = CreateGaugeGroup(rect, "SkillGroup", "Icon_Skill", ColorSkill, new Vector2(0, 0), "Skill: 10");
-            GameObject mentalGo = CreateGaugeGroup(rect, "MentalGroup", "Icon_Mental", ColorMental, new Vector2(400, 0), "Mental: 80 / 100");
-
-            GameObject turnGo = CreateLabel(rect, "TurnText", "TURN 1 / 24", new Vector2(-750, 0), new Vector2(200, 50), 28, TextAlignmentOptions.Left);
-            GameObject pointsGo = CreateLabel(rect, "PointsText", "POINTS: 0", new Vector2(750, 0), new Vector2(200, 50), 28, TextAlignmentOptions.Right);
-
-            // StatusView の SerializedObject バインド
-            GameStateEventChannelSO channel = AssetDatabase.LoadAssetAtPath<GameStateEventChannelSO>("Assets/Data/Channels/GameStateChannel.asset");
-            SerializedObject so = new SerializedObject(view);
-            so.FindProperty("_gameStateChannel").objectReferenceValue = channel;
-            so.FindProperty("_turnText").objectReferenceValue = turnGo.GetComponent<TextMeshProUGUI>();
-            so.FindProperty("_metaPointsText").objectReferenceValue = pointsGo.GetComponent<TextMeshProUGUI>();
-            so.FindProperty("_staminaText").objectReferenceValue = staminaGo.transform.Find("Label").GetComponent<TextMeshProUGUI>();
-            so.FindProperty("_skillText").objectReferenceValue = skillGo.transform.Find("Label").GetComponent<TextMeshProUGUI>();
-            so.FindProperty("_mentalText").objectReferenceValue = mentalGo.transform.Find("Label").GetComponent<TextMeshProUGUI>();
-            so.FindProperty("_staminaBarFill").objectReferenceValue = staminaGo.transform.Find("BarBg/BarFill")?.GetComponent<RectTransform>();
-            so.FindProperty("_skillBarFill").objectReferenceValue = skillGo.transform.Find("BarBg/BarFill")?.GetComponent<RectTransform>();
-            so.FindProperty("_mentalBarFill").objectReferenceValue = mentalGo.transform.Find("BarBg/BarFill")?.GetComponent<RectTransform>();
-            so.ApplyModifiedProperties();
-
         }
 
         private static void SetupCommandPanel(Transform canvasTr)
@@ -612,7 +570,6 @@ namespace Game.EditorScripts
 
             so.ApplyModifiedProperties();
 
-            BindStatusViewSceneReferences(canvasTr, controller);
             BindRelicDraftDialogSceneReferences(canvasTr, controller);
             BindBossBattleDialogSceneReferences(canvasTr);
             BindMetaShopDialogSceneReferences(canvasTr, controller);
@@ -696,33 +653,6 @@ namespace Game.EditorScripts
             {
                 Debug.LogError($"[UILayoutBuilder] Element ({typeof(T).Name}) not found for '{propName}' (searched: {string.Join(", ", candidatePaths)}) under {containerName}. Existing reference is kept.");
             }
-        }
-
-
-        // StatusView はボス戦の発生を GameFlowController から受け取り、BossBattleDialogView へ橋渡しする。
-        // どちらもシーン内オブジェクトなので、全パネル生成後にまとめて結線する。
-        private static void BindStatusViewSceneReferences(Transform canvasTr, GameFlowController controller)
-        {
-            Transform statusTr = canvasTr.Find("StatusPanel");
-            if (statusTr == null) return;
-
-            StatusView view = statusTr.GetComponent<StatusView>();
-            if (view == null) return;
-
-            Transform viewsTr = canvasTr.Find("UIViews");
-            BossBattleDialogView bossDialog = viewsTr != null ? viewsTr.GetComponent<BossBattleDialogView>() : null;
-
-            SerializedObject so = new SerializedObject(view);
-            so.FindProperty("_gameFlowController").objectReferenceValue = controller;
-            so.FindProperty("_bossBattleDialog").objectReferenceValue = bossDialog;
-
-            Transform pointsTr = statusTr.Find("PointsText");
-            if (pointsTr != null)
-            {
-                so.FindProperty("_metaPointsText").objectReferenceValue = pointsTr.GetComponent<TextMeshProUGUI>();
-            }
-
-            so.ApplyModifiedProperties();
         }
 
         private static void BindMetaShopDialogSceneReferences(Transform canvasTr, GameFlowController controller)

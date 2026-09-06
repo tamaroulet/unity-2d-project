@@ -39,22 +39,6 @@ Canvas/RelicDraftDialogPanel/PanelRoot/Card3  [active=false]
     _descriptionText -> DescText/TextMeshProUGUI (TextMeshProUGUI)
     _nameText -> NameText/TextMeshProUGUI (TextMeshProUGUI)
     _selectButton -> SelectButton/Button (Button)
-Canvas/StatusPanel  [active=true]
-  StatusView
-    _bossBattleDialog -> UIViews/BossBattleDialogView (BossBattleDialogView)
-    _gameFlowController -> GameFlowController/GameFlowController (GameFlowController)
-    _gameStateChannel -> GameStateChannel (GameStateEventChannelSO)
-    _mentalBarFill -> BarFill/RectTransform (RectTransform)
-    _mentalGauge -> <unbound>
-    _mentalText -> Label/TextMeshProUGUI (TextMeshProUGUI)
-    _metaPointsText -> PointsText/TextMeshProUGUI (TextMeshProUGUI)
-    _skillBarFill -> BarFill/RectTransform (RectTransform)
-    _skillGauge -> <unbound>
-    _skillText -> Label/TextMeshProUGUI (TextMeshProUGUI)
-    _staminaBarFill -> BarFill/RectTransform (RectTransform)
-    _staminaGauge -> <unbound>
-    _staminaText -> Label/TextMeshProUGUI (TextMeshProUGUI)
-    _turnText -> TurnText/TextMeshProUGUI (TextMeshProUGUI)
 Canvas/UIViews  [active=true]
   BossBattleDialogView
     _battleLogText -> <unbound>
@@ -108,4 +92,4 @@ GameFlowController  [active=true]
     _relicAcquiredChannel -> RelicAcquiredChannel (RelicAcquiredChannelSO)
     _relicCatalog -> RelicCatalog (RelicCatalogSO)
     _relicResolver -> RelicResolver (RelicResolverSO)
-=== components: 14 / bound: 74 / unbound: 8 ===
+=== components: 13 / bound: 63 / unbound: 5 ===

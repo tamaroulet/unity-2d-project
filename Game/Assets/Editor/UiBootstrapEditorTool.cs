@@ -83,6 +83,64 @@ namespace Game.EditorScripts
 
             SceneBindingReport.GenerateSceneSnapshot();
         }
+
+        [MenuItem("Tools/Migrate StatusPanel To Runtime")]
+        public static void MigrateStatusPanel()
+        {
+            // 1. Assets/Resources フォルダの準備とアセット移動
+            if (!AssetDatabase.IsValidFolder("Assets/Resources"))
+            {
+                AssetDatabase.CreateFolder("Assets", "Resources");
+            }
+
+            string oldChannelPath = "Assets/Data/Channels/GameStateChannel.asset";
+            string newChannelPath = "Assets/Resources/GameStateChannel.asset";
+
+            if (File.Exists(Path.Combine(Application.dataPath, "..", oldChannelPath)))
+            {
+                string moveResult = AssetDatabase.MoveAsset(oldChannelPath, newChannelPath);
+                if (!string.IsNullOrEmpty(moveResult))
+                {
+                    Debug.LogError($"[UiBootstrapEditorTool] Failed to move {oldChannelPath}: {moveResult}");
+                }
+                else
+                {
+                    Debug.Log($"[UiBootstrapEditorTool] Successfully moved {oldChannelPath} -> {newChannelPath}");
+                }
+            }
+
+            AssetDatabase.SaveAssets();
+            AssetDatabase.Refresh();
+
+            // 2. シーンの読み込み
+            Scene scene = EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
+
+            // 3. Canvas の探索と StatusPanel の削除
+            Canvas canvas = Object.FindFirstObjectByType<Canvas>();
+            if (canvas == null)
+            {
+                Debug.LogError("[UiBootstrapEditorTool] Canvas not found in scene.");
+                return;
+            }
+
+            Transform statusPanelTr = canvas.transform.Find("StatusPanel");
+            if (statusPanelTr != null)
+            {
+                Object.DestroyImmediate(statusPanelTr.gameObject);
+                Debug.Log("[UiBootstrapEditorTool] Removed StatusPanel from Canvas.");
+            }
+            else
+            {
+                Debug.LogWarning("[UiBootstrapEditorTool] StatusPanel not found on Canvas (already removed?).");
+            }
+
+            // 4. シーン保存とスナップショット更新
+            EditorSceneManager.MarkSceneDirty(scene);
+            EditorSceneManager.SaveScene(scene);
+            Debug.Log("[UiBootstrapEditorTool] MainGame scene updated and saved.");
+
+            SceneBindingReport.GenerateSceneSnapshot();
+        }
     }
 }
 #endif
