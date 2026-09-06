@@ -48,7 +48,7 @@ docs/
     failure-modes.md   失敗の型カタログ（症状 → 法則 → 検出手段）
   decisions/       【永続】ADR
   spec/            【プロジェクト限り】このゲームの仕様
-  STATUS.md        【プロジェクト限り】現在地 1 枚。上書きのみ
+  status.md        【プロジェクト限り】現在地 1 枚。上書きのみ
   cycles/          【使い捨て】1 サイクル 1 フォルダ（指示書 + 02-context + 04-result + 05-review）
   archive/         完了サイクルの墓場
 ```
@@ -70,7 +70,7 @@ docs/
 
 ### 3. `laws/` に上限を設ける
 
-**合計 150 行以内。** `.agents/rules/00_rules.md`（`trigger: always_on`）と同じ扱いができる大きさに保つ。
+**合計 150 行以内。** `.agents/rules/development-rules.md`（`trigger: always_on`）と同じ扱いができる大きさに保つ。
 
 **溢れたら足すのではなく統合する。** 法則が 20 本を超えたら細かすぎるということなので、
 上位の法則にまとめ直す。**小さく保つという制約が、知識の質を強制する。**
@@ -79,9 +79,9 @@ docs/
 
 | 対象 | 処置 |
 |---|---|
-| `docs/log.md`（1,243 行の日記） | **廃止。** `STATUS.md` への上書きに寄せる |
+| `docs/log.md`（1,243 行の日記） | **廃止。** `status.md` への上書きに寄せる |
 | `docs/nightly/` | CI の成果物とし、`logs/` と同様に追跡外へ |
-| `docs/PLAN_ROADMAP.md` | `STATUS.md` に統合 |
+| `docs/PLAN_ROADMAP.md` | `status.md` に統合 |
 | `docs/research/`（5,158 行） | 結論を `decisions/` か `laws/` に吸わせ、生資料は `archive/` へ |
 
 **増え続けてよいのは `laws/` だけ。それにも上限がある。**
@@ -89,7 +89,7 @@ docs/
 ### 5. 次のゲームへの持ち出し集合を定義する
 
 ```
-laws/  +  decisions/  +  .agents/rules/00_rules.md  +  scripts/  +  Game.Core（Brain 層）
+laws/  +  decisions/  +  .agents/rules/development-rules.md  +  scripts/  +  Game.Core（Brain 層）
 ```
 
 **これだけをコピーすれば、次のゲームは 1 日目から不変条件と機械判定を持って始まる。**
@@ -98,7 +98,7 @@ laws/  +  decisions/  +  .agents/rules/00_rules.md  +  scripts/  +  Game.Core（
 
 ### 6. Architect の読み取り範囲を更新する
 
-`00_rules.md`「セッション枠」の 3 ファイル制限に `laws/` を加える。
+`development-rules.md`「セッション枠」の 3 ファイル制限に `laws/` を加える。
 `laws/` は 150 行以内なので、常時読んでも負担にならない。
 
 ## 検討した代替案
@@ -140,7 +140,7 @@ Architect の読み取りを 3 ファイルに制限したのは、この増加�
 3. `instructions/` と `handoff/` を `cycles/` へ統合する
 4. `log.md` / `PLAN_ROADMAP.md` / `nightly/` を整理する
 5. `research/` の結論を吸い上げ、生資料を `archive/` へ
-6. `00_rules.md` に §2 の問いと §6 の読み取り範囲を追記する
+6. `development-rules.md` に §2 の問いと §6 の読み取り範囲を追記する
 
 **1 と 2 を先に行う。** 器と中身が無いまま移動だけしても、複利は始まらない。
 

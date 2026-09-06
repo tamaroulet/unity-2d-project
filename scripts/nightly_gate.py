@@ -85,7 +85,7 @@ def is_dirty() -> bool:
 #   Gemini / agy にはフックが効かないため、成果物をコミット後に静的検査する。
 # ==============================================================================
 
-# 自己改変の禁止領域。ここが 1 行でも変わったら無条件で隔離する（00_rules.md「停止条件」/ 自己ガードレール保護）。
+# 自己改変の禁止領域。ここが 1 行でも変わったら無条件で隔離する（development-rules.md「停止条件」/ 自己ガードレール保護）。
 PROTECTED_PREFIXES = (
     ".github/workflows/",
     ".claude/hooks/",
@@ -96,7 +96,7 @@ PROTECTED_PREFIXES = (
     "scripts/nightly_baseline.json",
     "scripts/auto_runner.py",
     # 依存の無断追加を物理的に封鎖する。UI Toolkit / VContainer / Rosalina 等は
-    # manifest.json の 1 行で入る。00_rules.md は DI コンテナと Addressables を
+    # manifest.json の 1 行で入る。development-rules.md は DI コンテナと Addressables を
     # 禁止しており、その制約はここで初めて実効化される。
     "Game/Packages/manifest.json",
     "Game/Packages/packages-lock.json",
@@ -153,12 +153,12 @@ ABUSE_RULES = [
     (re.compile(r"--dangerously-skip-permissions"), "権限スキップフラグが新たに埋め込まれた"),
 ]
 
-# EditMode テストの純粋性（00_rules.md「テスト」）。
+# EditMode テストの純粋性（development-rules.md「テスト」）。
 # EditMode は入力と出力が純粋な計算に限る。View を AddComponent して組み立てる
 # テストは PlayMode で書く。private フィールドへの reflection は実装のフィールド名を
 # 変えた瞬間に静かに壊れるため禁止する。
 #
-# private フィールドへの reflection は意図的に対象外にしている。00_rules.md が
+# private フィールドへの reflection は意図的に対象外にしている。development-rules.md が
 # `.asset` のテキスト編集を禁じているため、ScriptableObject のフィクスチャを組む
 # 唯一の手段が reflection であり、*SOFactory.cs が正規の用途で使っている。
 EDITMODE_PURITY_RULES = [
@@ -166,7 +166,7 @@ EDITMODE_PURITY_RULES = [
     (re.compile(r"\.AddComponent\s*<"), "EditMode テストで AddComponent している"),
 ]
 
-# 00_rules.md が明記する 3 枚の例外。GameFlowController を器として使うが、
+# development-rules.md が明記する 3 枚の例外。GameFlowController を器として使うが、
 # 検証内容は状態遷移の純粋計算であるため許可されている。
 EDITMODE_PURITY_ALLOWLIST = frozenset({
     "Game/Assets/Tests/GameFlowControllerTests.cs",
@@ -311,12 +311,12 @@ def check_policy(base: str, head: str) -> dict:
             violations.append(f"テストファイルが削除された: {path}")
         if status == "D" and SERIALIZED.search(path):
             violations.append(f"Unity シリアライズ資産が削除された: {path}")
-        # asmdef の新設は 00_rules.md「アーキテクチャ」で禁止されている。
+        # asmdef の新設は development-rules.md「アーキテクチャ」で禁止されている。
         # 他のシリアライズ資産と同じ warning 扱いでは制約が実効化されない。
         if status == "A" and path.lower().endswith(".asmdef"):
             violations.append(
                 f"asmdef が新設された: {path}"
-                "（00_rules.md はランタイム 1 枚 + Editor 1 枚 + テスト 2 枚のみを許可）")
+                "（development-rules.md はランタイム 1 枚 + Editor 1 枚 + テスト 2 枚のみを許可）")
         elif status in ("M", "A") and SERIALIZED.search(path):
             warnings.append(f"Unity シリアライズ資産が変更された（人間の目視確認が必要）: {path}")
         # 新規 UXML の名前空間宣言は行単位の diff では見られないためファイルごと検査する
@@ -358,7 +358,7 @@ def check_policy(base: str, head: str) -> dict:
                     if pattern.search(text):
                         violations.append(f"{message} [{path}] -> {text.strip()[:120]}")
 
-                # EditMode の純粋性。PlayMode 配下と 00_rules の例外 3 枚は対象外
+                # EditMode の純粋性。PlayMode 配下と development-rules の例外 3 枚は対象外
                 if (not path.startswith(TEST_PREFIX + "PlayMode/")
                         and path not in EDITMODE_PURITY_ALLOWLIST):
                     for pattern, message in EDITMODE_PURITY_RULES:
@@ -744,7 +744,7 @@ def finalize_cycle(cycle: Cycle, agent_ok: bool = True) -> dict:
 
     # 3. ローカル Unity で検証できるか（エディタ起動中は batchmode が使えない）
     if unity_editor_running():
-        # 00_rules.md は人間の役割として Unity エディタ操作を定めている。
+        # development-rules.md は人間の役割として Unity エディタ操作を定めている。
         # エディタが開いている＝人間が作業中であり、成果物を捨てる理由にはならない。
         # 検証できないものは「破棄」ではなく「保留」にし、作業ブランチ上に温存する。
         record["verdict"] = VERDICT_UNVERIFIED

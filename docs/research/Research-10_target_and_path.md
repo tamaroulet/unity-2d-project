@@ -16,7 +16,7 @@ docs/decisions/    docs/strategy/    docs/cycles/    docs/archive/
 docs/research/（本書を除く）
 ```
 
-読んでよいのは `.agents/rules/00_rules.md` / `docs/laws/` / `docs/STATUS.md` / `Game/Assets/` のコード / 本書。
+読んでよいのは `.agents/rules/development-rules.md` / `docs/laws/` / `docs/status.md` / `Game/Assets/` のコード / 本書。
 
 ---
 

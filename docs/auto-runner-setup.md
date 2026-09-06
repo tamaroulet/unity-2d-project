@@ -9,7 +9,7 @@
 Windows Task Scheduler (30分間隔)
   └─ python scripts/auto_runner.py
        ├─ 1. scripts/get_all_quotas.ps1 でクォータ確認
-       ├─ 2. docs/STATUS.md を読み取り、次のタスクを特定
+       ├─ 2. docs/status.md を読み取り、次のタスクを特定
        ├─ 3. Gemini 25% 未満 → Claude 優先モードフラグ
        ├─ 4. Antigravity Python SDK (google-antigravity) でエージェント起動
        │     └─ Agent.chat() でプロンプト実行
@@ -62,7 +62,7 @@ powershell -File scripts/register_scheduled_task.ps1 -IntervalMinutes 15
 
 1. Task Scheduler が 30分ごとに `auto_runner.py` を起動
 2. クォータを確認し、Gemini/Claude の使い分けを決定
-3. `docs/STATUS.md` から次の未完了 Step を特定
+3. `docs/status.md` から次の未完了 Step を特定
 4. Antigravity SDK の `Agent.chat()` でエージェントを起動
 5. エージェントが自律的に実装・テスト・コミット・プッシュを実行
 6. 結果を `logs/auto_runner/` に記録

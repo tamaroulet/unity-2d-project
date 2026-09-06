@@ -16,7 +16,7 @@ namespace Game.EditorScripts
     /// 参照が null のままシーンが保存される。結果として画面は出るが操作が伝わらず、
     /// 原因の分かりにくいソフトロックになる（ターン 6 の詰みがこれだった）。
     ///
-    /// .agents/rules/00_rules.md の改訂に従い、資産の生成は Editor API を通す。
+    /// .agents/rules/development-rules.md の改訂に従い、資産の生成は Editor API を通す。
     /// 冪等であり、既に存在すれば何もしない。
     /// </summary>
     public static class MissingChannelAssetCreator

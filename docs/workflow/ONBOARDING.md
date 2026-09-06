@@ -1,7 +1,7 @@
 # AI 開発者向けオンボーディング・マスターガイド（引き継ぎ書）
 
 初見の AI エージェント（Claude / Gemini / その他）は、作業前に**必ずこの文書を最初に通読**してください。
-また、作業着手前には必ず [`docs/STATUS.md`](file:///c:/dev/unity-2d-project/docs/STATUS.md)（現在地）と [`docs/log.md`](file:///c:/dev/unity-2d-project/docs/log.md)（直近の決定事項）を確認し、前提のズレを防いでください。
+また、作業着手前には必ず [`docs/status.md`](file:///c:/dev/unity-2d-project/docs/status.md)（現在地）と [`docs/log.md`](file:///c:/dev/unity-2d-project/docs/log.md)（直近の決定事項）を確認し、前提のズレを防いでください。
 このプロジェクトには過去の失敗から得られた厳格なルールと仕組みがあります。
 
 ---
@@ -34,7 +34,7 @@ AIは言われたコードを高速に生成できるが、暗黙の了解や実
 
 ## 2. 厳格なアーキテクチャ規約（破ると即隔離されます）
 
-詳細は [`.agents/rules/00_rules.md`](file:///c:/dev/unity-2d-project/.agents/rules/00_rules.md) を参照。
+詳細は [`.agents/rules/development-rules.md`](file:///c:/dev/unity-2d-project/.agents/rules/development-rules.md) を参照。
 
 1. **アセンブリ定義（asmdef）**:
    - ランタイムは **`Game.asmdef` 1枚のみ**。機能ごとの細分化は厳禁。

@@ -22,7 +22,7 @@ namespace Game.Tests.PlayMode
     /// (BarFill) の変動・例外 0 件を 1 本で証明する。
     ///
     /// このテストが赤になっても、緑にするためにプロダクションコードへ分岐・自己修復・
-    /// Find 系の再導入を行ってはならない（00_rules.md「テスト」節）。出力をそのまま
+    /// Find 系の再導入を行ってはならない（development-rules.md「テスト」節）。出力をそのまま
     /// 貼って停止し、人間に報告すること。
     ///
     /// ゲージは Slider ではなく RectTransform.anchorMax.x で表現されている
@@ -437,7 +437,7 @@ namespace Game.Tests.PlayMode
 
         /// <summary>
         /// GameObject 名で CommandButtonView を引く。テストコードでのシーン検索は
-        /// 00_rules.md の禁止対象（ランタイムコード）ではない。
+        /// development-rules.md の禁止対象（ランタイムコード）ではない。
         /// </summary>
         private static CommandButtonView FindCommandButtonByName(string gameObjectName)
         {

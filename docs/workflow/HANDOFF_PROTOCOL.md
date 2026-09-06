@@ -126,7 +126,7 @@ docs/cycles/YYYY-MM-DD-NN/
 | Claude ⇄ agy の差し戻し | **2 往復** | 人間へ上げる |
 
 `05-review.md` の先頭に `再試行: N / 2` を必ず書く。数えていないと効かない
-（`00_rules.md` の停止条件はこれを言っている）。
+（`development-rules.md` の停止条件はこれを言っている）。
 
 ## 3. 禁止事項
 

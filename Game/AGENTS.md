@@ -29,8 +29,8 @@
 3. **仕様策定 & Claude洗練**: `docs/instructions/` の指示書素案を必ず Claude に投入し、仕様の穴・数学モデル・ゲーム性の改善・テストケースの網羅性を徹底精査・洗練させてから実装へ移行（Claude 頭脳の最大活用）
 4. **テスト先行実装（TDD）**: EditMode 単体テストコードを先行作成し、C# ロジックを実装
 5. **Unity-MCP 多層検証**: `refresh_unity` および `run_tests`（100% Green）を機械的に確認
-6. **Living Spec 同期 & 記録**: `docs/spec/`、`docs/STATUS.md`、`docs/log.md` を更新して Git コミット・プッシュ
-7. **ダッシュボード保守**: 人間が確認に来られた際に一目で進捗・残量・テスト件数を把握できるよう `docs/STATUS.md` を最新に維持
+6. **Living Spec 同期 & 記録**: `docs/spec/`、`docs/status.md`、`docs/log.md` を更新して Git コミット・プッシュ
+7. **ダッシュボード保守**: 人間が確認に来られた際に一目で進捗・残量・テスト件数を把握できるよう `docs/status.md` を最新に維持
 8. **自律継続実行インフラ常駐**: Windows Task Scheduler ＋ Antigravity SDK（`scripts/auto_runner.py`）により、セッション外でも 30分間隔で未完了 Step の自動前倒し実行を維持
 
 ### 禁止事項

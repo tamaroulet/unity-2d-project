@@ -64,7 +64,7 @@ Bootstrapper   ← 起動時に UI 全体を構築し、参照を結線する
 
 ### 参照の解決
 
-`00_rules.md`「参照の解決手段は 2 つだけ: `[SerializeField]` + 人間の Inspector アサイン、
+`development-rules.md`「参照の解決手段は 2 つだけ: `[SerializeField]` + 人間の Inspector アサイン、
 または `Resources.Load`」の**後者に全面的に寄せる。**
 
 - ScriptableObject（`GameRulesSO` / 各 `Catalog` / 各 `Channel`）は
@@ -115,7 +115,7 @@ Editor 側には「シーンの雛形（Camera / EventSystem / Canvas / Bootstra
 
 ### 案 C: Addressables を導入して参照を解決する
 
-**却下。** `00_rules.md` が Addressables の追加を明示的に禁じている。
+**却下。** `development-rules.md` が Addressables の追加を明示的に禁じている。
 `Resources.Load` は規約が既に許可しており、この規模で不足しない。
 
 ### 案 D: UI Toolkit へ移行する

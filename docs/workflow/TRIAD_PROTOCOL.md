@@ -5,8 +5,8 @@ scope: 本プロジェクトにおける人間・Claude・Gemini の全作業
 
 # 3者協調作業フロー規約（Triad Protocol）
 
-本規約は `.agents/rules/00_rules.md`（宣言的制約）の**運用手続き**を定める。
-両者が矛盾する場合は `00_rules.md` が優先する。
+本規約は `.agents/rules/development-rules.md`（宣言的制約）の**運用手続き**を定める。
+両者が矛盾する場合は `development-rules.md` が優先する。
 
 ## 0. 目的
 

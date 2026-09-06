@@ -63,7 +63,7 @@ Game.Core.sln
 
 > **`Game.Core.csproj` に含まれるファイルに `using UnityEngine` を書いたら、`dotnet build` が落ちる。**
 
-規約の文章ではなく、コンパイラが物理的に弾く。`00_rules.md` の
+規約の文章ではなく、コンパイラが物理的に弾く。`development-rules.md` の
 「違反は物理的にブロックする。文章で守らせるのではない」に沿う。
 
 `scripts/mechanical_check.ps1` に判定項目を 1 行追加する。
@@ -74,7 +74,7 @@ PASS/FAIL Core: dotnet build Game.Core.sln → 0 errors
 
 ### asmdef 規約は変更しない
 
-**新しい asmdef を作らない。** `00_rules.md`「ランタイムアセンブリは `Game.asmdef` 1 つ」は
+**新しい asmdef を作らない。** `development-rules.md`「ランタイムアセンブリは `Game.asmdef` 1 つ」は
 そのまま維持される。追加するのは Unity の外の csproj であり、Unity のアセンブリではない。
 
 規約に足すのは次の 1 行のみとする。
@@ -88,7 +88,7 @@ PASS/FAIL Core: dotnet build Game.Core.sln → 0 errors
 
 **却下。** 2 つの理由による。
 
-1. `00_rules.md` が asmdef の新設を明示的に禁じており、規約改訂が必要になる
+1. `development-rules.md` が asmdef の新設を明示的に禁じており、規約改訂が必要になる
 2. **目的を達成しない。** asmdef が生成する csproj は Unity の生成物であり git 管理外なので、
    結局「Unity が動いた PC でしか `dotnet test` できない」という現状の制約が残る
 

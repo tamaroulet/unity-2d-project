@@ -85,7 +85,7 @@ ROADMAP_PLAN = [
         "title": "仕様書・成果物ドキュメントの最終同期とGitコミット",
         "instruction_pattern": r"2\.5.*仕様書・成果物ドキュメント",
         "prompt_detail": (
-            "docs/STATUS.md, docs/log.md, docs/instructions/08_polish_and_balance.md, README.md を最新実績に合わせて完全同期し、"
+            "docs/status.md, docs/log.md, docs/instructions/08_polish_and_balance.md, README.md を最新実績に合わせて完全同期し、"
             "Git コミット＆プッシュを実行してください。"
         )
     }
@@ -168,7 +168,7 @@ def get_next_prompt(quotas: dict) -> tuple:
     """未完了タスクとロードマップを照合し、次に実行すべき高精度プロンプトを構築する。"""
     uncompleted_tasks = parse_instruction_uncompleted_tasks()
     rejected_tasks = get_recently_rejected_tasks()
-    status_path = PROJECT_ROOT / "docs" / "STATUS.md"
+    status_path = PROJECT_ROOT / "docs" / "status.md"
     status_text = status_path.read_text(encoding="utf-8") if status_path.exists() else ""
 
     # REJECT されたタスクは後回しにし、未挑戦のタスクを最優先して先行実装を進める
@@ -209,9 +209,9 @@ def get_next_prompt(quotas: dict) -> tuple:
 指示書に書かれていない設計判断が必要になったら、推測で埋めず、手を止めて報告する。
 
 【作業規律】
-1. .agents/rules/00_rules.md の全行動規範（平素な文体、ノンストップ自律チェーン、Unity-MCP検証）を遵守すること。
+1. .agents/rules/development-rules.md の全行動規範（平素な文体、ノンストップ自律チェーン、Unity-MCP検証）を遵守すること。
 2. 作業完了後は必ず docs/instructions/08_polish_and_balance.md の対応するチェックボックスを - [x] に更新すること。
-3. docs/STATUS.md および docs/log.md を同期し、Git コミット＆プッシュ（origin/main）まで同一ターンで完了させること。
+3. docs/status.md および docs/log.md を同期し、Git コミット＆プッシュ（origin/main）まで同一ターンで完了させること。
 【夜間モードの絶対禁止事項（違反した成果物は自動的に隔離され、main から巻き戻される）】
 1. `git push origin main` を実行してはならない。push は安全ハーネスが nightly/<日付> ブランチへ行う。
 2. テストを緑にするためにテストコードを弱めてはならない
@@ -226,7 +226,7 @@ def get_next_prompt(quotas: dict) -> tuple:
 【未完了タスク一覧】
 {json.dumps([t['task'] for t in uncompleted_tasks[:5]], ensure_ascii=False, indent=2)}
 
-【現在の STATUS.md 抜粋】
+【現在の status.md 抜粋】
 ---
 {status_text[:1500]}
 ---
@@ -411,7 +411,7 @@ async def run_single_cycle():
                 "エディタを閉じてから再開すること。")
             return -1
         if record.get("consecutive_rejects", 0) >= 2:
-            log("[HALT] 同一タスクで 2 回連続 REJECT。00_rules.md 停止条件により中断する。")
+            log("[HALT] 同一タスクで 2 回連続 REJECT。development-rules.md 停止条件により中断する。")
             log(f"理由: {', '.join(record.get('reasons', []))}")
             return -1
 

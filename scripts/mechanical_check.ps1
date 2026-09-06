@@ -72,7 +72,7 @@ try {
     $protectedPatterns = @(
         '^docs/spec/',
         '^docs/decisions/',
-        '^\.agents/rules/00_rules\.md$',
+        '^\.agents/rules/development-rules\.md$',
         '^\.claude/hooks/guard\.js$',
         '^\.github/workflows/',
         '^scripts/nightly_gate\.py$',

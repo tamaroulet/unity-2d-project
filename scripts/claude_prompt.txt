@@ -13,15 +13,15 @@
 ### レビュー対象ファイル
 1. docs/workflow/ONBOARDING.md （初見AI向けマスターガイド）
 2. docs/workflow/TRIAD_PROTOCOL.md （3者協調作業規約）
-3. .agents/rules/00_rules.md （宣言的制約と文体規約）
+3. .agents/rules/development-rules.md （宣言的制約と文体規約）
 4. scripts/nightly_gate.py （夜間安全ハーネス）
-5. docs/STATUS.md （最新の進捗状況）
+5. docs/status.md （最新の進捗状況）
 
 ---
 
 ### 監査・回答してほしい論点
 1. **「有能な素人」が勘違いする盲点・暗黙知の検出**:
-   現状の ONBOARDING.md や 00_rules.md を読んだ初見のAIが、「書かれていないから勝手に判断した」結果として、プロジェクトを壊しうる抜け穴や曖昧な記述はどこに残っているか？
+   現状の ONBOARDING.md や development-rules.md を読んだ初見のAIが、「書かれていないから勝手に判断した」結果として、プロジェクトを壊しうる抜け穴や曖昧な記述はどこに残っているか？
 2. **安全ハーネス（nightly_gate.py）の実効性と運用上の死角**:
    テスト失敗・ポリシー違反時の自動隔離・ロールバック機構において、夜間自律走行中に「AIが無駄なループに陥る」「意図せず動かないまま朝を迎える」といった死角はないか？
 3. **具体的な加筆・修正提案**:
