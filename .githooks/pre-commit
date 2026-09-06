@@ -1,6 +1,6 @@
 #!/bin/sh
 if [ "$HARNESS_INTEGRATOR" != "1" ]; then
-  echo "コミットは統合器のみ許可されています。手動実行時は HARNESS_INTEGRATOR=1 git commit または --no-verify を指定してください。" >&2
+  echo "コミットは統合器のみ許可されています。手動実行時は HARNESS_INTEGRATOR=1 git commit を指定してください。" >&2
   exit 1
 fi
 exit 0
