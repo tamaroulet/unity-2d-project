@@ -500,37 +500,153 @@ namespace Game.Tests.PlayMode
         }
 
         /// <summary>
+        /// 対照群（u-0028）: 対象ボタンの上に一時的な遮蔽物を置くと AssertRaycastReachesButton / RunDriver が
+        /// 確実に失敗（Blocked）し、遮蔽物を外すと正常に通ることを実証する。
+        /// 置いた遮蔽物は必ず同じテスト内で破棄して後片付けする。
+        /// </summary>
+        [UnityTest]
+        public IEnumerator MainGame_CommandButtonClick_BlockedByOverlay_AssertFailsAndRecovers()
+        {
+            Debug.Log("[ContrastTest] Starting test");
+
+            // ---------- Arrange: MainGame をロードし、入力待ちまで進める ----------
+            AsyncOperation load = SceneManager.LoadSceneAsync(SceneName, LoadSceneMode.Single);
+            Assert.IsTrue(load != null, $"シーン '{SceneName}' のロードを開始できなかった。");
+
+            while (!load.isDone)
+            {
+                yield return null;
+            }
+
+            yield return null;
+
+            GameFlowController flow = UnityEngine.Object.FindFirstObjectByType<GameFlowController>();
+            Assert.IsTrue(flow != null, "GameFlowController が MainGame シーンに存在しない。");
+
+            yield return WaitForCondition(
+                () => flow.CurrentPhase == GamePhase.WaitingInput,
+                () => $"起動から {TimeoutSeconds} 秒以内に GamePhase.WaitingInput へ到達しなかった。");
+
+            Debug.Log("[ContrastTest] Scene loaded, WaitingInput reached");
+
+            Button studyButton = GameObject.Find(StudyButtonName)?.GetComponent<Button>();
+            Assert.IsTrue(studyButton != null, $"{StudyButtonName} が見つからない。");
+
+            RunDriver driver = RunDriver.FromScene();
+            driver.CommandPolicy = _ => studyButton;
+
+            // 1. 遮蔽物がない通常状態では届くことを確認
+            AssertRaycastReachesButton(studyButton, StudyButtonName);
+            Debug.Log("[ContrastTest] Step 1 passed (reachable without obstruction)");
+
+            // 2. button.interactable = false のときに落ちることを実証
+            studyButton.interactable = false;
+            bool interactableThrew = false;
+            try
+            {
+                AssertRaycastReachesButton(studyButton, StudyButtonName);
+            }
+            catch (AssertionException ex)
+            {
+                interactableThrew = true;
+                Assert.IsTrue(ex.Message.Contains("not interactable"), $"想定と異なるエラーメッセージ: {ex.Message}");
+            }
+            finally
+            {
+                studyButton.interactable = true;
+            }
+            Assert.IsTrue(interactableThrew, "interactable = false なのに AssertRaycastReachesButton が失敗しなかった。");
+            Debug.Log("[ContrastTest] Step 2 passed (interactable=false throws)");
+
+            // 3. 必ず落ちる側の実証: ボタンの前面に一時的な遮蔽物を配置
+            Canvas canvas = studyButton.GetComponentInParent<Canvas>();
+            Assert.IsTrue(canvas != null, "Canvas not found for studyButton.");
+
+            GameObject obstruction = new GameObject("TemporaryObstruction", typeof(RectTransform));
+            try
+            {
+                obstruction.transform.SetParent(studyButton.transform.parent, false);
+                RectTransform rt = obstruction.GetComponent<RectTransform>();
+                rt.position = studyButton.transform.position;
+                rt.sizeDelta = new Vector2(500f, 500f);
+                rt.SetAsLastSibling();
+
+                Image img = obstruction.AddComponent<Image>();
+                img.color = Color.red;
+                img.raycastTarget = true;
+
+                Canvas.ForceUpdateCanvases();
+                yield return null;
+
+                // 直接呼び出しで Blocked になることを検証
+                bool directAssertThrew = false;
+                try
+                {
+                    AssertRaycastReachesButton(studyButton, StudyButtonName);
+                }
+                catch (AssertionException ex)
+                {
+                    directAssertThrew = true;
+                    Assert.IsTrue(
+                        ex.Message.Contains("blocked by 'TemporaryObstruction'"),
+                        $"想定と異なるエラーメッセージ: {ex.Message}");
+                }
+                Assert.IsTrue(directAssertThrew, "遮蔽物を配置したにもかかわらず AssertRaycastReachesButton が失敗しなかった。");
+                Debug.Log("[ContrastTest] Step 3a passed (direct assert blocked)");
+
+                // RunDriver.Step でも Blocked になることを検証
+                bool driverStepThrew = false;
+                try
+                {
+                    driver.Step(flow);
+                }
+                catch (AssertionException ex)
+                {
+                    driverStepThrew = true;
+                    Assert.IsTrue(
+                        ex.Message.Contains("blocked by 'TemporaryObstruction'"),
+                        $"想定と異なるエラーメッセージ: {ex.Message}");
+                }
+                Assert.IsTrue(driverStepThrew, "遮蔽物を配置したにもかかわらず driver.Step が失敗しなかった。");
+                Debug.Log("[ContrastTest] Step 3b passed (driver.Step blocked)");
+            }
+            finally
+            {
+                // 遮蔽物を必ず破棄する（シーンに残さない）
+                if (obstruction != null)
+                {
+                    UnityEngine.Object.DestroyImmediate(obstruction);
+                }
+            }
+
+            Canvas.ForceUpdateCanvases();
+            yield return null;
+
+            // 4. 遮蔽物がシーンに残っていないことを確認
+            Assert.IsNull(GameObject.Find("TemporaryObstruction"), "遮蔽物がシーンに残っている。");
+            Debug.Log("[ContrastTest] Step 4 passed (obstruction destroyed)");
+
+            // 5. 遮蔽物除去後は正常に driver.Step でクリックが届き、ターン進行できることを確認
+            RunDriver.Action taken = driver.Step(flow);
+            Assert.AreEqual(RunDriver.Action.ClickCommand, taken);
+            Assert.IsTrue(driver.LastClickAccepted, "遮蔽物除去後の driver.Step クリックが受理されなかった。");
+            Debug.Log("[ContrastTest] Step 5 passed (driver.Step succeeded)");
+
+            yield return WaitForCondition(
+                () => flow.CurrentState != null && flow.CurrentState.CurrentTurn == 2 && flow.CurrentPhase == GamePhase.WaitingInput,
+                () => "クリック後に Turn 2 / WaitingInput へ遷移しなかった。");
+
+            Assert.AreEqual(2, flow.CurrentState.CurrentTurn);
+            Debug.Log("[ContrastTest] Step 6 passed (Turn 2 reached)");
+        }
+
+        /// <summary>
         /// GraphicRaycaster を通して指定ボタン（またはその子要素）がクリック可能位置の最前面にあるかを検証する。
-        /// 他のモーダルパネル（透明背景など）が上に被さっている場合、検知してテストを失敗させる。
+        /// 実体は RunDriver.AssertRaycastReachesButton に集約。
         /// </summary>
         private static void AssertRaycastReachesButton(Button button, string buttonName)
         {
-            Assert.IsTrue(button != null, $"{buttonName} is null.");
-            Assert.IsTrue(button.gameObject.activeInHierarchy, $"{buttonName} is not active in hierarchy.");
-
-            Canvas canvas = button.GetComponentInParent<Canvas>();
-            Assert.IsTrue(canvas != null, $"Canvas not found for {buttonName}.");
-            GraphicRaycaster raycaster = canvas.GetComponent<GraphicRaycaster>();
-            Assert.IsTrue(raycaster != null, $"GraphicRaycaster not found on Canvas for {buttonName}.");
-
-            Camera eventCamera = canvas.renderMode == RenderMode.ScreenSpaceOverlay ? null : canvas.worldCamera;
-            Vector2 screenPoint = RectTransformUtility.WorldToScreenPoint(eventCamera, button.transform.position);
-
-            PointerEventData pointerData = new PointerEventData(EventSystem.current)
-            {
-                position = screenPoint
-            };
-
-            List<RaycastResult> results = new List<RaycastResult>();
-            raycaster.Raycast(pointerData, results);
-
-            Assert.IsTrue(results.Count > 0, $"Raycast hit nothing at {buttonName} screen position {screenPoint}.");
-
-            GameObject topHit = results[0].gameObject;
-            bool isTargetOrChild = topHit == button.gameObject || topHit.transform.IsChildOf(button.transform);
-            Assert.IsTrue(
-                isTargetOrChild,
-                $"Raycast to '{buttonName}' was blocked by '{topHit.name}' (Parent: {topHit.transform.parent?.name}). Target button: {button.gameObject.name}");
+            RunDriver.AssertRaycastReachesButton(button, buttonName);
         }
     }
 }

@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Reflection;
 using Game.Features.GameFlow;
 using Game.UI;
+using NUnit.Framework;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
@@ -239,12 +240,51 @@ namespace Game.Tests.PlayMode
             return go != null && go.activeInHierarchy;
         }
 
+        /// <summary>
+        /// GraphicRaycaster を通して指定ボタン（またはその子要素）がクリック可能位置の最前面にあり、
+        /// かつ interactable であるかを検証する。
+        /// 他のモーダルパネル（透明背景など）が上に被さっている場合、検知してテストを失敗させる。
+        /// </summary>
+        public static void AssertRaycastReachesButton(Button button, string buttonName = null)
+        {
+            string name = buttonName ?? (button != null ? button.gameObject.name : "null");
+            Assert.IsTrue(button != null, $"{name} is null.");
+            Assert.IsTrue(button.gameObject.activeInHierarchy, $"{name} is not active in hierarchy.");
+            Assert.IsTrue(button.interactable, $"{name} is not interactable.");
+
+            Canvas canvas = button.GetComponentInParent<Canvas>();
+            Assert.IsTrue(canvas != null, $"Canvas not found for {name}.");
+            GraphicRaycaster raycaster = canvas.GetComponent<GraphicRaycaster>();
+            Assert.IsTrue(raycaster != null, $"GraphicRaycaster not found on Canvas for {name}.");
+
+            Camera eventCamera = canvas.renderMode == RenderMode.ScreenSpaceOverlay ? null : canvas.worldCamera;
+            Vector2 screenPoint = RectTransformUtility.WorldToScreenPoint(eventCamera, button.transform.position);
+
+            PointerEventData pointerData = new PointerEventData(EventSystem.current)
+            {
+                position = screenPoint
+            };
+
+            List<RaycastResult> results = new List<RaycastResult>();
+            raycaster.Raycast(pointerData, results);
+
+            Assert.IsTrue(results.Count > 0, $"Raycast hit nothing at {name} screen position {screenPoint}.");
+
+            GameObject topHit = results[0].gameObject;
+            bool isTargetOrChild = topHit == button.gameObject || topHit.transform.IsChildOf(button.transform);
+            Assert.IsTrue(
+                isTargetOrChild,
+                $"Raycast to '{name}' was blocked by '{topHit.name}' (Parent: {topHit.transform.parent?.name}). Target button: {button.gameObject.name}");
+        }
+
         private static bool Click(Button button)
         {
             if (button == null)
             {
                 return false;
             }
+
+            AssertRaycastReachesButton(button);
 
             return ExecuteEvents.Execute(
                 button.gameObject,
