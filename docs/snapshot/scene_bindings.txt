@@ -3,21 +3,6 @@ Canvas  [active=true]
     _canvas -> Canvas/Canvas (Canvas)
     _endingView -> UIViews/EndingView (EndingView)
     _gameFlowController -> GameFlowController/GameFlowController (GameFlowController)
-Canvas/RelicDraftDialogPanel/PanelRoot/Card1  [active=false]
-  RelicCardView
-    _descriptionText -> DescText/TextMeshProUGUI (TextMeshProUGUI)
-    _nameText -> NameText/TextMeshProUGUI (TextMeshProUGUI)
-    _selectButton -> SelectButton/Button (Button)
-Canvas/RelicDraftDialogPanel/PanelRoot/Card2  [active=false]
-  RelicCardView
-    _descriptionText -> DescText/TextMeshProUGUI (TextMeshProUGUI)
-    _nameText -> NameText/TextMeshProUGUI (TextMeshProUGUI)
-    _selectButton -> SelectButton/Button (Button)
-Canvas/RelicDraftDialogPanel/PanelRoot/Card3  [active=false]
-  RelicCardView
-    _descriptionText -> DescText/TextMeshProUGUI (TextMeshProUGUI)
-    _nameText -> NameText/TextMeshProUGUI (TextMeshProUGUI)
-    _selectButton -> SelectButton/Button (Button)
 Canvas/UIViews  [active=true]
   BossBattleDialogView
 Canvas/UIViews  [active=true]
@@ -39,7 +24,6 @@ Canvas/UIViews  [active=true]
 Canvas/UIViews  [active=true]
   RelicDraftDialogView
     _gameFlowController -> GameFlowController/GameFlowController (GameFlowController)
-    _panelRoot -> RelicDraftDialogPanel (GameObject)
     _relicAcquiredChannel -> RelicAcquiredChannel (RelicAcquiredChannelSO)
 GameFlowController  [active=true]
   GameFlowController
@@ -59,4 +43,4 @@ GameFlowController  [active=true]
     _relicAcquiredChannel -> RelicAcquiredChannel (RelicAcquiredChannelSO)
     _relicCatalog -> RelicCatalog (RelicCatalogSO)
     _relicResolver -> RelicResolver (RelicResolverSO)
-=== components: 10 / bound: 41 / unbound: 0 ===
+=== components: 7 / bound: 31 / unbound: 0 ===

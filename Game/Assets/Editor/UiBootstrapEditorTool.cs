@@ -269,6 +269,39 @@ namespace Game.EditorScripts
 
             SceneBindingReport.GenerateSceneSnapshot();
         }
+
+        [MenuItem("Tools/Migrate RelicDraftDialogPanel To Runtime")]
+        public static void MigrateRelicDraftDialogPanel()
+        {
+            // 1. シーンの読み込み
+            Scene scene = EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
+
+            // 2. Canvas の探索と RelicDraftDialogPanel の削除
+            Canvas canvas = Object.FindFirstObjectByType<Canvas>();
+            if (canvas == null)
+            {
+                Debug.LogError("[UiBootstrapEditorTool] Canvas not found in scene.");
+                return;
+            }
+
+            Transform relicPanelTr = canvas.transform.Find("RelicDraftDialogPanel");
+            if (relicPanelTr != null)
+            {
+                Object.DestroyImmediate(relicPanelTr.gameObject);
+                Debug.Log("[UiBootstrapEditorTool] Removed RelicDraftDialogPanel from Canvas.");
+            }
+            else
+            {
+                Debug.LogWarning("[UiBootstrapEditorTool] RelicDraftDialogPanel not found on Canvas (already removed?).");
+            }
+
+            // 3. シーン保存とスナップショット更新
+            EditorSceneManager.MarkSceneDirty(scene);
+            EditorSceneManager.SaveScene(scene);
+            Debug.Log("[UiBootstrapEditorTool] MainGame scene updated and saved.");
+
+            SceneBindingReport.GenerateSceneSnapshot();
+        }
     }
 }
 #endif

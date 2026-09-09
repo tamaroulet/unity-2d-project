@@ -99,7 +99,6 @@ namespace Game.EditorScripts
             CreateOrUpdateBackground(canvas.transform);
 
             // 5. 各 UI パネルの完全構築
-            SetupRelicDraftDialogPanel(canvas.transform);
             SetupMetaShopDialogPanel(canvas.transform);
 
             // 6. UIViews の構築（常時アクティブな View コンポーネントホスト）
@@ -137,24 +136,6 @@ namespace Game.EditorScripts
         }
 
 
-        private static void SetupRelicDraftDialogPanel(Transform canvasTr)
-        {
-            Transform tr = canvasTr.Find("RelicDraftDialogPanel");
-            GameObject go = tr != null ? tr.gameObject : new GameObject("RelicDraftDialogPanel", typeof(RectTransform), typeof(Image));
-            go.transform.SetParent(canvasTr, false);
-
-            ConfigureModalPanel(go.transform, new Vector2(1150, 650), ColorBgDialog);
-            Transform rootTr = go.transform.Find("PanelRoot");
-            if (rootTr != null)
-            {
-                CreateLabel(rootTr.GetComponent<RectTransform>(), "DraftTitleText", "RELIC DRAFT (SELECT PASSIVE)", new Vector2(0, 240), new Vector2(800, 50), 32, TextAlignmentOptions.Center);
-                CreateRelicCard(rootTr.GetComponent<RectTransform>(), "Card1", "Iron Dumbbell", "+5 Stamina/Turn", new Vector2(-340, -20));
-                CreateRelicCard(rootTr.GetComponent<RectTransform>(), "Card2", "Book of Wisdom", "+20% Skill Gain", new Vector2(0, -20));
-                CreateRelicCard(rootTr.GetComponent<RectTransform>(), "Card3", "Healing Amulet", "+30% Mental Guard", new Vector2(340, -20));
-            }
-
-            go.SetActive(false);
-        }
 
 
 
@@ -332,45 +313,6 @@ namespace Game.EditorScripts
             CreateLabel(rect, "Text", text, Vector2.zero, size, 22, TextAlignmentOptions.Center);
         }
 
-        private static RelicCardView CreateRelicCard(RectTransform parent, string name, string relicName, string desc, Vector2 pos)
-        {
-            Transform existing = parent.Find(name);
-            GameObject cardGo = existing != null ? existing.gameObject : new GameObject(name, typeof(RectTransform), typeof(Image), typeof(RelicCardView));
-            if (cardGo.GetComponent<RelicCardView>() == null)
-            {
-                cardGo.AddComponent<RelicCardView>();
-            }
-            cardGo.transform.SetParent(parent, false);
-
-            RectTransform rect = EnsureRectTransform(cardGo);
-            rect.anchoredPosition = pos;
-            rect.sizeDelta = new Vector2(280, 380);
-
-            Image img = cardGo.GetComponent<Image>() ?? cardGo.AddComponent<Image>();
-            img.sprite = LoadSprite("Frame_Card");
-            img.type = Image.Type.Sliced;
-            img.color = ColorButtonBg;
-
-            AttachIcon(rect, "Icon", LoadSprite("Icon_Relic"), new Vector2(0, 80), new Vector2(80, 80));
-            TextMeshProUGUI nameLbl = CreateLabel(rect, "NameText", relicName, new Vector2(0, 0), new Vector2(240, 40), 22, TextAlignmentOptions.Center).GetComponent<TextMeshProUGUI>();
-            TextMeshProUGUI descLbl = CreateLabel(rect, "DescText", desc, new Vector2(0, -60), new Vector2(240, 80), 18, TextAlignmentOptions.Center).GetComponent<TextMeshProUGUI>();
-            CreateModalButton(rect, "SelectButton", "SELECT", new Vector2(0, -130), new Vector2(200, 45));
-
-            Transform btnTr = rect.Find("SelectButton");
-            Button btn = btnTr != null ? btnTr.GetComponent<Button>() : null;
-
-            RelicCardView cardView = cardGo.GetComponent<RelicCardView>();
-            if (cardView != null)
-            {
-                SerializedObject cSo = new SerializedObject(cardView);
-                cSo.FindProperty("_nameText").objectReferenceValue = nameLbl;
-                cSo.FindProperty("_descriptionText").objectReferenceValue = descLbl;
-                cSo.FindProperty("_selectButton").objectReferenceValue = btn;
-                cSo.ApplyModifiedProperties();
-            }
-
-            return cardView;
-        }
 
         private static void CreateShopItemCard(RectTransform parent, string cardName, string text, Vector2 pos)
         {
@@ -628,38 +570,7 @@ namespace Game.EditorScripts
 
             SerializedObject so = new SerializedObject(view);
             so.FindProperty("_gameFlowController").objectReferenceValue = controller;
-
-            Transform panelTr = canvasTr.Find("RelicDraftDialogPanel");
-            if (panelTr != null)
-            {
-                so.FindProperty("_panelRoot").objectReferenceValue = panelTr.gameObject;
-            }
-            else
-            {
-                Debug.LogError("[UILayoutBuilder] RelicDraftDialogPanel not found for RelicDraftDialogView._panelRoot.");
-            }
-
             BindAsset<RelicAcquiredChannelSO>(so, "_relicAcquiredChannel", "Assets/Features/Relic/Instances/RelicAcquiredChannel.asset");
-
-            Transform rootTr = panelTr != null ? panelTr.Find("PanelRoot") : null;
-            if (rootTr != null)
-            {
-                RelicCardView[] cardViews = rootTr.GetComponentsInChildren<RelicCardView>(true);
-                SerializedProperty cardsProp = so.FindProperty("_cardViews");
-                if (cardsProp != null)
-                {
-                    cardsProp.ClearArray();
-                    for (int i = 0; i < cardViews.Length; i++)
-                    {
-                        cardsProp.InsertArrayElementAtIndex(i);
-                        cardsProp.GetArrayElementAtIndex(i).objectReferenceValue = cardViews[i];
-                    }
-                }
-            }
-            else
-            {
-                Debug.LogError("[UILayoutBuilder] RelicDraftDialogPanel/PanelRoot not found for RelicDraftDialogView._cardViews.");
-            }
 
             so.ApplyModifiedProperties();
         }

@@ -12,9 +12,9 @@ namespace Game.UI
     /// </summary>
     public class RelicCardView : MonoBehaviour
     {
-        [SerializeField] private TextMeshProUGUI _nameText;
-        [SerializeField] private TextMeshProUGUI _descriptionText;
-        [SerializeField] private Button _selectButton;
+        private TextMeshProUGUI _nameText;
+        private TextMeshProUGUI _descriptionText;
+        private Button _selectButton;
 
         private RelicSO _relic;
         private Action<int> _onSelected;
@@ -25,10 +25,32 @@ namespace Game.UI
 
         public string DisplayedDescription => _descriptionText != null ? _descriptionText.text : string.Empty;
 
+        /// <summary>
+        /// ランタイムブートストラップ時に各参照を直接代入・結線する。
+        /// </summary>
+        public void BindElements(
+            TextMeshProUGUI nameText,
+            TextMeshProUGUI descriptionText,
+            Button selectButton)
+        {
+            _nameText = nameText;
+            _descriptionText = descriptionText;
+            if (_selectButton != null)
+            {
+                _selectButton.onClick.RemoveListener(OnButtonClicked);
+            }
+            _selectButton = selectButton;
+            if (_selectButton != null && isActiveAndEnabled)
+            {
+                _selectButton.onClick.AddListener(OnButtonClicked);
+            }
+        }
+
         private void OnEnable()
         {
             if (_selectButton != null)
             {
+                _selectButton.onClick.RemoveListener(OnButtonClicked);
                 _selectButton.onClick.AddListener(OnButtonClicked);
             }
         }

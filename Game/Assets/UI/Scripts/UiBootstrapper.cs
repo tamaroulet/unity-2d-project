@@ -1,4 +1,5 @@
 // SPDX-AI-Disclosure: ai-generated
+using System.Collections.Generic;
 using Game.Core;
 using Game.Features.Command;
 using Game.Features.Ending;
@@ -37,6 +38,7 @@ namespace Game.UI
         {
             BootstrapBossBattleDialogPanel();
             BootstrapEventDialogPanel();
+            BootstrapRelicDraftDialogPanel();
             BootstrapStatusPanel();
             BootstrapCommandPanel();
             BootstrapEndingPanel();
@@ -602,6 +604,136 @@ namespace Game.UI
             {
                 Debug.LogError("[UiBootstrapper] EventDialogView not found, cannot bind references.");
             }
+        }
+
+        private void BootstrapRelicDraftDialogPanel()
+        {
+            if (_canvas == null)
+            {
+                _canvas = GetComponentInParent<Canvas>() ?? GetComponent<Canvas>();
+            }
+
+            // RelicDraftDialogPanel (全画面モーダルオーバーレイ)
+            GameObject panelGo = new GameObject("RelicDraftDialogPanel", typeof(RectTransform), typeof(Image));
+            panelGo.transform.SetParent(_canvas.transform, false);
+
+            RectTransform panelRect = panelGo.GetComponent<RectTransform>();
+            panelRect.anchorMin = Vector2.zero;
+            panelRect.anchorMax = Vector2.one;
+            panelRect.offsetMin = Vector2.zero;
+            panelRect.offsetMax = Vector2.zero;
+
+            Image overlayImg = panelGo.GetComponent<Image>();
+            overlayImg.color = ColorOverlay;
+            overlayImg.raycastTarget = true;
+
+            // PanelRoot (ダイアログ本体枠)
+            GameObject rootGo = new GameObject("PanelRoot", typeof(RectTransform), typeof(Image));
+            rootGo.transform.SetParent(panelGo.transform, false);
+
+            RectTransform rootRect = rootGo.GetComponent<RectTransform>();
+            rootRect.anchorMin = new Vector2(0.5f, 0.5f);
+            rootRect.anchorMax = new Vector2(0.5f, 0.5f);
+            rootRect.pivot = new Vector2(0.5f, 0.5f);
+            rootRect.sizeDelta = new Vector2(1150, 650);
+            rootRect.anchoredPosition = Vector2.zero;
+
+            Image rootImg = rootGo.GetComponent<Image>();
+            rootImg.color = ColorBgDialog;
+
+            // DraftTitleText
+            CreateLabel(
+                rootRect, "DraftTitleText", "RELIC DRAFT (SELECT PASSIVE)", new Vector2(0, 240), new Vector2(800, 50), 32, TextAlignmentOptions.Center);
+
+            // Card1, Card2, Card3
+            List<RelicCardView> cardViews = new List<RelicCardView>
+            {
+                CreateRelicCard(rootRect, "Card1", "Iron Dumbbell", "+5 Stamina/Turn", new Vector2(-340, -20)),
+                CreateRelicCard(rootRect, "Card2", "Book of Wisdom", "+20% Skill Gain", new Vector2(0, -20)),
+                CreateRelicCard(rootRect, "Card3", "Healing Amulet", "+30% Mental Guard", new Vector2(340, -20))
+            };
+
+            // 初期状態は非アクティブ
+            panelGo.SetActive(false);
+
+            // RelicDraftDialogView への依存注入
+            RelicDraftDialogView relicDialog = _canvas.GetComponentInChildren<RelicDraftDialogView>(true)
+                ?? Object.FindFirstObjectByType<RelicDraftDialogView>(FindObjectsInactive.Include);
+
+            if (relicDialog != null)
+            {
+                relicDialog.Bind(panelGo, cardViews);
+            }
+            else
+            {
+                Debug.LogError("[UiBootstrapper] RelicDraftDialogView not found, cannot bind references.");
+            }
+        }
+
+        private static RelicCardView CreateRelicCard(
+            RectTransform parent,
+            string name,
+            string relicName,
+            string desc,
+            Vector2 pos)
+        {
+            GameObject cardGo = new GameObject(name, typeof(RectTransform), typeof(Image), typeof(RelicCardView));
+            cardGo.transform.SetParent(parent, false);
+
+            RectTransform rect = cardGo.GetComponent<RectTransform>();
+            rect.anchoredPosition = pos;
+            rect.sizeDelta = new Vector2(280, 380);
+
+            Image img = cardGo.GetComponent<Image>();
+            img.color = ColorButtonBg;
+            img.raycastTarget = true;
+
+            // Icon
+            GameObject iconGo = new GameObject("Icon", typeof(RectTransform), typeof(Image));
+            iconGo.transform.SetParent(rect, false);
+            RectTransform iconRect = iconGo.GetComponent<RectTransform>();
+            iconRect.anchoredPosition = new Vector2(0, 80);
+            iconRect.sizeDelta = new Vector2(80, 80);
+            Image iconImg = iconGo.GetComponent<Image>();
+            iconImg.color = Color.white;
+            iconImg.raycastTarget = false;
+
+            // NameText
+            TextMeshProUGUI nameLbl = CreateLabel(rect, "NameText", relicName, new Vector2(0, 0), new Vector2(240, 40), 22, TextAlignmentOptions.Center);
+
+            // DescText
+            TextMeshProUGUI descLbl = CreateLabel(rect, "DescText", desc, new Vector2(0, -60), new Vector2(240, 80), 18, TextAlignmentOptions.Center);
+
+            // SelectButton
+            GameObject btnGo = new GameObject("SelectButton", typeof(RectTransform), typeof(Image), typeof(Button));
+            btnGo.transform.SetParent(rect, false);
+            RectTransform btnRect = btnGo.GetComponent<RectTransform>();
+            btnRect.anchoredPosition = new Vector2(0, -130);
+            btnRect.sizeDelta = new Vector2(200, 45);
+
+            Image btnImg = btnGo.GetComponent<Image>();
+            btnImg.color = ColorModalButtonBg;
+            btnImg.raycastTarget = true;
+
+            Button btn = btnGo.GetComponent<Button>();
+            btn.targetGraphic = btnImg;
+
+            // SelectButton / Text
+            GameObject btnTextGo = new GameObject("Text", typeof(RectTransform), typeof(TextMeshProUGUI));
+            btnTextGo.transform.SetParent(btnGo.transform, false);
+            RectTransform btnTextRect = btnTextGo.GetComponent<RectTransform>();
+            btnTextRect.anchoredPosition = Vector2.zero;
+            btnTextRect.sizeDelta = new Vector2(200, 45);
+            TextMeshProUGUI btnTmp = btnTextGo.GetComponent<TextMeshProUGUI>();
+            btnTmp.text = "SELECT";
+            btnTmp.fontSize = 22;
+            btnTmp.alignment = TextAlignmentOptions.Center;
+            btnTmp.color = Color.white;
+            btnTmp.raycastTarget = false;
+
+            RelicCardView cardView = cardGo.GetComponent<RelicCardView>();
+            cardView.BindElements(nameLbl, descLbl, btn);
+            return cardView;
         }
     }
 }

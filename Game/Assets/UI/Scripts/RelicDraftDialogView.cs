@@ -15,8 +15,22 @@ namespace Game.UI
     {
         [SerializeField] private RelicAcquiredChannelSO _relicAcquiredChannel;
         [SerializeField] private GameFlowController _gameFlowController;
-        [SerializeField] private GameObject _panelRoot;
-        [SerializeField] private List<RelicCardView> _cardViews = new List<RelicCardView>();
+        private GameObject _panelRoot;
+        private List<RelicCardView> _cardViews = new List<RelicCardView>();
+
+        /// <summary>
+        /// ランタイムブートストラップ時に各参照を直接代入・結線する。
+        /// </summary>
+        public void Bind(
+            GameObject panelRoot,
+            List<RelicCardView> cardViews)
+        {
+            _panelRoot = panelRoot;
+            if (cardViews != null)
+            {
+                _cardViews = cardViews;
+            }
+        }
 
         public int LastSelectedRelicId { get; private set; } = -1;
 
