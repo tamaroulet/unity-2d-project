@@ -99,7 +99,6 @@ namespace Game.EditorScripts
             CreateOrUpdateBackground(canvas.transform);
 
             // 5. 各 UI パネルの完全構築
-            SetupEventDialogPanel(canvas.transform);
             SetupRelicDraftDialogPanel(canvas.transform);
             SetupMetaShopDialogPanel(canvas.transform);
 
@@ -137,27 +136,6 @@ namespace Game.EditorScripts
             img.raycastTarget = false;
         }
 
-        private static void SetupEventDialogPanel(Transform canvasTr)
-        {
-            Transform tr = canvasTr.Find("EventDialogPanel");
-            GameObject go = tr != null ? tr.gameObject : new GameObject("EventDialogPanel", typeof(RectTransform), typeof(Image));
-            EventDialogView oldView = go.GetComponent<EventDialogView>();
-            if (oldView != null)
-            {
-                Object.DestroyImmediate(oldView);
-            }
-            go.transform.SetParent(canvasTr, false);
-
-            ConfigureModalPanel(go.transform, new Vector2(850, 520), ColorBgDialog);
-            Transform rootTr = go.transform.Find("PanelRoot");
-            if (rootTr != null)
-            {
-                CreateLabel(rootTr.GetComponent<RectTransform>(), "EventTitleText", "EVENT OCCURRED", new Vector2(0, 160), new Vector2(700, 50), 32, TextAlignmentOptions.Center);
-                CreateLabel(rootTr.GetComponent<RectTransform>(), "EventDescriptionText", "A training event has occurred.\nChoose your option carefully.", new Vector2(0, 40), new Vector2(700, 140), 22, TextAlignmentOptions.Center);
-                CreateModalButton(rootTr.GetComponent<RectTransform>(), "OkButton", "OK", new Vector2(0, -120), new Vector2(300, 60));
-            }
-            go.SetActive(false); // 初期状態は非表示
-        }
 
         private static void SetupRelicDraftDialogPanel(Transform canvasTr)
         {
@@ -610,13 +588,6 @@ namespace Game.EditorScripts
 
         private static void BindEventDialogSceneReferences(Transform canvasTr, GameFlowController controller)
         {
-            Transform panelTr = canvasTr.Find("EventDialogPanel");
-            if (panelTr == null)
-            {
-                Debug.LogError("[UILayoutBuilder] EventDialogPanel not found on Canvas.");
-                return;
-            }
-
             Transform viewsTr = canvasTr.Find("UIViews");
             if (viewsTr == null)
             {
@@ -632,18 +603,9 @@ namespace Game.EditorScripts
             }
 
             SerializedObject so = new SerializedObject(view);
-            so.FindProperty("_panelRoot").objectReferenceValue = panelTr.gameObject;
             so.FindProperty("_gameFlowController").objectReferenceValue = controller;
             BindAsset<GameEventFiredChannelSO>(so, "_eventFiredChannel", "Assets/Data/Channels/EventFiredChannel.asset");
             BindAsset<GameEventCatalogSO>(so, "_eventCatalog", "Assets/Data/Events/GameEventCatalog.asset");
-
-            Transform rootTr = panelTr.Find("PanelRoot");
-            if (rootTr != null)
-            {
-                BindComponentReference<TextMeshProUGUI>(so, "_titleText", rootTr, "EventDialogPanel", "EventTitleText");
-                BindComponentReference<TextMeshProUGUI>(so, "_bodyText", rootTr, "EventDialogPanel", "EventDescriptionText");
-                BindComponentReference<Button>(so, "_okButton", rootTr, "EventDialogPanel", "OkButton");
-            }
 
             so.ApplyModifiedProperties();
         }

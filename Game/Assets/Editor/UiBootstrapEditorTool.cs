@@ -236,6 +236,39 @@ namespace Game.EditorScripts
 
             SceneBindingReport.GenerateSceneSnapshot();
         }
+
+        [MenuItem("Tools/Migrate EventDialogPanel To Runtime")]
+        public static void MigrateEventDialogPanel()
+        {
+            // 1. シーンの読み込み
+            Scene scene = EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
+
+            // 2. Canvas の探索と EventDialogPanel の削除
+            Canvas canvas = Object.FindFirstObjectByType<Canvas>();
+            if (canvas == null)
+            {
+                Debug.LogError("[UiBootstrapEditorTool] Canvas not found in scene.");
+                return;
+            }
+
+            Transform eventPanelTr = canvas.transform.Find("EventDialogPanel");
+            if (eventPanelTr != null)
+            {
+                Object.DestroyImmediate(eventPanelTr.gameObject);
+                Debug.Log("[UiBootstrapEditorTool] Removed EventDialogPanel from Canvas.");
+            }
+            else
+            {
+                Debug.LogWarning("[UiBootstrapEditorTool] EventDialogPanel not found on Canvas (already removed?).");
+            }
+
+            // 3. シーン保存とスナップショット更新
+            EditorSceneManager.MarkSceneDirty(scene);
+            EditorSceneManager.SaveScene(scene);
+            Debug.Log("[UiBootstrapEditorTool] MainGame scene updated and saved.");
+
+            SceneBindingReport.GenerateSceneSnapshot();
+        }
     }
 }
 #endif

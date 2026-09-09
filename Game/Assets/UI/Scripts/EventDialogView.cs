@@ -17,11 +17,35 @@ namespace Game.UI
     {
         [SerializeField] private GameEventFiredChannelSO _eventFiredChannel;
         [SerializeField] private GameEventCatalogSO _eventCatalog;
-        [SerializeField] private GameObject _panelRoot;
-        [SerializeField] private TextMeshProUGUI _titleText;
-        [SerializeField] private TextMeshProUGUI _bodyText;
-        [SerializeField] private Button _okButton;
         [SerializeField] private GameFlowController _gameFlowController;
+
+        private GameObject _panelRoot;
+        private TextMeshProUGUI _titleText;
+        private TextMeshProUGUI _bodyText;
+        private Button _okButton;
+
+        /// <summary>
+        /// ランタイムブートストラップ時に各参照を直接代入・結線する。
+        /// </summary>
+        public void Bind(
+            GameObject panelRoot,
+            TextMeshProUGUI titleText = null,
+            TextMeshProUGUI bodyText = null,
+            Button okButton = null)
+        {
+            _panelRoot = panelRoot;
+            if (titleText != null) _titleText = titleText;
+            if (bodyText != null) _bodyText = bodyText;
+            if (okButton != null)
+            {
+                if (_okButton != null)
+                {
+                    _okButton.onClick.RemoveListener(OnEventDismissed);
+                }
+                _okButton = okButton;
+                _okButton.onClick.AddListener(OnEventDismissed);
+            }
+        }
 
         /// <summary>
         /// パネルの表示状態。
@@ -48,6 +72,7 @@ namespace Game.UI
 
             if (_okButton != null)
             {
+                _okButton.onClick.RemoveListener(OnEventDismissed);
                 _okButton.onClick.AddListener(OnEventDismissed);
             }
         }

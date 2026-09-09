@@ -25,13 +25,9 @@ Canvas/UIViews  [active=true]
     _gameFlowController -> GameFlowController/GameFlowController (GameFlowController)
 Canvas/UIViews  [active=true]
   EventDialogView
-    _bodyText -> EventDescriptionText/TextMeshProUGUI (TextMeshProUGUI)
     _eventCatalog -> GameEventCatalog (GameEventCatalogSO)
     _eventFiredChannel -> EventFiredChannel (GameEventFiredChannelSO)
     _gameFlowController -> GameFlowController/GameFlowController (GameFlowController)
-    _okButton -> OkButton/Button (Button)
-    _panelRoot -> EventDialogPanel (GameObject)
-    _titleText -> EventTitleText/TextMeshProUGUI (TextMeshProUGUI)
 Canvas/UIViews  [active=true]
   MetaShopDialogView
     _availablePointsText -> PointsText/TextMeshProUGUI (TextMeshProUGUI)
@@ -63,4 +59,4 @@ GameFlowController  [active=true]
     _relicAcquiredChannel -> RelicAcquiredChannel (RelicAcquiredChannelSO)
     _relicCatalog -> RelicCatalog (RelicCatalogSO)
     _relicResolver -> RelicResolver (RelicResolverSO)
-=== components: 10 / bound: 45 / unbound: 0 ===
+=== components: 10 / bound: 41 / unbound: 0 ===

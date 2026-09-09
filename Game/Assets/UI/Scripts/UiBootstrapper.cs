@@ -36,6 +36,7 @@ namespace Game.UI
         private void Awake()
         {
             BootstrapBossBattleDialogPanel();
+            BootstrapEventDialogPanel();
             BootstrapStatusPanel();
             BootstrapCommandPanel();
             BootstrapEndingPanel();
@@ -513,6 +514,93 @@ namespace Game.UI
             else
             {
                 Debug.LogError("[UiBootstrapper] BossBattleDialogView not found, cannot bind references.");
+            }
+        }
+
+        private void BootstrapEventDialogPanel()
+        {
+            if (_canvas == null)
+            {
+                _canvas = GetComponentInParent<Canvas>() ?? GetComponent<Canvas>();
+            }
+
+            // EventDialogPanel (全画面モーダルオーバーレイ)
+            GameObject panelGo = new GameObject("EventDialogPanel", typeof(RectTransform), typeof(Image));
+            panelGo.transform.SetParent(_canvas.transform, false);
+
+            RectTransform panelRect = panelGo.GetComponent<RectTransform>();
+            panelRect.anchorMin = Vector2.zero;
+            panelRect.anchorMax = Vector2.one;
+            panelRect.offsetMin = Vector2.zero;
+            panelRect.offsetMax = Vector2.zero;
+
+            Image overlayImg = panelGo.GetComponent<Image>();
+            overlayImg.color = ColorOverlay;
+            overlayImg.raycastTarget = true;
+
+            // PanelRoot (ダイアログ本体枠)
+            GameObject rootGo = new GameObject("PanelRoot", typeof(RectTransform), typeof(Image));
+            rootGo.transform.SetParent(panelGo.transform, false);
+
+            RectTransform rootRect = rootGo.GetComponent<RectTransform>();
+            rootRect.anchorMin = new Vector2(0.5f, 0.5f);
+            rootRect.anchorMax = new Vector2(0.5f, 0.5f);
+            rootRect.pivot = new Vector2(0.5f, 0.5f);
+            rootRect.sizeDelta = new Vector2(850, 520);
+            rootRect.anchoredPosition = Vector2.zero;
+
+            Image rootImg = rootGo.GetComponent<Image>();
+            rootImg.color = ColorBgDialog;
+
+            // EventTitleText
+            TextMeshProUGUI titleTmp = CreateLabel(
+                rootRect, "EventTitleText", "EVENT OCCURRED", new Vector2(0, 160), new Vector2(700, 50), 32, TextAlignmentOptions.Center);
+
+            // EventDescriptionText
+            TextMeshProUGUI descTmp = CreateLabel(
+                rootRect, "EventDescriptionText", "A training event has occurred.\nChoose your option carefully.", new Vector2(0, 40), new Vector2(700, 140), 22, TextAlignmentOptions.Center);
+
+            // OkButton
+            GameObject btnGo = new GameObject("OkButton", typeof(RectTransform), typeof(Image), typeof(Button));
+            btnGo.transform.SetParent(rootRect, false);
+            RectTransform btnRect = btnGo.GetComponent<RectTransform>();
+            btnRect.anchoredPosition = new Vector2(0, -120);
+            btnRect.sizeDelta = new Vector2(300, 60);
+
+            Image btnImg = btnGo.GetComponent<Image>();
+            btnImg.color = ColorModalButtonBg;
+            btnImg.raycastTarget = true;
+
+            Button okButton = btnGo.GetComponent<Button>();
+            okButton.targetGraphic = btnImg;
+
+            // OkButton / Text
+            GameObject btnTextGo = new GameObject("Text", typeof(RectTransform), typeof(TextMeshProUGUI));
+            btnTextGo.transform.SetParent(btnGo.transform, false);
+            RectTransform btnTextRect = btnTextGo.GetComponent<RectTransform>();
+            btnTextRect.anchoredPosition = Vector2.zero;
+            btnTextRect.sizeDelta = new Vector2(300, 60);
+            TextMeshProUGUI btnTmp = btnTextGo.GetComponent<TextMeshProUGUI>();
+            btnTmp.text = "OK";
+            btnTmp.fontSize = 22;
+            btnTmp.alignment = TextAlignmentOptions.Center;
+            btnTmp.color = Color.white;
+            btnTmp.raycastTarget = false;
+
+            // 初期状態は非アクティブ
+            panelGo.SetActive(false);
+
+            // EventDialogView への依存注入
+            EventDialogView eventDialog = _canvas.GetComponentInChildren<EventDialogView>(true)
+                ?? Object.FindFirstObjectByType<EventDialogView>(FindObjectsInactive.Include);
+
+            if (eventDialog != null)
+            {
+                eventDialog.Bind(panelGo, titleTmp, descTmp, okButton);
+            }
+            else
+            {
+                Debug.LogError("[UiBootstrapper] EventDialogView not found, cannot bind references.");
             }
         }
     }
