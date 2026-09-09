@@ -15,11 +15,7 @@ Canvas/UIViews  [active=true]
     _gameFlowController -> GameFlowController/GameFlowController (GameFlowController)
 Canvas/UIViews  [active=true]
   MetaShopDialogView
-    _availablePointsText -> PointsText/TextMeshProUGUI (TextMeshProUGUI)
-    _closeButton -> CloseShopButton/Button (Button)
     _gameFlowController -> GameFlowController/GameFlowController (GameFlowController)
-    _panelRoot -> MetaShopDialogPanel (GameObject)
-    _totalRunsText -> RunsText/TextMeshProUGUI (TextMeshProUGUI)
     _unlockCatalog -> MetaUnlockCatalog (MetaUnlockCatalogSO)
 Canvas/UIViews  [active=true]
   RelicDraftDialogView
@@ -43,4 +39,4 @@ GameFlowController  [active=true]
     _relicAcquiredChannel -> RelicAcquiredChannel (RelicAcquiredChannelSO)
     _relicCatalog -> RelicCatalog (RelicCatalogSO)
     _relicResolver -> RelicResolver (RelicResolverSO)
-=== components: 7 / bound: 31 / unbound: 0 ===
+=== components: 7 / bound: 27 / unbound: 0 ===

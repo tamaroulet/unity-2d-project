@@ -302,6 +302,39 @@ namespace Game.EditorScripts
 
             SceneBindingReport.GenerateSceneSnapshot();
         }
+
+        [MenuItem("Tools/Migrate MetaShopDialogPanel To Runtime")]
+        public static void MigrateMetaShopDialogPanel()
+        {
+            // 1. シーンの読み込み
+            Scene scene = EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
+
+            // 2. Canvas の探索と MetaShopDialogPanel の削除
+            Canvas canvas = Object.FindFirstObjectByType<Canvas>();
+            if (canvas == null)
+            {
+                Debug.LogError("[UiBootstrapEditorTool] Canvas not found in scene.");
+                return;
+            }
+
+            Transform metaShopPanelTr = canvas.transform.Find("MetaShopDialogPanel");
+            if (metaShopPanelTr != null)
+            {
+                Object.DestroyImmediate(metaShopPanelTr.gameObject);
+                Debug.Log("[UiBootstrapEditorTool] Removed MetaShopDialogPanel from Canvas.");
+            }
+            else
+            {
+                Debug.LogWarning("[UiBootstrapEditorTool] MetaShopDialogPanel not found on Canvas (already removed?).");
+            }
+
+            // 3. シーン保存とスナップショット更新
+            EditorSceneManager.MarkSceneDirty(scene);
+            EditorSceneManager.SaveScene(scene);
+            Debug.Log("[UiBootstrapEditorTool] MainGame scene updated and saved.");
+
+            SceneBindingReport.GenerateSceneSnapshot();
+        }
     }
 }
 #endif

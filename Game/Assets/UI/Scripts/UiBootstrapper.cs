@@ -39,6 +39,7 @@ namespace Game.UI
             BootstrapBossBattleDialogPanel();
             BootstrapEventDialogPanel();
             BootstrapRelicDraftDialogPanel();
+            BootstrapMetaShopDialogPanel();
             BootstrapStatusPanel();
             BootstrapCommandPanel();
             BootstrapEndingPanel();
@@ -734,6 +735,170 @@ namespace Game.UI
             RelicCardView cardView = cardGo.GetComponent<RelicCardView>();
             cardView.BindElements(nameLbl, descLbl, btn);
             return cardView;
+        }
+
+        private void BootstrapMetaShopDialogPanel()
+        {
+            if (_canvas == null)
+            {
+                _canvas = GetComponentInParent<Canvas>() ?? GetComponent<Canvas>();
+            }
+
+            // MetaShopDialogPanel (全画面モーダルオーバーレイ)
+            GameObject panelGo = new GameObject("MetaShopDialogPanel", typeof(RectTransform), typeof(Image));
+            panelGo.transform.SetParent(_canvas.transform, false);
+
+            RectTransform panelRect = panelGo.GetComponent<RectTransform>();
+            panelRect.anchorMin = Vector2.zero;
+            panelRect.anchorMax = Vector2.one;
+            panelRect.offsetMin = Vector2.zero;
+            panelRect.offsetMax = Vector2.zero;
+
+            Image overlayImg = panelGo.GetComponent<Image>();
+            overlayImg.color = ColorOverlay;
+            overlayImg.raycastTarget = true;
+
+            // PanelRoot (ダイアログ本体枠)
+            GameObject rootGo = new GameObject("PanelRoot", typeof(RectTransform), typeof(Image));
+            rootGo.transform.SetParent(panelGo.transform, false);
+
+            RectTransform rootRect = rootGo.GetComponent<RectTransform>();
+            rootRect.anchorMin = new Vector2(0.5f, 0.5f);
+            rootRect.anchorMax = new Vector2(0.5f, 0.5f);
+            rootRect.pivot = new Vector2(0.5f, 0.5f);
+            rootRect.sizeDelta = new Vector2(1150, 700);
+            rootRect.anchoredPosition = Vector2.zero;
+
+            Image rootImg = rootGo.GetComponent<Image>();
+            rootImg.color = ColorBgDialog;
+
+            // ShopTitleText
+            CreateLabel(
+                rootRect, "ShopTitleText", "META PROGRESSION SHOP", new Vector2(0, 270), new Vector2(800, 50), 32, TextAlignmentOptions.Center);
+
+            // PointsText
+            TextMeshProUGUI pointsTmp = CreateLabel(
+                rootRect, "PointsText", "POINTS: 0", new Vector2(-250, 220), new Vector2(400, 40), 24, TextAlignmentOptions.Left);
+
+            // RunsText
+            TextMeshProUGUI runsTmp = CreateLabel(
+                rootRect, "RunsText", "RUNS: 0", new Vector2(250, 220), new Vector2(400, 40), 24, TextAlignmentOptions.Right);
+
+            // Item1, Item2, Item3
+            Button[] itemButtons = new Button[3];
+            TextMeshProUGUI[] itemNameTexts = new TextMeshProUGUI[3];
+            TextMeshProUGUI[] itemDescTexts = new TextMeshProUGUI[3];
+
+            CreateShopItemCard(rootRect, "Item1", "Initial Stamina +10\nCost: 50 Pts", new Vector2(-340, 10), out itemButtons[0], out itemNameTexts[0], out itemDescTexts[0]);
+            CreateShopItemCard(rootRect, "Item2", "Initial Skill +5\nCost: 100 Pts", new Vector2(0, 10), out itemButtons[1], out itemNameTexts[1], out itemDescTexts[1]);
+            CreateShopItemCard(rootRect, "Item3", "Initial Mental +15\nCost: 150 Pts", new Vector2(340, 10), out itemButtons[2], out itemNameTexts[2], out itemDescTexts[2]);
+
+            // CloseShopButton
+            GameObject closeBtnGo = new GameObject("CloseShopButton", typeof(RectTransform), typeof(Image), typeof(Button));
+            closeBtnGo.transform.SetParent(rootRect, false);
+            RectTransform closeBtnRect = closeBtnGo.GetComponent<RectTransform>();
+            closeBtnRect.anchoredPosition = new Vector2(0, -250);
+            closeBtnRect.sizeDelta = new Vector2(450, 60);
+
+            Image closeBtnImg = closeBtnGo.GetComponent<Image>();
+            closeBtnImg.color = ColorModalButtonBg;
+            closeBtnImg.raycastTarget = true;
+
+            Button closeButton = closeBtnGo.GetComponent<Button>();
+            closeButton.targetGraphic = closeBtnImg;
+
+            // CloseShopButton / Text
+            GameObject closeBtnTextGo = new GameObject("Text", typeof(RectTransform), typeof(TextMeshProUGUI));
+            closeBtnTextGo.transform.SetParent(closeBtnGo.transform, false);
+            RectTransform closeBtnTextRect = closeBtnTextGo.GetComponent<RectTransform>();
+            closeBtnTextRect.anchoredPosition = Vector2.zero;
+            closeBtnTextRect.sizeDelta = new Vector2(450, 60);
+            TextMeshProUGUI closeBtnTmp = closeBtnTextGo.GetComponent<TextMeshProUGUI>();
+            closeBtnTmp.text = "CLOSE / NEXT RUN";
+            closeBtnTmp.fontSize = 22;
+            closeBtnTmp.alignment = TextAlignmentOptions.Center;
+            closeBtnTmp.color = Color.white;
+            closeBtnTmp.raycastTarget = false;
+
+            // 初期状態は非アクティブ
+            panelGo.SetActive(false);
+
+            // MetaShopDialogView への依存注入
+            MetaShopDialogView metaShopDialog = _canvas.GetComponentInChildren<MetaShopDialogView>(true)
+                ?? Object.FindFirstObjectByType<MetaShopDialogView>(FindObjectsInactive.Include);
+
+            if (metaShopDialog != null)
+            {
+                metaShopDialog.Bind(panelGo, pointsTmp, runsTmp, closeButton, itemButtons, itemNameTexts, itemDescTexts);
+            }
+            else
+            {
+                Debug.LogError("[UiBootstrapper] MetaShopDialogView not found, cannot bind references.");
+            }
+        }
+
+        private static void CreateShopItemCard(
+            RectTransform parent,
+            string cardName,
+            string desc,
+            Vector2 pos,
+            out Button itemButton,
+            out TextMeshProUGUI nameText,
+            out TextMeshProUGUI descText)
+        {
+            GameObject cardGo = new GameObject(cardName, typeof(RectTransform), typeof(Image));
+            cardGo.transform.SetParent(parent, false);
+
+            RectTransform rect = cardGo.GetComponent<RectTransform>();
+            rect.anchoredPosition = pos;
+            rect.sizeDelta = new Vector2(280, 420);
+
+            Image img = cardGo.GetComponent<Image>();
+            img.color = ColorButtonBg;
+            img.raycastTarget = true;
+
+            // Icon
+            GameObject iconGo = new GameObject("Icon", typeof(RectTransform), typeof(Image));
+            iconGo.transform.SetParent(rect, false);
+            RectTransform iconRect = iconGo.GetComponent<RectTransform>();
+            iconRect.anchoredPosition = new Vector2(0, 80);
+            iconRect.sizeDelta = new Vector2(80, 80);
+            Image iconImg = iconGo.GetComponent<Image>();
+            iconImg.color = Color.white;
+            iconImg.raycastTarget = false;
+
+            // NameText
+            nameText = CreateLabel(rect, "NameText", cardName, new Vector2(0, 0), new Vector2(240, 40), 22, TextAlignmentOptions.Center);
+
+            // DescText
+            descText = CreateLabel(rect, "DescText", desc, new Vector2(0, -60), new Vector2(240, 80), 18, TextAlignmentOptions.Center);
+
+            // SelectButton
+            GameObject btnGo = new GameObject("SelectButton", typeof(RectTransform), typeof(Image), typeof(Button));
+            btnGo.transform.SetParent(rect, false);
+            RectTransform btnRect = btnGo.GetComponent<RectTransform>();
+            btnRect.anchoredPosition = new Vector2(0, -130);
+            btnRect.sizeDelta = new Vector2(200, 45);
+
+            Image btnImg = btnGo.GetComponent<Image>();
+            btnImg.color = ColorModalButtonBg;
+            btnImg.raycastTarget = true;
+
+            itemButton = btnGo.GetComponent<Button>();
+            itemButton.targetGraphic = btnImg;
+
+            // SelectButton / Text
+            GameObject btnTextGo = new GameObject("Text", typeof(RectTransform), typeof(TextMeshProUGUI));
+            btnTextGo.transform.SetParent(btnGo.transform, false);
+            RectTransform btnTextRect = btnTextGo.GetComponent<RectTransform>();
+            btnTextRect.anchoredPosition = Vector2.zero;
+            btnTextRect.sizeDelta = new Vector2(200, 45);
+            TextMeshProUGUI btnTmp = btnTextGo.GetComponent<TextMeshProUGUI>();
+            btnTmp.text = "SELECT";
+            btnTmp.fontSize = 22;
+            btnTmp.alignment = TextAlignmentOptions.Center;
+            btnTmp.color = Color.white;
+            btnTmp.raycastTarget = false;
         }
     }
 }

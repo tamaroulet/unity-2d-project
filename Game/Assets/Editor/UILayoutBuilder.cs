@@ -98,8 +98,7 @@ namespace Game.EditorScripts
             // 4. 全画面背景
             CreateOrUpdateBackground(canvas.transform);
 
-            // 5. 各 UI パネルの完全構築
-            SetupMetaShopDialogPanel(canvas.transform);
+            // 5. 各 UI パネルの完全構築 (すべてランタイム構築へ移行済)
 
             // 6. UIViews の構築（常時アクティブな View コンポーネントホスト）
             SetupUIViews(canvas.transform);
@@ -139,32 +138,7 @@ namespace Game.EditorScripts
 
 
 
-        private static void SetupMetaShopDialogPanel(Transform canvasTr)
-        {
-            Transform tr = canvasTr.Find("MetaShopDialogPanel");
-            GameObject go = tr != null ? tr.gameObject : new GameObject("MetaShopDialogPanel", typeof(RectTransform), typeof(Image));
-            go.transform.SetParent(canvasTr, false);
 
-            MetaShopDialogView oldView = go.GetComponent<MetaShopDialogView>();
-            if (oldView != null)
-            {
-                Object.DestroyImmediate(oldView);
-            }
-
-            ConfigureModalPanel(go.transform, new Vector2(1150, 700), ColorBgDialog);
-            Transform rootTr = go.transform.Find("PanelRoot");
-            if (rootTr != null)
-            {
-                CreateLabel(rootTr.GetComponent<RectTransform>(), "ShopTitleText", "META PROGRESSION SHOP", new Vector2(0, 270), new Vector2(800, 50), 32, TextAlignmentOptions.Center);
-                CreateLabel(rootTr.GetComponent<RectTransform>(), "PointsText", "POINTS: 0", new Vector2(-250, 220), new Vector2(400, 40), 24, TextAlignmentOptions.Left);
-                CreateLabel(rootTr.GetComponent<RectTransform>(), "RunsText", "RUNS: 0", new Vector2(250, 220), new Vector2(400, 40), 24, TextAlignmentOptions.Right);
-                CreateShopItemCard(rootTr.GetComponent<RectTransform>(), "Item1", "Initial Stamina +10\nCost: 50 Pts", new Vector2(-340, 10));
-                CreateShopItemCard(rootTr.GetComponent<RectTransform>(), "Item2", "Initial Skill +5\nCost: 100 Pts", new Vector2(0, 10));
-                CreateShopItemCard(rootTr.GetComponent<RectTransform>(), "Item3", "Initial Mental +15\nCost: 150 Pts", new Vector2(340, 10));
-                CreateModalButton(rootTr.GetComponent<RectTransform>(), "CloseShopButton", "CLOSE / NEXT RUN", new Vector2(0, -250), new Vector2(450, 60));
-            }
-            go.SetActive(false);
-        }
 
         private static void SetupUIViews(Transform canvasTr)
         {
@@ -314,32 +288,6 @@ namespace Game.EditorScripts
         }
 
 
-        private static void CreateShopItemCard(RectTransform parent, string cardName, string text, Vector2 pos)
-        {
-            Transform existing = parent.Find(cardName);
-            GameObject cardGo = existing != null ? existing.gameObject : new GameObject(cardName, typeof(RectTransform), typeof(Image));
-            cardGo.transform.SetParent(parent, false);
-
-            RelicCardView oldCardView = cardGo.GetComponent<RelicCardView>();
-            if (oldCardView != null)
-            {
-                Object.DestroyImmediate(oldCardView);
-            }
-
-            RectTransform rect = EnsureRectTransform(cardGo);
-            rect.anchoredPosition = pos;
-            rect.sizeDelta = new Vector2(280, 420);
-
-            Image img = cardGo.GetComponent<Image>() ?? cardGo.AddComponent<Image>();
-            img.sprite = LoadSprite("Frame_Card");
-            img.type = Image.Type.Sliced;
-            img.color = ColorButtonBg;
-
-            AttachIcon(rect, "Icon", LoadSprite("Icon_Relic"), new Vector2(0, 80), new Vector2(80, 80));
-            CreateLabel(rect, "NameText", cardName, new Vector2(0, 0), new Vector2(240, 40), 22, TextAlignmentOptions.Center);
-            CreateLabel(rect, "DescText", text, new Vector2(0, -60), new Vector2(240, 80), 18, TextAlignmentOptions.Center);
-            CreateModalButton(rect, "SelectButton", "SELECT", new Vector2(0, -130), new Vector2(200, 45));
-        }
 
         private static void AttachIcon(Transform parent, string iconName, Sprite sprite, Vector2 anchoredPos, Vector2 size)
         {
@@ -456,13 +404,6 @@ namespace Game.EditorScripts
 
         private static void BindMetaShopDialogSceneReferences(Transform canvasTr, GameFlowController controller)
         {
-            Transform shopPanelTr = canvasTr.Find("MetaShopDialogPanel");
-            if (shopPanelTr == null)
-            {
-                Debug.LogError("[UILayoutBuilder] MetaShopDialogPanel not found on Canvas.");
-                return;
-            }
-
             Transform viewsTr = canvasTr.Find("UIViews");
             if (viewsTr == null)
             {
@@ -478,52 +419,8 @@ namespace Game.EditorScripts
             }
 
             SerializedObject so = new SerializedObject(view);
-            so.FindProperty("_panelRoot").objectReferenceValue = shopPanelTr.gameObject;
             so.FindProperty("_gameFlowController").objectReferenceValue = controller;
             BindAsset<MetaUnlockCatalogSO>(so, "_unlockCatalog", "Assets/Features/MetaProgression/Instances/MetaUnlockCatalog.asset");
-
-            Transform rootTr = shopPanelTr.Find("PanelRoot");
-            if (rootTr != null)
-            {
-                BindComponentReference<TextMeshProUGUI>(so, "_availablePointsText", rootTr, "MetaShopDialogPanel", "PointsText");
-                BindComponentReference<TextMeshProUGUI>(so, "_totalRunsText", rootTr, "MetaShopDialogPanel", "RunsText");
-                BindComponentReference<Button>(so, "_closeButton", rootTr, "MetaShopDialogPanel", "CloseShopButton");
-
-                SerializedProperty itemButtonsProp = so.FindProperty("_itemButtons");
-                SerializedProperty itemNameTextsProp = so.FindProperty("_itemNameTexts");
-                SerializedProperty itemDescTextsProp = so.FindProperty("_itemDescTexts");
-
-                itemButtonsProp.ClearArray();
-                itemButtonsProp.arraySize = 3;
-                itemNameTextsProp.ClearArray();
-                itemNameTextsProp.arraySize = 3;
-                itemDescTextsProp.ClearArray();
-                itemDescTextsProp.arraySize = 3;
-
-                string[] itemNames = { "Item1", "Item2", "Item3" };
-                for (int i = 0; i < itemNames.Length; i++)
-                {
-                    Transform itemTr = rootTr.Find(itemNames[i]);
-                    if (itemTr != null)
-                    {
-                        Transform btnTr = itemTr.Find("SelectButton");
-                        if (btnTr != null)
-                        {
-                            itemButtonsProp.GetArrayElementAtIndex(i).objectReferenceValue = btnTr.GetComponent<Button>();
-                        }
-                        Transform nameTr = itemTr.Find("NameText");
-                        if (nameTr != null)
-                        {
-                            itemNameTextsProp.GetArrayElementAtIndex(i).objectReferenceValue = nameTr.GetComponent<TextMeshProUGUI>();
-                        }
-                        Transform descTr = itemTr.Find("DescText");
-                        if (descTr != null)
-                        {
-                            itemDescTextsProp.GetArrayElementAtIndex(i).objectReferenceValue = descTr.GetComponent<TextMeshProUGUI>();
-                        }
-                    }
-                }
-            }
 
             so.ApplyModifiedProperties();
         }

@@ -14,18 +14,49 @@ namespace Game.UI
     /// </summary>
     public class MetaShopDialogView : MonoBehaviour
     {
-        [SerializeField] private GameObject _panelRoot;
-        [SerializeField] private TextMeshProUGUI _availablePointsText;
-        [SerializeField] private TextMeshProUGUI _totalRunsText;
-        [SerializeField] private Button _closeButton;
+        private GameObject _panelRoot;
+        private TextMeshProUGUI _availablePointsText;
+        private TextMeshProUGUI _totalRunsText;
+        private Button _closeButton;
 
         [SerializeField] private GameFlowController _gameFlowController;
         [SerializeField] private MetaUnlockCatalogSO _unlockCatalog;
-        [SerializeField] private Button[] _itemButtons = new Button[3];
-        [SerializeField] private TextMeshProUGUI[] _itemNameTexts = new TextMeshProUGUI[3];
-        [SerializeField] private TextMeshProUGUI[] _itemDescTexts = new TextMeshProUGUI[3];
+        private Button[] _itemButtons = new Button[3];
+        private TextMeshProUGUI[] _itemNameTexts = new TextMeshProUGUI[3];
+        private TextMeshProUGUI[] _itemDescTexts = new TextMeshProUGUI[3];
 
         private Action _onCloseCallback;
+
+        /// <summary>
+        /// ランタイムブートストラップ時に各参照を直接代入・結線する。
+        /// </summary>
+        public void Bind(
+            GameObject panelRoot,
+            TextMeshProUGUI availablePointsText = null,
+            TextMeshProUGUI totalRunsText = null,
+            Button closeButton = null,
+            Button[] itemButtons = null,
+            TextMeshProUGUI[] itemNameTexts = null,
+            TextMeshProUGUI[] itemDescTexts = null)
+        {
+            _panelRoot = panelRoot;
+            if (availablePointsText != null) _availablePointsText = availablePointsText;
+            if (totalRunsText != null) _totalRunsText = totalRunsText;
+
+            if (closeButton != null)
+            {
+                if (_closeButton != null)
+                {
+                    _closeButton.onClick.RemoveListener(OnCloseButtonClicked);
+                }
+                _closeButton = closeButton;
+                _closeButton.onClick.AddListener(OnCloseButtonClicked);
+            }
+
+            if (itemButtons != null) _itemButtons = itemButtons;
+            if (itemNameTexts != null) _itemNameTexts = itemNameTexts;
+            if (itemDescTexts != null) _itemDescTexts = itemDescTexts;
+        }
 
         public bool IsPanelActive => _panelRoot != null && _panelRoot.activeSelf;
 
@@ -33,6 +64,7 @@ namespace Game.UI
         {
             if (_closeButton != null)
             {
+                _closeButton.onClick.RemoveListener(OnCloseButtonClicked);
                 _closeButton.onClick.AddListener(OnCloseButtonClicked);
             }
             HookController();
