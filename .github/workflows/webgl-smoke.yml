@@ -16,8 +16,8 @@ permissions:
   contents: read
 
 jobs:
-  smoke-test:
-    name: Build and Smoke Test WebGL
+  build-webgl:
+    name: Build WebGL
     runs-on: ubuntu-latest
     timeout-minutes: 90
     steps:
@@ -54,16 +54,35 @@ jobs:
           buildName: WebGL
           buildsPath: build
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
+      - name: Upload WebGL build
+        uses: actions/upload-artifact@v4
         with:
-          python-version: '3.11'
+          name: webgl-build-${{ github.sha }}
+          path: build/WebGL
+          retention-days: 1
 
-      - name: Install Playwright and dependencies
+  smoke-test:
+    name: Run WebGL Smoke Test
+    needs: build-webgl
+    runs-on: ubuntu-latest
+    container:
+      image: mcr.microsoft.com/playwright/python:v1.50.0-noble
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Download WebGL build
+        uses: actions/download-artifact@v4
+        with:
+          name: webgl-build-${{ github.sha }}
+          path: build/WebGL
+
+      - name: Install Python dependencies
         run: |
-          python -m pip install --upgrade pip
-          pip install playwright pillow
-          playwright install --with-deps chromium
+          pip install playwright==1.50.0 pillow
 
       - name: Run WebGL Smoke Test (playwright)
         timeout-minutes: 10 # 待ち時間の上限（超過時は失敗）
