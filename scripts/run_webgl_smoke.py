@@ -28,11 +28,51 @@ sys.path.insert(0, str(SCRIPTS_DIR))
 from judge_browser_logs import judge_browser_logs
 
 
+def detect_content_encoding(path: Path) -> str | None:
+    """ファイルの先頭バイト列から圧縮方式を判定する。
+
+    戻り値:
+        "gzip": gzip 圧縮されている
+        "br": Brotli 圧縮されている
+        None: 圧縮されていない（平文）
+    例外:
+        ValueError / FileNotFoundError: 0バイトまたは読めない場合
+    """
+    p = Path(path)
+    if not p.is_file():
+        raise FileNotFoundError(f"File not found: {p}")
+    if p.stat().st_size == 0:
+        raise ValueError(f"File is empty (0 bytes): {p}")
+
+    with open(p, "rb") as f:
+        head = f.read(512)
+    if len(head) == 0:
+        raise ValueError(f"Could not read content from file: {p}")
+
+    # gzip マジックバイト: 1f 8b
+    if head.startswith(b"\x1f\x8b"):
+        return "gzip"
+
+    # 平文（無圧縮）の判定:
+    # ヌルバイトが含まれる場合はバイナリ（圧縮）と判定
+    if b"\x00" in head:
+        return "br"
+
+    try:
+        text = head.decode("utf-8")
+        control_chars = {i for i in range(32)} - {9, 10, 13}  # \t, \n, \r 以外
+        if any(ord(c) in control_chars for c in text):
+            return "br"
+        return None
+    except UnicodeDecodeError:
+        return "br"
+
+
 class WebGLHTTPRequestHandler(SimpleHTTPRequestHandler):
     """Unity WebGL 用のヘッダーを付与する静的サーバーハンドラー。"""
 
     def end_headers(self) -> None:
-        # Unity WebGL gzip 圧縮ファイルへの対応
+        # Unity WebGL 圧縮ファイルへの対応
         path_lower = self.path.lower().split("?")[0]
         if path_lower.endswith(".unityweb"):
             if "wasm" in path_lower:
@@ -42,8 +82,11 @@ class WebGLHTTPRequestHandler(SimpleHTTPRequestHandler):
             elif "js" in path_lower:
                 self.send_header("Content-Type", "application/javascript")
 
-            # 拡張子に .unityweb が含まれるビルド成果物は通常 gzip 圧縮されている
-            self.send_header("Content-Encoding", "gzip")
+            local_path = Path(self.translate_path(self.path))
+            if local_path.is_file():
+                encoding = detect_content_encoding(local_path)
+                if encoding:
+                    self.send_header("Content-Encoding", encoding)
 
         # 共通ヘッダー
         self.send_header("Cross-Origin-Opener-Policy", "same-origin")
