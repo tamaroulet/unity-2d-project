@@ -1,5 +1,6 @@
 // SPDX-AI-Disclosure: ai-generated
 using Game.Core;
+using Game.Features.Command;
 using Game.Features.Ending;
 using Game.Features.GameFlow;
 using TMPro;
@@ -18,6 +19,8 @@ namespace Game.UI
         private static readonly Color ColorOverlay = new Color(0.0f, 0.0f, 0.0f, 0.80f);
         private static readonly Color ColorModalButtonBg = new Color(0.25f, 0.45f, 0.85f, 1.0f);
         private static readonly Color ColorBgHeader = new Color(0.12f, 0.15f, 0.20f, 0.98f);
+        private static readonly Color ColorBgFooter = new Color(0.10f, 0.12f, 0.16f, 0.98f);
+        private static readonly Color ColorButtonBg = new Color(0.18f, 0.22f, 0.30f, 1.0f);
         private static readonly Color ColorBarBg = new Color(0.18f, 0.20f, 0.26f, 1.0f);
         private static readonly Color ColorStamina = new Color(0.22f, 0.85f, 0.45f, 1.0f);
         private static readonly Color ColorSkill = new Color(0.25f, 0.65f, 0.98f, 1.0f);
@@ -30,6 +33,7 @@ namespace Game.UI
         private void Awake()
         {
             BootstrapStatusPanel();
+            BootstrapCommandPanel();
             BootstrapEndingPanel();
         }
 
@@ -194,6 +198,106 @@ namespace Game.UI
             tmp.color = Color.white;
             tmp.raycastTarget = false;
             return tmp;
+        }
+
+        private void BootstrapCommandPanel()
+        {
+            if (_canvas == null)
+            {
+                _canvas = GetComponentInParent<Canvas>() ?? GetComponent<Canvas>();
+            }
+
+            // CommandPanel (フッター枠)
+            GameObject panelGo = new GameObject("CommandPanel", typeof(RectTransform), typeof(Image));
+            panelGo.transform.SetParent(_canvas.transform, false);
+            panelGo.transform.SetSiblingIndex(1); // Background の直後、モーダルダイアログ群より手前（奥側）
+
+            RectTransform panelRect = panelGo.GetComponent<RectTransform>();
+            panelRect.anchorMin = new Vector2(0f, 0f);
+            panelRect.anchorMax = new Vector2(1f, 0.22f);
+            panelRect.offsetMin = new Vector2(20f, 15f);
+            panelRect.offsetMax = new Vector2(-20f, 15f);
+
+            Image panelImg = panelGo.GetComponent<Image>();
+            panelImg.color = ColorBgFooter;
+
+            if (_gameFlowController == null)
+            {
+                _gameFlowController = Object.FindFirstObjectByType<GameFlowController>();
+            }
+
+            CommandDataSO studyCmd = Resources.Load<CommandDataSO>("Study");
+            CommandDataSO trainCmd = Resources.Load<CommandDataSO>("Train");
+            CommandDataSO restCmd = Resources.Load<CommandDataSO>("Rest");
+
+            if (studyCmd == null) Debug.LogError("[UiBootstrapper] Failed to load Study CommandDataSO from Resources.");
+            if (trainCmd == null) Debug.LogError("[UiBootstrapper] Failed to load Train CommandDataSO from Resources.");
+            if (restCmd == null) Debug.LogError("[UiBootstrapper] Failed to load Rest CommandDataSO from Resources.");
+
+            CreateCommandButton(panelRect, "StudyButton", studyCmd, new Vector2(-400, 0), _gameFlowController);
+            CreateCommandButton(panelRect, "TrainButton", trainCmd, new Vector2(0, 0), _gameFlowController);
+            CreateCommandButton(panelRect, "RestButton", restCmd, new Vector2(400, 0), _gameFlowController);
+        }
+
+        private static void CreateCommandButton(
+            RectTransform parent,
+            string name,
+            CommandDataSO command,
+            Vector2 pos,
+            GameFlowController controller)
+        {
+            GameObject btnGo = new GameObject(name, typeof(RectTransform), typeof(Image), typeof(Button), typeof(CommandButtonView));
+            btnGo.transform.SetParent(parent, false);
+
+            RectTransform rect = btnGo.GetComponent<RectTransform>();
+            rect.anchoredPosition = pos;
+            rect.sizeDelta = new Vector2(300, 120);
+
+            Image img = btnGo.GetComponent<Image>();
+            img.color = ColorButtonBg;
+            img.raycastTarget = true;
+
+            Button btn = btnGo.GetComponent<Button>();
+            btn.targetGraphic = img;
+
+            // アイコン枠
+            GameObject iconGo = new GameObject("Icon", typeof(RectTransform), typeof(Image));
+            iconGo.transform.SetParent(rect, false);
+            RectTransform iconRect = iconGo.GetComponent<RectTransform>();
+            iconRect.anchoredPosition = new Vector2(-80, 0);
+            iconRect.sizeDelta = new Vector2(56, 56);
+            Image iconImg = iconGo.GetComponent<Image>();
+            iconImg.color = Color.white;
+            iconImg.raycastTarget = false;
+
+            // テキストラベル（コマンド名）
+            GameObject textGo = new GameObject("Text", typeof(RectTransform), typeof(TextMeshProUGUI));
+            textGo.transform.SetParent(rect, false);
+            RectTransform textRect = textGo.GetComponent<RectTransform>();
+            textRect.anchoredPosition = new Vector2(40, 18);
+            textRect.sizeDelta = new Vector2(180, 50);
+
+            TextMeshProUGUI nameTmp = textGo.GetComponent<TextMeshProUGUI>();
+            nameTmp.fontSize = 20;
+            nameTmp.alignment = TextAlignmentOptions.Center;
+            nameTmp.color = Color.white;
+            nameTmp.raycastTarget = false;
+
+            // コスト表示ラベル
+            GameObject costGo = new GameObject("CostText", typeof(RectTransform), typeof(TextMeshProUGUI));
+            costGo.transform.SetParent(rect, false);
+            RectTransform costRect = costGo.GetComponent<RectTransform>();
+            costRect.anchoredPosition = new Vector2(40, -25);
+            costRect.sizeDelta = new Vector2(180, 30);
+
+            TextMeshProUGUI costTmp = costGo.GetComponent<TextMeshProUGUI>();
+            costTmp.fontSize = 16;
+            costTmp.alignment = TextAlignmentOptions.Center;
+            costTmp.color = new Color(0.85f, 0.85f, 0.85f, 1f);
+            costTmp.raycastTarget = false;
+
+            CommandButtonView btnView = btnGo.GetComponent<CommandButtonView>();
+            btnView.Bind(command, controller, btn, nameTmp, costTmp);
         }
 
         private void BootstrapEndingPanel()

@@ -13,11 +13,11 @@ namespace Game.UI
     /// </summary>
     public class CommandButtonView : MonoBehaviour
     {
-        [SerializeField] private CommandDataSO _command;
-        [SerializeField] private GameFlowController _gameFlowController;
-        [SerializeField] private Button _button;
-        [SerializeField] private TextMeshProUGUI _nameText;
-        [SerializeField] private TextMeshProUGUI _costText;
+        private CommandDataSO _command;
+        private GameFlowController _gameFlowController;
+        private Button _button;
+        private TextMeshProUGUI _nameText;
+        private TextMeshProUGUI _costText;
 
         /// <summary>
         /// 表示中のコマンド名。TMP Essential Resources 未インポート環境では
@@ -57,6 +57,32 @@ namespace Game.UI
             if (_button != null)
             {
                 _button.onClick.RemoveListener(OnCommandClick);
+            }
+        }
+
+        /// <summary>
+        /// ランタイムブートストラップ時に各参照を直接代入・結線する。
+        /// </summary>
+        public void Bind(
+            CommandDataSO command,
+            GameFlowController gameFlowController,
+            Button button = null,
+            TextMeshProUGUI nameText = null,
+            TextMeshProUGUI costText = null)
+        {
+            _command = command;
+            _gameFlowController = gameFlowController;
+            if (button != null) _button = button;
+            if (nameText != null) _nameText = nameText;
+            if (costText != null) _costText = costText;
+
+            EnsureReferences();
+            RefreshLabel();
+
+            if (_button != null)
+            {
+                _button.onClick.RemoveListener(OnCommandClick);
+                _button.onClick.AddListener(OnCommandClick);
             }
         }
 

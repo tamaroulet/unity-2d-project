@@ -99,7 +99,6 @@ namespace Game.EditorScripts
             CreateOrUpdateBackground(canvas.transform);
 
             // 5. 各 UI パネルの完全構築
-            SetupCommandPanel(canvas.transform);
             SetupEventDialogPanel(canvas.transform);
             SetupRelicDraftDialogPanel(canvas.transform);
             SetupBossBattleDialogPanel(canvas.transform);
@@ -137,60 +136,6 @@ namespace Game.EditorScripts
             Image img = bgGo.GetComponent<Image>();
             img.color = ColorBgMain;
             img.raycastTarget = false;
-        }
-
-        private static void SetupCommandPanel(Transform canvasTr)
-        {
-            Transform tr = canvasTr.Find("CommandPanel") ?? canvasTr.Find("CommandButtonsPanel");
-            GameObject go = tr != null ? tr.gameObject : new GameObject("CommandPanel", typeof(RectTransform), typeof(Image));
-            go.name = "CommandPanel";
-            go.transform.SetParent(canvasTr, false);
-
-            RectTransform rect = EnsureRectTransform(go);
-            rect.anchorMin = new Vector2(0f, 0f);
-            rect.anchorMax = new Vector2(1f, 0.22f);
-            rect.offsetMin = new Vector2(20f, 15f);
-            rect.offsetMax = new Vector2(-20f, 15f);
-
-            Image img = go.GetComponent<Image>() ?? go.AddComponent<Image>();
-            img.color = ColorBgFooter;
-
-            GameFlowController flowController = Object.FindFirstObjectByType<GameFlowController>();
-
-            // 3つのコマンドボタン（STUDY, TRAIN, REST）を完全配線
-            SetupCommandButton(rect, "StudyButton", "Icon_Study", "STUDY\nSkill+5", new Vector2(-400, 0), "Assets/Data/Commands/Study.asset", flowController);
-            SetupCommandButton(rect, "TrainButton", "Icon_Train", "TRAIN\nSkill+10", new Vector2(0, 0), "Assets/Data/Commands/Train.asset", flowController);
-            SetupCommandButton(rect, "RestButton", "Icon_Rest", "REST\nStamina+30", new Vector2(400, 0), "Assets/Data/Commands/Rest.asset", flowController);
-        }
-
-        private static void SetupCommandButton(RectTransform parent, string name, string iconName, string text, Vector2 pos, string cmdAssetPath, GameFlowController controller)
-        {
-            Transform existing = parent.Find(name);
-            GameObject btnGo = existing != null ? existing.gameObject : new GameObject(name, typeof(RectTransform), typeof(Image), typeof(Button), typeof(CommandButtonView));
-            btnGo.transform.SetParent(parent, false);
-
-            RectTransform rect = EnsureRectTransform(btnGo);
-            rect.anchoredPosition = pos;
-            rect.sizeDelta = new Vector2(300, 120);
-
-            Image img = btnGo.GetComponent<Image>() ?? btnGo.AddComponent<Image>();
-            img.sprite = LoadSprite("Frame_Card");
-            img.type = Image.Type.Sliced;
-            img.color = ColorButtonBg;
-
-            AttachIcon(rect, "Icon", LoadSprite(iconName), new Vector2(-80, 0), new Vector2(56, 56));
-            GameObject labelGo = CreateLabel(rect, "Text", text, new Vector2(40, 0), new Vector2(180, 80), 22, TextAlignmentOptions.Center);
-
-            CommandDataSO cmd = AssetDatabase.LoadAssetAtPath<CommandDataSO>(cmdAssetPath);
-            Button btn = btnGo.GetComponent<Button>() ?? btnGo.AddComponent<Button>();
-            CommandButtonView btnView = btnGo.GetComponent<CommandButtonView>() ?? btnGo.AddComponent<CommandButtonView>();
-
-            SerializedObject so = new SerializedObject(btnView);
-            so.FindProperty("_command").objectReferenceValue = cmd;
-            so.FindProperty("_gameFlowController").objectReferenceValue = controller;
-            so.FindProperty("_button").objectReferenceValue = btn;
-            so.FindProperty("_nameText").objectReferenceValue = labelGo.GetComponent<TextMeshProUGUI>();
-            so.ApplyModifiedProperties();
         }
 
         private static void SetupEventDialogPanel(Transform canvasTr)

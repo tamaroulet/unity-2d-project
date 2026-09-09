@@ -3,27 +3,6 @@ Canvas  [active=true]
     _canvas -> Canvas/Canvas (Canvas)
     _endingView -> UIViews/EndingView (EndingView)
     _gameFlowController -> GameFlowController/GameFlowController (GameFlowController)
-Canvas/CommandPanel/RestButton  [active=true]
-  CommandButtonView
-    _button -> RestButton/Button (Button)
-    _command -> Rest (CommandDataSO)
-    _costText -> <unbound>
-    _gameFlowController -> GameFlowController/GameFlowController (GameFlowController)
-    _nameText -> Text/TextMeshProUGUI (TextMeshProUGUI)
-Canvas/CommandPanel/StudyButton  [active=true]
-  CommandButtonView
-    _button -> StudyButton/Button (Button)
-    _command -> Study (CommandDataSO)
-    _costText -> <unbound>
-    _gameFlowController -> GameFlowController/GameFlowController (GameFlowController)
-    _nameText -> Text/TextMeshProUGUI (TextMeshProUGUI)
-Canvas/CommandPanel/TrainButton  [active=true]
-  CommandButtonView
-    _button -> TrainButton/Button (Button)
-    _command -> Train (CommandDataSO)
-    _costText -> <unbound>
-    _gameFlowController -> GameFlowController/GameFlowController (GameFlowController)
-    _nameText -> Text/TextMeshProUGUI (TextMeshProUGUI)
 Canvas/RelicDraftDialogPanel/PanelRoot/Card1  [active=false]
   RelicCardView
     _descriptionText -> DescText/TextMeshProUGUI (TextMeshProUGUI)
@@ -92,4 +71,4 @@ GameFlowController  [active=true]
     _relicAcquiredChannel -> RelicAcquiredChannel (RelicAcquiredChannelSO)
     _relicCatalog -> RelicCatalog (RelicCatalogSO)
     _relicResolver -> RelicResolver (RelicResolverSO)
-=== components: 13 / bound: 63 / unbound: 5 ===
+=== components: 10 / bound: 51 / unbound: 2 ===

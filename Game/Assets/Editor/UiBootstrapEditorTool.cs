@@ -141,6 +141,68 @@ namespace Game.EditorScripts
 
             SceneBindingReport.GenerateSceneSnapshot();
         }
+
+        [MenuItem("Tools/Migrate CommandPanel To Runtime")]
+        public static void MigrateCommandPanel()
+        {
+            // 1. Assets/Resources フォルダの準備とアセット移動
+            if (!AssetDatabase.IsValidFolder("Assets/Resources"))
+            {
+                AssetDatabase.CreateFolder("Assets", "Resources");
+            }
+
+            string[] commands = { "Study", "Train", "Rest" };
+            foreach (string cmd in commands)
+            {
+                string oldPath = $"Assets/Data/Commands/{cmd}.asset";
+                string newPath = $"Assets/Resources/{cmd}.asset";
+
+                if (File.Exists(Path.Combine(Application.dataPath, "..", oldPath)))
+                {
+                    string moveResult = AssetDatabase.MoveAsset(oldPath, newPath);
+                    if (!string.IsNullOrEmpty(moveResult))
+                    {
+                        Debug.LogError($"[UiBootstrapEditorTool] Failed to move {oldPath}: {moveResult}");
+                    }
+                    else
+                    {
+                        Debug.Log($"[UiBootstrapEditorTool] Successfully moved {oldPath} -> {newPath}");
+                    }
+                }
+            }
+
+            AssetDatabase.SaveAssets();
+            AssetDatabase.Refresh();
+
+            // 2. シーンの読み込み
+            Scene scene = EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
+
+            // 3. Canvas の探索と CommandPanel の削除
+            Canvas canvas = Object.FindFirstObjectByType<Canvas>();
+            if (canvas == null)
+            {
+                Debug.LogError("[UiBootstrapEditorTool] Canvas not found in scene.");
+                return;
+            }
+
+            Transform commandPanelTr = canvas.transform.Find("CommandPanel") ?? canvas.transform.Find("CommandButtonsPanel");
+            if (commandPanelTr != null)
+            {
+                Object.DestroyImmediate(commandPanelTr.gameObject);
+                Debug.Log("[UiBootstrapEditorTool] Removed CommandPanel from Canvas.");
+            }
+            else
+            {
+                Debug.LogWarning("[UiBootstrapEditorTool] CommandPanel not found on Canvas (already removed?).");
+            }
+
+            // 4. シーン保存とスナップショット更新
+            EditorSceneManager.MarkSceneDirty(scene);
+            EditorSceneManager.SaveScene(scene);
+            Debug.Log("[UiBootstrapEditorTool] MainGame scene updated and saved.");
+
+            SceneBindingReport.GenerateSceneSnapshot();
+        }
     }
 }
 #endif
