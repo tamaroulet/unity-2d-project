@@ -1,26 +1,5 @@
 Canvas  [active=true]
   UiBootstrapper
-    _canvas -> Canvas/Canvas (Canvas)
-    _endingView -> UIViews/EndingView (EndingView)
-    _gameFlowController -> GameFlowController/GameFlowController (GameFlowController)
-Canvas/UIViews  [active=true]
-  BossBattleDialogView
-Canvas/UIViews  [active=true]
-  EndingView
-    _gameFlowController -> GameFlowController/GameFlowController (GameFlowController)
-Canvas/UIViews  [active=true]
-  EventDialogView
-    _eventCatalog -> GameEventCatalog (GameEventCatalogSO)
-    _eventFiredChannel -> EventFiredChannel (GameEventFiredChannelSO)
-    _gameFlowController -> GameFlowController/GameFlowController (GameFlowController)
-Canvas/UIViews  [active=true]
-  MetaShopDialogView
-    _gameFlowController -> GameFlowController/GameFlowController (GameFlowController)
-    _unlockCatalog -> MetaUnlockCatalog (MetaUnlockCatalogSO)
-Canvas/UIViews  [active=true]
-  RelicDraftDialogView
-    _gameFlowController -> GameFlowController/GameFlowController (GameFlowController)
-    _relicAcquiredChannel -> RelicAcquiredChannel (RelicAcquiredChannelSO)
 GameFlowController  [active=true]
   GameFlowController
     _autoBattleResolver -> AutoBattleResolver (AutoBattleResolverSO)
@@ -39,4 +18,4 @@ GameFlowController  [active=true]
     _relicAcquiredChannel -> RelicAcquiredChannel (RelicAcquiredChannelSO)
     _relicCatalog -> RelicCatalog (RelicCatalogSO)
     _relicResolver -> RelicResolver (RelicResolverSO)
-=== components: 7 / bound: 27 / unbound: 0 ===
+=== components: 2 / bound: 16 / unbound: 0 ===

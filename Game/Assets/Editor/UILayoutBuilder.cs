@@ -87,7 +87,7 @@ namespace Game.EditorScripts
                 }
             }
 
-            // 古い壊れた子オブジェクトを一括クリア（クリーンビルド）
+            // 古い壊れた子オブジェクトを一括クリア（クリーンビルド: Canvas は子を持たない）
             int childCount = canvas.transform.childCount;
             for (int i = childCount - 1; i >= 0; i--)
             {
@@ -95,20 +95,18 @@ namespace Game.EditorScripts
                 Object.DestroyImmediate(child.gameObject);
             }
 
-            // 4. 全画面背景
-            CreateOrUpdateBackground(canvas.transform);
+            // 4. UiBootstrapper の配置（ADR 0002 段階 5: UI は実行時にコードから構築する）
+            if (canvas.GetComponent<UiBootstrapper>() == null)
+            {
+                canvas.gameObject.AddComponent<UiBootstrapper>();
+            }
 
-            // 5. 各 UI パネルの完全構築 (すべてランタイム構築へ移行済)
-
-            // 6. UIViews の構築（常時アクティブな View コンポーネントホスト）
-            SetupUIViews(canvas.transform);
-
-            // 7. GameFlowController へのバインド
-            RebindGameFlowControllerReferences(canvas.transform);
+            // 5. GameFlowController へのバインド
+            RebindGameFlowControllerReferences();
 
             EditorSceneManager.MarkSceneDirty(scene);
             EditorSceneManager.SaveScene(scene);
-            Debug.Log("[UILayoutBuilder] Full UI Layout successfully built and saved without errors.");
+            Debug.Log("[UILayoutBuilder] Scene scaffolding (Camera / EventSystem / Canvas / UiBootstrapper) successfully built and saved.");
             SceneBindingReport.GenerateSceneSnapshot();
         }
 
@@ -117,60 +115,6 @@ namespace Game.EditorScripts
             return AssetDatabase.LoadAssetAtPath<Sprite>($"Assets/UI/Sprites/{name}.png");
         }
 
-        private static void CreateOrUpdateBackground(Transform canvasTr)
-        {
-            Transform bgTr = canvasTr.Find("Background");
-            GameObject bgGo = bgTr != null ? bgTr.gameObject : new GameObject("Background", typeof(RectTransform), typeof(Image));
-            bgGo.transform.SetParent(canvasTr, false);
-            bgGo.transform.SetAsFirstSibling();
-
-            RectTransform rect = bgGo.GetComponent<RectTransform>();
-            rect.anchorMin = Vector2.zero;
-            rect.anchorMax = Vector2.one;
-            rect.sizeDelta = Vector2.zero;
-
-            Image img = bgGo.GetComponent<Image>();
-            img.color = ColorBgMain;
-            img.raycastTarget = false;
-        }
-
-
-
-
-
-
-
-        private static void SetupUIViews(Transform canvasTr)
-        {
-            Transform tr = canvasTr.Find("UIViews");
-            GameObject go = tr != null ? tr.gameObject : new GameObject("UIViews", typeof(RectTransform));
-            go.transform.SetParent(canvasTr, false);
-            go.SetActive(true);
-
-            EnsureRectTransform(go);
-
-            // EndingView, RelicDraftDialogView, BossBattleDialogView, MetaShopDialogView を常時アクティブなホストへ配置
-            if (go.GetComponent<EndingView>() == null)
-            {
-                go.AddComponent<EndingView>();
-            }
-            if (go.GetComponent<RelicDraftDialogView>() == null)
-            {
-                go.AddComponent<RelicDraftDialogView>();
-            }
-            if (go.GetComponent<BossBattleDialogView>() == null)
-            {
-                go.AddComponent<BossBattleDialogView>();
-            }
-            if (go.GetComponent<MetaShopDialogView>() == null)
-            {
-                go.AddComponent<MetaShopDialogView>();
-            }
-            if (go.GetComponent<EventDialogView>() == null)
-            {
-                go.AddComponent<EventDialogView>();
-            }
-        }
 
         // --- UI 生成ヘルパー群 ---
 
@@ -325,7 +269,7 @@ namespace Game.EditorScripts
             return labelGo;
         }
 
-        private static void RebindGameFlowControllerReferences(Transform canvasTr)
+        private static void RebindGameFlowControllerReferences()
         {
             GameFlowController controller = Object.FindFirstObjectByType<GameFlowController>();
             if (controller == null) return;
@@ -333,19 +277,19 @@ namespace Game.EditorScripts
             SerializedObject so = new SerializedObject(controller);
             BindAsset<GameRulesSO>(so, "_gameRules", "Assets/Data/Rules/GameRules.asset");
             BindAsset<CommandResolverSO>(so, "_commandResolver", "Assets/Data/Commands/CommandResolver.asset");
-            BindAsset<GameEventCatalogSO>(so, "_eventCatalog", "Assets/Data/Events/GameEventCatalog.asset");
+            BindAsset<GameEventCatalogSO>(so, "_eventCatalog", "Assets/Resources/GameEventCatalog.asset");
             BindAsset<EventResolverSO>(so, "_eventResolver", "Assets/Data/Events/EventResolver.asset");
             BindAsset<EndingRulesSO>(so, "_endingRules", "Assets/Data/Endings/EndingRules.asset");
             BindAsset<EndingResolverSO>(so, "_endingResolver", "Assets/Data/Endings/EndingResolver.asset");
-            BindAsset<GameStateEventChannelSO>(so, "_gameStateChannel", "Assets/Data/Channels/GameStateChannel.asset");
-            BindAsset<GameEventFiredChannelSO>(so, "_eventFiredChannel", "Assets/Data/Channels/EventFiredChannel.asset");
+            BindAsset<GameStateEventChannelSO>(so, "_gameStateChannel", "Assets/Resources/GameStateChannel.asset");
+            BindAsset<GameEventFiredChannelSO>(so, "_eventFiredChannel", "Assets/Resources/EventFiredChannel.asset");
             BindAsset<EndingDecidedChannelSO>(so, "_endingDecidedChannel", "Assets/Resources/EndingDecidedChannel.asset");
             BindAsset<RelicCatalogSO>(so, "_relicCatalog", "Assets/Features/Relic/Instances/RelicCatalog.asset");
             BindAsset<RelicResolverSO>(so, "_relicResolver", "Assets/Features/Relic/Instances/RelicResolver.asset");
             BindAsset<BossCatalogSO>(so, "_bossCatalog", "Assets/Features/Boss/Instances/BossCatalog.asset");
             BindAsset<AutoBattleResolverSO>(so, "_autoBattleResolver", "Assets/Features/Boss/Instances/AutoBattleResolver.asset");
             BindAsset<MetaPointResolverSO>(so, "_metaPointResolver", "Assets/Features/MetaProgression/Instances/MetaPointResolver.asset");
-            BindAsset<MetaUnlockCatalogSO>(so, "_metaUnlockCatalog", "Assets/Features/MetaProgression/Instances/MetaUnlockCatalog.asset");
+            BindAsset<MetaUnlockCatalogSO>(so, "_metaUnlockCatalog", "Assets/Resources/MetaUnlockCatalog.asset");
 
             int[] bossBattleTurns = { 6, 12, 18, 24 };
             SerializedProperty turnsProp = so.FindProperty("_bossBattleTurns");
@@ -357,10 +301,6 @@ namespace Game.EditorScripts
             }
 
             so.ApplyModifiedProperties();
-
-            BindRelicDraftDialogSceneReferences(canvasTr, controller);
-            BindMetaShopDialogSceneReferences(canvasTr, controller);
-            BindEventDialogSceneReferences(canvasTr, controller);
         }
 
         private static void BindComponentReference<T>(SerializedObject so, string propName, Transform rootTr, string containerName, params string[] candidatePaths) where T : Component
@@ -402,75 +342,7 @@ namespace Game.EditorScripts
             }
         }
 
-        private static void BindMetaShopDialogSceneReferences(Transform canvasTr, GameFlowController controller)
-        {
-            Transform viewsTr = canvasTr.Find("UIViews");
-            if (viewsTr == null)
-            {
-                Debug.LogError("[UILayoutBuilder] UIViews not found on Canvas for MetaShopDialogView.");
-                return;
-            }
 
-            MetaShopDialogView view = viewsTr.GetComponent<MetaShopDialogView>();
-            if (view == null)
-            {
-                Debug.LogError("[UILayoutBuilder] MetaShopDialogView component not found on UIViews.");
-                return;
-            }
-
-            SerializedObject so = new SerializedObject(view);
-            so.FindProperty("_gameFlowController").objectReferenceValue = controller;
-            BindAsset<MetaUnlockCatalogSO>(so, "_unlockCatalog", "Assets/Features/MetaProgression/Instances/MetaUnlockCatalog.asset");
-
-            so.ApplyModifiedProperties();
-        }
-
-        private static void BindEventDialogSceneReferences(Transform canvasTr, GameFlowController controller)
-        {
-            Transform viewsTr = canvasTr.Find("UIViews");
-            if (viewsTr == null)
-            {
-                Debug.LogError("[UILayoutBuilder] UIViews not found on Canvas for EventDialogView.");
-                return;
-            }
-
-            EventDialogView view = viewsTr.GetComponent<EventDialogView>();
-            if (view == null)
-            {
-                Debug.LogError("[UILayoutBuilder] EventDialogView component not found on UIViews.");
-                return;
-            }
-
-            SerializedObject so = new SerializedObject(view);
-            so.FindProperty("_gameFlowController").objectReferenceValue = controller;
-            BindAsset<GameEventFiredChannelSO>(so, "_eventFiredChannel", "Assets/Data/Channels/EventFiredChannel.asset");
-            BindAsset<GameEventCatalogSO>(so, "_eventCatalog", "Assets/Data/Events/GameEventCatalog.asset");
-
-            so.ApplyModifiedProperties();
-        }
-
-        private static void BindRelicDraftDialogSceneReferences(Transform canvasTr, GameFlowController controller)
-        {
-            Transform viewsTr = canvasTr.Find("UIViews");
-            if (viewsTr == null)
-            {
-                Debug.LogError("[UILayoutBuilder] UIViews not found on Canvas for RelicDraftDialogView.");
-                return;
-            }
-
-            RelicDraftDialogView view = viewsTr.GetComponent<RelicDraftDialogView>();
-            if (view == null)
-            {
-                Debug.LogError("[UILayoutBuilder] RelicDraftDialogView component not found on UIViews.");
-                return;
-            }
-
-            SerializedObject so = new SerializedObject(view);
-            so.FindProperty("_gameFlowController").objectReferenceValue = controller;
-            BindAsset<RelicAcquiredChannelSO>(so, "_relicAcquiredChannel", "Assets/Features/Relic/Instances/RelicAcquiredChannel.asset");
-
-            so.ApplyModifiedProperties();
-        }
 
 
         // 参照先が見つからないときは既存の結線を残したままエラーで知らせる。

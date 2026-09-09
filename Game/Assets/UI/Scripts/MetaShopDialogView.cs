@@ -19,8 +19,8 @@ namespace Game.UI
         private TextMeshProUGUI _totalRunsText;
         private Button _closeButton;
 
-        [SerializeField] private GameFlowController _gameFlowController;
-        [SerializeField] private MetaUnlockCatalogSO _unlockCatalog;
+        private GameFlowController _gameFlowController;
+        private MetaUnlockCatalogSO _unlockCatalog;
         private Button[] _itemButtons = new Button[3];
         private TextMeshProUGUI[] _itemNameTexts = new TextMeshProUGUI[3];
         private TextMeshProUGUI[] _itemDescTexts = new TextMeshProUGUI[3];
@@ -37,7 +37,9 @@ namespace Game.UI
             Button closeButton = null,
             Button[] itemButtons = null,
             TextMeshProUGUI[] itemNameTexts = null,
-            TextMeshProUGUI[] itemDescTexts = null)
+            TextMeshProUGUI[] itemDescTexts = null,
+            GameFlowController controller = null,
+            MetaUnlockCatalogSO catalog = null)
         {
             _panelRoot = panelRoot;
             if (availablePointsText != null) _availablePointsText = availablePointsText;
@@ -56,6 +58,11 @@ namespace Game.UI
             if (itemButtons != null) _itemButtons = itemButtons;
             if (itemNameTexts != null) _itemNameTexts = itemNameTexts;
             if (itemDescTexts != null) _itemDescTexts = itemDescTexts;
+
+            if (controller != null || catalog != null)
+            {
+                Bind(controller, catalog);
+            }
         }
 
         public bool IsPanelActive => _panelRoot != null && _panelRoot.activeSelf;

@@ -3,7 +3,10 @@ using System.Collections.Generic;
 using Game.Core;
 using Game.Features.Command;
 using Game.Features.Ending;
+using Game.Features.Event;
 using Game.Features.GameFlow;
+using Game.Features.MetaProgression;
+using Game.Features.Relic;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -30,12 +33,23 @@ namespace Game.UI
         private static readonly Color ColorBossHp = new Color(0.92f, 0.25f, 0.25f, 1.0f);
         private static readonly Color ColorShield = new Color(0.30f, 0.75f, 0.95f, 1.0f);
 
-        [SerializeField] private Canvas _canvas;
-        [SerializeField] private EndingView _endingView;
-        [SerializeField] private GameFlowController _gameFlowController;
+        private Canvas _canvas;
+        private EndingView _endingView;
+        private GameFlowController _gameFlowController;
 
         private void Awake()
         {
+            if (_canvas == null)
+            {
+                _canvas = GetComponentInParent<Canvas>() ?? GetComponent<Canvas>();
+            }
+            if (_gameFlowController == null)
+            {
+                _gameFlowController = Object.FindFirstObjectByType<GameFlowController>();
+            }
+
+            BootstrapBackground();
+            BootstrapUIViews();
             BootstrapBossBattleDialogPanel();
             BootstrapEventDialogPanel();
             BootstrapRelicDraftDialogPanel();
@@ -43,6 +57,45 @@ namespace Game.UI
             BootstrapStatusPanel();
             BootstrapCommandPanel();
             BootstrapEndingPanel();
+        }
+
+        private void BootstrapBackground()
+        {
+            if (_canvas == null)
+            {
+                _canvas = GetComponentInParent<Canvas>() ?? GetComponent<Canvas>();
+            }
+
+            GameObject bgGo = new GameObject("Background", typeof(RectTransform), typeof(Image));
+            bgGo.transform.SetParent(_canvas.transform, false);
+            bgGo.transform.SetAsFirstSibling();
+
+            RectTransform rect = bgGo.GetComponent<RectTransform>();
+            rect.anchorMin = Vector2.zero;
+            rect.anchorMax = Vector2.one;
+            rect.sizeDelta = Vector2.zero;
+
+            Image img = bgGo.GetComponent<Image>();
+            img.color = new Color(0.08f, 0.09f, 0.12f, 1.0f);
+            img.raycastTarget = false;
+        }
+
+        private void BootstrapUIViews()
+        {
+            if (_canvas == null)
+            {
+                _canvas = GetComponentInParent<Canvas>() ?? GetComponent<Canvas>();
+            }
+
+            GameObject viewsGo = new GameObject("UIViews", typeof(RectTransform));
+            viewsGo.transform.SetParent(_canvas.transform, false);
+            viewsGo.SetActive(true);
+
+            _endingView = viewsGo.AddComponent<EndingView>();
+            viewsGo.AddComponent<BossBattleDialogView>();
+            viewsGo.AddComponent<EventDialogView>();
+            viewsGo.AddComponent<RelicDraftDialogView>();
+            viewsGo.AddComponent<MetaShopDialogView>();
         }
 
         private void BootstrapStatusPanel()
@@ -599,7 +652,9 @@ namespace Game.UI
 
             if (eventDialog != null)
             {
-                eventDialog.Bind(panelGo, titleTmp, descTmp, okButton);
+                GameEventFiredChannelSO eventChannel = Resources.Load<GameEventFiredChannelSO>("EventFiredChannel");
+                GameEventCatalogSO eventCatalog = Resources.Load<GameEventCatalogSO>("GameEventCatalog");
+                eventDialog.Bind(panelGo, titleTmp, descTmp, okButton, eventChannel, eventCatalog, _gameFlowController);
             }
             else
             {
@@ -663,7 +718,8 @@ namespace Game.UI
 
             if (relicDialog != null)
             {
-                relicDialog.Bind(panelGo, cardViews);
+                RelicAcquiredChannelSO relicChannel = Resources.Load<RelicAcquiredChannelSO>("RelicAcquiredChannel");
+                relicDialog.Bind(panelGo, cardViews, _gameFlowController, relicChannel);
             }
             else
             {
@@ -829,7 +885,8 @@ namespace Game.UI
 
             if (metaShopDialog != null)
             {
-                metaShopDialog.Bind(panelGo, pointsTmp, runsTmp, closeButton, itemButtons, itemNameTexts, itemDescTexts);
+                MetaUnlockCatalogSO unlockCatalog = Resources.Load<MetaUnlockCatalogSO>("MetaUnlockCatalog");
+                metaShopDialog.Bind(panelGo, pointsTmp, runsTmp, closeButton, itemButtons, itemNameTexts, itemDescTexts, _gameFlowController, unlockCatalog);
             }
             else
             {

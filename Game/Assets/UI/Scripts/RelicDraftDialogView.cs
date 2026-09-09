@@ -13,8 +13,8 @@ namespace Game.UI
     /// </summary>
     public class RelicDraftDialogView : MonoBehaviour
     {
-        [SerializeField] private RelicAcquiredChannelSO _relicAcquiredChannel;
-        [SerializeField] private GameFlowController _gameFlowController;
+        private RelicAcquiredChannelSO _relicAcquiredChannel;
+        private GameFlowController _gameFlowController;
         private GameObject _panelRoot;
         private List<RelicCardView> _cardViews = new List<RelicCardView>();
 
@@ -23,12 +23,18 @@ namespace Game.UI
         /// </summary>
         public void Bind(
             GameObject panelRoot,
-            List<RelicCardView> cardViews)
+            List<RelicCardView> cardViews,
+            GameFlowController controller = null,
+            RelicAcquiredChannelSO channel = null)
         {
             _panelRoot = panelRoot;
             if (cardViews != null)
             {
                 _cardViews = cardViews;
+            }
+            if (controller != null || channel != null)
+            {
+                Bind(controller, channel);
             }
         }
 

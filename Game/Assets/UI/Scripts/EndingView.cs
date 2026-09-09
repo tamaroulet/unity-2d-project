@@ -24,9 +24,9 @@ namespace Game.UI
         private EndingDecidedChannelSO _endingDecidedChannel;
         private GameObject _panelRoot;
         private TextMeshProUGUI _resultText;
-        [SerializeField] private EndingLabel[] _endingLabels;
+        private EndingLabel[] _endingLabels;
         private Button _restartButton;
-        [SerializeField] private GameFlowController _gameFlowController;
+        private GameFlowController _gameFlowController;
 
         /// <summary>
         /// パネルの表示状態。

@@ -335,6 +335,79 @@ namespace Game.EditorScripts
 
             SceneBindingReport.GenerateSceneSnapshot();
         }
+
+        [MenuItem("Tools/Retire Canvas Builder And Cleanup Scene")]
+        public static void RetireCanvasBuilderAndCleanupScene()
+        {
+            // 1. Assets/Resources フォルダの準備とアセット移動
+            if (!AssetDatabase.IsValidFolder("Assets/Resources"))
+            {
+                AssetDatabase.CreateFolder("Assets", "Resources");
+            }
+
+            string[,] assetsToMove = new string[,]
+            {
+                { "Assets/Data/Channels/EventFiredChannel.asset", "Assets/Resources/EventFiredChannel.asset" },
+                { "Assets/Data/Events/GameEventCatalog.asset", "Assets/Resources/GameEventCatalog.asset" },
+                { "Assets/Features/Relic/Instances/RelicAcquiredChannel.asset", "Assets/Resources/RelicAcquiredChannel.asset" },
+                { "Assets/Features/MetaProgression/Instances/MetaUnlockCatalog.asset", "Assets/Resources/MetaUnlockCatalog.asset" }
+            };
+
+            for (int i = 0; i < assetsToMove.GetLength(0); i++)
+            {
+                string oldPath = assetsToMove[i, 0];
+                string newPath = assetsToMove[i, 1];
+                if (File.Exists(Path.Combine(Application.dataPath, "..", oldPath)))
+                {
+                    string res = AssetDatabase.MoveAsset(oldPath, newPath);
+                    if (!string.IsNullOrEmpty(res))
+                    {
+                        Debug.LogError($"[UiBootstrapEditorTool] Failed to move {oldPath}: {res}");
+                    }
+                    else
+                    {
+                        Debug.Log($"[UiBootstrapEditorTool] Moved {oldPath} -> {newPath}");
+                    }
+                }
+            }
+
+            AssetDatabase.SaveAssets();
+            AssetDatabase.Refresh();
+
+            // 2. シーンの読み込み
+            Scene scene = EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
+
+            // 3. Canvas の探索と全子の削除
+            Canvas canvas = Object.FindFirstObjectByType<Canvas>();
+            if (canvas == null)
+            {
+                Debug.LogError("[UiBootstrapEditorTool] Canvas not found in scene.");
+                return;
+            }
+
+            int childCount = canvas.transform.childCount;
+            for (int i = childCount - 1; i >= 0; i--)
+            {
+                Transform child = canvas.transform.GetChild(i);
+                Object.DestroyImmediate(child.gameObject);
+            }
+            Debug.Log($"[UiBootstrapEditorTool] Removed all {childCount} children from Canvas. Canvas is now empty.");
+
+            // 4. UiBootstrapper の確認
+            UiBootstrapper bootstrapper = canvas.GetComponent<UiBootstrapper>();
+            if (bootstrapper == null)
+            {
+                canvas.gameObject.AddComponent<UiBootstrapper>();
+                Debug.Log("[UiBootstrapEditorTool] Added UiBootstrapper component to Canvas.");
+            }
+
+            // 5. シーン保存とスナップショット更新
+            EditorSceneManager.MarkSceneDirty(scene);
+            EditorSceneManager.SaveScene(scene);
+            Debug.Log("[UiBootstrapEditorTool] MainGame scene updated and saved.");
+
+            SceneBindingReport.GenerateSceneSnapshot();
+        }
     }
 }
 #endif

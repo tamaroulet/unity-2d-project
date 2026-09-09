@@ -15,9 +15,9 @@ namespace Game.UI
     /// </summary>
     public class EventDialogView : MonoBehaviour
     {
-        [SerializeField] private GameEventFiredChannelSO _eventFiredChannel;
-        [SerializeField] private GameEventCatalogSO _eventCatalog;
-        [SerializeField] private GameFlowController _gameFlowController;
+        private GameEventFiredChannelSO _eventFiredChannel;
+        private GameEventCatalogSO _eventCatalog;
+        private GameFlowController _gameFlowController;
 
         private GameObject _panelRoot;
         private TextMeshProUGUI _titleText;
@@ -31,11 +31,25 @@ namespace Game.UI
             GameObject panelRoot,
             TextMeshProUGUI titleText = null,
             TextMeshProUGUI bodyText = null,
-            Button okButton = null)
+            Button okButton = null,
+            GameEventFiredChannelSO channel = null,
+            GameEventCatalogSO catalog = null,
+            GameFlowController gameFlowController = null)
         {
             _panelRoot = panelRoot;
             if (titleText != null) _titleText = titleText;
             if (bodyText != null) _bodyText = bodyText;
+            if (channel != null)
+            {
+                if (_eventFiredChannel != null)
+                {
+                    _eventFiredChannel.OnEventRaised -= OnEventFired;
+                }
+                _eventFiredChannel = channel;
+                _eventFiredChannel.OnEventRaised += OnEventFired;
+            }
+            if (catalog != null) _eventCatalog = catalog;
+            if (gameFlowController != null) _gameFlowController = gameFlowController;
             if (okButton != null)
             {
                 if (_okButton != null)
