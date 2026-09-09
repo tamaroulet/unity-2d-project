@@ -25,6 +25,9 @@ namespace Game.UI
         private static readonly Color ColorStamina = new Color(0.22f, 0.85f, 0.45f, 1.0f);
         private static readonly Color ColorSkill = new Color(0.25f, 0.65f, 0.98f, 1.0f);
         private static readonly Color ColorMental = new Color(0.92f, 0.35f, 0.65f, 1.0f);
+        private static readonly Color ColorBgBossDialog = new Color(0.20f, 0.10f, 0.12f, 0.98f);
+        private static readonly Color ColorBossHp = new Color(0.92f, 0.25f, 0.25f, 1.0f);
+        private static readonly Color ColorShield = new Color(0.30f, 0.75f, 0.95f, 1.0f);
 
         [SerializeField] private Canvas _canvas;
         [SerializeField] private EndingView _endingView;
@@ -32,6 +35,7 @@ namespace Game.UI
 
         private void Awake()
         {
+            BootstrapBossBattleDialogPanel();
             BootstrapStatusPanel();
             BootstrapCommandPanel();
             BootstrapEndingPanel();
@@ -402,6 +406,113 @@ namespace Game.UI
             else
             {
                 Debug.LogError("[UiBootstrapper] _endingView is null, cannot bind EndingPanel references.");
+            }
+        }
+
+        private void BootstrapBossBattleDialogPanel()
+        {
+            if (_canvas == null)
+            {
+                _canvas = GetComponentInParent<Canvas>() ?? GetComponent<Canvas>();
+            }
+
+            // BossBattleDialogPanel (全画面モーダルオーバーレイ)
+            GameObject panelGo = new GameObject("BossBattleDialogPanel", typeof(RectTransform), typeof(Image));
+            panelGo.transform.SetParent(_canvas.transform, false);
+
+            RectTransform panelRect = panelGo.GetComponent<RectTransform>();
+            panelRect.anchorMin = Vector2.zero;
+            panelRect.anchorMax = Vector2.one;
+            panelRect.offsetMin = Vector2.zero;
+            panelRect.offsetMax = Vector2.zero;
+
+            Image overlayImg = panelGo.GetComponent<Image>();
+            overlayImg.color = ColorOverlay;
+            overlayImg.raycastTarget = true;
+
+            // PanelRoot (ダイアログ本体枠)
+            GameObject rootGo = new GameObject("PanelRoot", typeof(RectTransform), typeof(Image));
+            rootGo.transform.SetParent(panelGo.transform, false);
+
+            RectTransform rootRect = rootGo.GetComponent<RectTransform>();
+            rootRect.anchorMin = new Vector2(0.5f, 0.5f);
+            rootRect.anchorMax = new Vector2(0.5f, 0.5f);
+            rootRect.pivot = new Vector2(0.5f, 0.5f);
+            rootRect.sizeDelta = new Vector2(1250, 750);
+            rootRect.anchoredPosition = Vector2.zero;
+
+            Image rootImg = rootGo.GetComponent<Image>();
+            rootImg.color = ColorBgBossDialog;
+
+            // BossTitleText
+            TextMeshProUGUI titleTmp = CreateLabel(
+                rootRect, "BossTitleText", "BOSS BATTLE", new Vector2(0, 290), new Vector2(800, 50), 34, TextAlignmentOptions.Center);
+
+            // BossEmblem
+            GameObject emblemGo = new GameObject("BossEmblem", typeof(RectTransform), typeof(Image));
+            emblemGo.transform.SetParent(rootRect, false);
+            RectTransform emblemRect = emblemGo.GetComponent<RectTransform>();
+            emblemRect.anchoredPosition = new Vector2(0, 110);
+            emblemRect.sizeDelta = new Vector2(200, 200);
+            Image emblemImg = emblemGo.GetComponent<Image>();
+            emblemImg.color = Color.white;
+            emblemImg.raycastTarget = false;
+
+            // BossHpGroup
+            CreateGaugeGroup(
+                rootRect, "BossHpGroup", ColorBossHp, new Vector2(0, -60), "Boss HP: 80 / 80",
+                out Slider bossHpSlider, out RectTransform _, out TextMeshProUGUI bossHpText);
+
+            // BossShieldGroup
+            CreateGaugeGroup(
+                rootRect, "BossShieldGroup", ColorShield, new Vector2(0, -130), "Shield: 10",
+                out Slider _, out RectTransform _, out TextMeshProUGUI shieldText);
+
+            // BattleLogText
+            TextMeshProUGUI logTmp = CreateLabel(
+                rootRect, "BattleLogText", "", new Vector2(0, -195), new Vector2(800, 50), 16, TextAlignmentOptions.Center);
+
+            // AutoBattleNextButton
+            GameObject btnGo = new GameObject("AutoBattleNextButton", typeof(RectTransform), typeof(Image), typeof(Button));
+            btnGo.transform.SetParent(rootRect, false);
+            RectTransform btnRect = btnGo.GetComponent<RectTransform>();
+            btnRect.anchoredPosition = new Vector2(0, -260);
+            btnRect.sizeDelta = new Vector2(400, 70);
+
+            Image btnImg = btnGo.GetComponent<Image>();
+            btnImg.color = ColorModalButtonBg;
+            btnImg.raycastTarget = true;
+
+            Button dismissButton = btnGo.GetComponent<Button>();
+            dismissButton.targetGraphic = btnImg;
+
+            // AutoBattleNextButton / Text
+            GameObject btnTextGo = new GameObject("Text", typeof(RectTransform), typeof(TextMeshProUGUI));
+            btnTextGo.transform.SetParent(btnGo.transform, false);
+            RectTransform btnTextRect = btnTextGo.GetComponent<RectTransform>();
+            btnTextRect.anchoredPosition = Vector2.zero;
+            btnTextRect.sizeDelta = new Vector2(400, 70);
+            TextMeshProUGUI btnTmp = btnTextGo.GetComponent<TextMeshProUGUI>();
+            btnTmp.text = "AUTO BATTLE / NEXT";
+            btnTmp.fontSize = 22;
+            btnTmp.alignment = TextAlignmentOptions.Center;
+            btnTmp.color = Color.white;
+            btnTmp.raycastTarget = false;
+
+            // 初期状態は非アクティブ
+            panelGo.SetActive(false);
+
+            // BossBattleDialogView への依存注入
+            BossBattleDialogView bossDialog = _canvas.GetComponentInChildren<BossBattleDialogView>(true)
+                ?? Object.FindFirstObjectByType<BossBattleDialogView>(FindObjectsInactive.Include);
+
+            if (bossDialog != null)
+            {
+                bossDialog.Bind(panelGo, titleTmp, bossHpText, bossHpSlider, shieldText, logTmp, dismissButton, btnTmp);
+            }
+            else
+            {
+                Debug.LogError("[UiBootstrapper] BossBattleDialogView not found, cannot bind references.");
             }
         }
     }

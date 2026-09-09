@@ -203,6 +203,39 @@ namespace Game.EditorScripts
 
             SceneBindingReport.GenerateSceneSnapshot();
         }
+
+        [MenuItem("Tools/Migrate BossBattleDialogPanel To Runtime")]
+        public static void MigrateBossBattleDialogPanel()
+        {
+            // 1. シーンの読み込み
+            Scene scene = EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
+
+            // 2. Canvas の探索と BossBattleDialogPanel の削除
+            Canvas canvas = Object.FindFirstObjectByType<Canvas>();
+            if (canvas == null)
+            {
+                Debug.LogError("[UiBootstrapEditorTool] Canvas not found in scene.");
+                return;
+            }
+
+            Transform bossPanelTr = canvas.transform.Find("BossBattleDialogPanel");
+            if (bossPanelTr != null)
+            {
+                Object.DestroyImmediate(bossPanelTr.gameObject);
+                Debug.Log("[UiBootstrapEditorTool] Removed BossBattleDialogPanel from Canvas.");
+            }
+            else
+            {
+                Debug.LogWarning("[UiBootstrapEditorTool] BossBattleDialogPanel not found on Canvas (already removed?).");
+            }
+
+            // 3. シーン保存とスナップショット更新
+            EditorSceneManager.MarkSceneDirty(scene);
+            EditorSceneManager.SaveScene(scene);
+            Debug.Log("[UiBootstrapEditorTool] MainGame scene updated and saved.");
+
+            SceneBindingReport.GenerateSceneSnapshot();
+        }
     }
 }
 #endif

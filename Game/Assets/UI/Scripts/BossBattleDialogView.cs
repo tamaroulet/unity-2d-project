@@ -15,16 +15,49 @@ namespace Game.UI
     /// </summary>
     public class BossBattleDialogView : MonoBehaviour
     {
-        [SerializeField] private GameObject _panelRoot;
-        [SerializeField] private TextMeshProUGUI _bossNameText;
-        [SerializeField] private TextMeshProUGUI _bossHpText;
-        [SerializeField] private Slider _bossHpSlider;
-        [SerializeField] private TextMeshProUGUI _shieldText;
-        [SerializeField] private TextMeshProUGUI _battleLogText;
-        [SerializeField] private Button _dismissButton;
-        [SerializeField] private TextMeshProUGUI _dismissButtonText;
+        private GameObject _panelRoot;
+        private TextMeshProUGUI _bossNameText;
+        private TextMeshProUGUI _bossHpText;
+        private Slider _bossHpSlider;
+        private TextMeshProUGUI _shieldText;
+        private TextMeshProUGUI _battleLogText;
+        private Button _dismissButton;
+        private TextMeshProUGUI _dismissButtonText;
 
         private Action _onDismissedCallback;
+
+        /// <summary>
+        /// ランタイムブートストラップ時に各参照を直接代入・結線する。
+        /// </summary>
+        public void Bind(
+            GameObject panelRoot,
+            TextMeshProUGUI bossNameText = null,
+            TextMeshProUGUI bossHpText = null,
+            Slider bossHpSlider = null,
+            TextMeshProUGUI shieldText = null,
+            TextMeshProUGUI battleLogText = null,
+            Button dismissButton = null,
+            TextMeshProUGUI dismissButtonText = null)
+        {
+            _panelRoot = panelRoot;
+            if (bossNameText != null) _bossNameText = bossNameText;
+            if (bossHpText != null) _bossHpText = bossHpText;
+            if (bossHpSlider != null) _bossHpSlider = bossHpSlider;
+            if (shieldText != null) _shieldText = shieldText;
+            if (battleLogText != null) _battleLogText = battleLogText;
+            if (dismissButton != null)
+            {
+                if (_dismissButton != null)
+                {
+                    _dismissButton.onClick.RemoveListener(OnDismissButtonClicked);
+                }
+                _dismissButton = dismissButton;
+                _dismissButton.onClick.AddListener(OnDismissButtonClicked);
+            }
+            if (dismissButtonText != null) _dismissButtonText = dismissButtonText;
+
+            EnsureReferences();
+        }
 
         public bool IsPanelActive => _panelRoot != null && _panelRoot.activeSelf;
         public bool IsVisible => IsPanelActive;

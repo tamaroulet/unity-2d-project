@@ -20,14 +20,6 @@ Canvas/RelicDraftDialogPanel/PanelRoot/Card3  [active=false]
     _selectButton -> SelectButton/Button (Button)
 Canvas/UIViews  [active=true]
   BossBattleDialogView
-    _battleLogText -> <unbound>
-    _bossHpSlider -> <unbound>
-    _bossHpText -> Label/TextMeshProUGUI (TextMeshProUGUI)
-    _bossNameText -> BossTitleText/TextMeshProUGUI (TextMeshProUGUI)
-    _dismissButton -> AutoBattleNextButton/Button (Button)
-    _dismissButtonText -> Text/TextMeshProUGUI (TextMeshProUGUI)
-    _panelRoot -> BossBattleDialogPanel (GameObject)
-    _shieldText -> Label/TextMeshProUGUI (TextMeshProUGUI)
 Canvas/UIViews  [active=true]
   EndingView
     _gameFlowController -> GameFlowController/GameFlowController (GameFlowController)
@@ -71,4 +63,4 @@ GameFlowController  [active=true]
     _relicAcquiredChannel -> RelicAcquiredChannel (RelicAcquiredChannelSO)
     _relicCatalog -> RelicCatalog (RelicCatalogSO)
     _relicResolver -> RelicResolver (RelicResolverSO)
-=== components: 10 / bound: 51 / unbound: 2 ===
+=== components: 10 / bound: 45 / unbound: 0 ===
