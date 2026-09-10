@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using Game.Features.Event;
 using NUnit.Framework;
 using UnityEditor;
+using UnityEngine;
 
 namespace Game.Tests.EditMode
 {
@@ -14,14 +15,22 @@ namespace Game.Tests.EditMode
     /// </summary>
     public class GameEventTurnConflictTests
     {
-        private const string CatalogAssetPath = "Assets/Data/Events/GameEventCatalog.asset";
         private static readonly int[] BossBattleTurns = { 6, 12, 18, 24 };
 
         [Test]
         public void EventCatalog_TurnEvents_DoNotConflictWithBossBattleTurns()
         {
-            GameEventCatalogSO catalog = AssetDatabase.LoadAssetAtPath<GameEventCatalogSO>(CatalogAssetPath);
-            Assert.IsNotNull(catalog, $"Failed to load GameEventCatalogSO at {CatalogAssetPath}");
+            GameEventCatalogSO catalog = Resources.Load<GameEventCatalogSO>("GameEventCatalog");
+            if (catalog == null)
+            {
+                string[] guids = AssetDatabase.FindAssets("t:GameEventCatalogSO");
+                if (guids.Length > 0)
+                {
+                    string path = AssetDatabase.GUIDToAssetPath(guids[0]);
+                    catalog = AssetDatabase.LoadAssetAtPath<GameEventCatalogSO>(path);
+                }
+            }
+            Assert.IsNotNull(catalog, "Failed to load GameEventCatalogSO via Resources.Load or AssetDatabase.FindAssets");
 
             List<string> conflicts = new List<string>();
             foreach (GameEventSO evt in catalog.Events)
