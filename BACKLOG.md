@@ -1,0 +1,4 @@
+- [ ] 自動プレイ bot: PlayMode テスト AutoPlayTest を新設。RunDriver で固定シード 1〜10 の 10 周を回し、各周が 24 ターン到達かゲームオーバーで正常に終わること。同じ状態で 50 回操作しても進まなければソフトロックとして失敗。例外 0 件
+- [ ] push ごとの CI を単体（EditMode + PlayMode）だけにし、WebGL Smoke Test は schedule（毎日 18:00 UTC）と workflow_dispatch だけにする
+- [ ] 夜間配信: webgl-build.yml を毎日 18:00 UTC に走らせ、その成果物（artifact）を同じ workflow の後段で actions/deploy-pages に渡して直接配信する。docs/webgl/ のコミットを経由しない。main がその日に変わっていなければ何もしない
+- [ ] 保護パス検査: PR が Game/Assets/Tests/ か .github/ か Game/Packages/ を変えるとき、PR 本文に「保護パス:」で始まる理由の行が無ければ落ちる workflow "protected-paths" を足す
