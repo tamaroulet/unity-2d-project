@@ -1,17 +1,10 @@
 {
-    "name": "Game.Editor",
-    "rootNamespace": "Game.Editor",
+    "name": "Game.Core.Events",
+    "rootNamespace": "Game.Core",
     "references": [
-        "Game",
-        "Game.Core",
-        "Game.Core.Events",
-        "Unity.TextMeshPro",
-        "UnityEngine.UI",
-        "Unity.InputSystem"
+        "Game.Core"
     ],
-    "includePlatforms": [
-        "Editor"
-    ],
+    "includePlatforms": [],
     "excludePlatforms": [],
     "allowUnsafeCode": false,
     "overrideReferences": false,

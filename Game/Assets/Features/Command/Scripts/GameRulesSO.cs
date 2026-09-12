@@ -35,16 +35,14 @@ namespace Game.Features.Command
         /// <summary>
         /// StartTurn / InitialStamina / InitialSkill / InitialMental から
         /// 初期状態の GameState を組み立てて返す。
+        /// 実体は UnityEngine 非依存の GameRules（Game.Core アセンブリ）に委譲する。
         /// </summary>
         public GameState CreateInitialState()
         {
-            return new GameState
-            {
-                CurrentTurn = _startTurn,
-                Stamina = _initialStamina,
-                Skill = _initialSkill,
-                Mental = _initialMental
-            };
+            return new GameRules(
+                _paramMin, _paramMax,
+                _initialStamina, _initialSkill, _initialMental,
+                _startTurn, _maxTurn).CreateInitialState();
         }
     }
 }

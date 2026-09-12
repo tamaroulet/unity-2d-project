@@ -3,6 +3,8 @@
     "rootNamespace": "Game.Tests.EditMode",
     "references": [
         "Game",
+        "Game.Core",
+        "Game.Core.Events",
         "UnityEngine.TestRunner",
         "UnityEditor.TestRunner",
         "Unity.TextMeshPro",
